@@ -11,9 +11,10 @@ class ServerConfig {
   void load() {
     final env = _loadEnv();
     
-    final hostStr = env['SERVER_HOST'] ?? '0.0.0.0';
+    final hostStr = env['SERVER_HOST'] ?? env['HOST'] ?? '0.0.0.0';
     host = InternetAddress(hostStr);
-    port = int.tryParse(env['SERVER_PORT'] ?? '8080') ?? 8080;
+    final portValue = env['PORT'] ?? env['SERVER_PORT'] ?? '8080';
+    port = int.tryParse(portValue) ?? 8080;
   }
 
   Map<String, String> _loadEnv() {

@@ -14,11 +14,20 @@ class DatabaseConfig {
   void load() {
     final env = _loadEnv();
     
-    host = env['DATABASE_HOST'] ?? 'localhost';
-    port = int.tryParse(env['DATABASE_PORT'] ?? '5432') ?? 5432;
-    database = env['DATABASE_NAME'] ?? 'shs_app';
-    user = env['DATABASE_USER'] ?? 'postgres';
-    password = env['DATABASE_PASSWORD'] ?? '';
+    if (env.containsKey('DATABASE_URL')) {
+      final uri = Uri.parse(env['DATABASE_URL']!);
+      host = uri.host.isNotEmpty ? uri.host : 'localhost';
+      port = uri.hasPort ? uri.port : 5432;
+      database = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : 'shs_app';
+      user = uri.userInfo.isNotEmpty ? uri.userInfo.split(':').first : 'postgres';
+      password = uri.userInfo.contains(':') ? uri.userInfo.split(':').last : '';
+    } else {
+      host = env['DATABASE_HOST'] ?? 'localhost';
+      port = int.tryParse(env['DATABASE_PORT'] ?? '5432') ?? 5432;
+      database = env['DATABASE_NAME'] ?? 'shs_app';
+      user = env['DATABASE_USER'] ?? 'postgres';
+      password = env['DATABASE_PASSWORD'] ?? '';
+    }
   }
 
   Map<String, String> _loadEnv() {

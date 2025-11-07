@@ -1,0 +1,10 @@
+.git
+.gitignore
+.dart_tool
+build
+node_modules
+**/pubspec.lock
+**/.DS_Store
+**/*.log
+.env
+
