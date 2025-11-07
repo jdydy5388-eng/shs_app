@@ -10,6 +10,7 @@ class DatabaseConfig {
   late String database;
   late String user;
   late String password;
+  bool useSSL = false;
 
   void load() {
     final env = _loadEnv();
@@ -21,12 +22,16 @@ class DatabaseConfig {
       database = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : 'shs_app';
       user = uri.userInfo.isNotEmpty ? uri.userInfo.split(':').first : 'postgres';
       password = uri.userInfo.contains(':') ? uri.userInfo.split(':').last : '';
+
+      final sslParam = uri.queryParameters['sslmode'] ?? uri.queryParameters['ssl'] ?? '';
+      useSSL = env['DATABASE_SSL']?.toLowerCase() == 'true' || sslParam.toLowerCase() == 'require';
     } else {
       host = env['DATABASE_HOST'] ?? 'localhost';
       port = int.tryParse(env['DATABASE_PORT'] ?? '5432') ?? 5432;
       database = env['DATABASE_NAME'] ?? 'shs_app';
       user = env['DATABASE_USER'] ?? 'postgres';
       password = env['DATABASE_PASSWORD'] ?? '';
+      useSSL = env['DATABASE_SSL']?.toLowerCase() == 'true';
     }
   }
 
