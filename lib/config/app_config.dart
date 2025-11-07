@@ -6,7 +6,10 @@ class AppConfig {
   static const bool useLocalMode = false; // true = محلي (SQLite), false = شبكي (REST API)
   
   // إعدادات الخادم (يستخدم فقط في الوضع الشبكي)
-  // يتم اكتشاف IP الخادم تلقائياً - لا حاجة لتعديله يدوياً!
+  // إذا كان لديك خادم منشور عبر Render أو دومين ثابت، حدده هنا
+  static const String _defaultRemoteBaseUrl = 'https://shs-app.onrender.com';
+
+  // يتم تخزين العنوان في الذاكرة لتجنب إعادة الحساب في كل مرة
   static String? _cachedServerBaseUrl;
   
   /// الحصول على عنوان الخادم (مع اكتشاف تلقائي)
@@ -20,7 +23,13 @@ class AppConfig {
       return _cachedServerBaseUrl!;
     }
     
-    // اكتشاف تلقائي للخادم
+    // إذا كان لدينا عنوان ثابت (مثل Render) نستخدمه مباشرة
+    if (_defaultRemoteBaseUrl.isNotEmpty) {
+      _cachedServerBaseUrl = _defaultRemoteBaseUrl;
+      return _cachedServerBaseUrl!;
+    }
+    
+    // وإلا نحاول الاكتشاف التلقائي
     _cachedServerBaseUrl = await ServerDiscoveryService.getServerBaseUrl();
     return _cachedServerBaseUrl!;
   }
