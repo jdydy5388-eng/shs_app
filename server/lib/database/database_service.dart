@@ -32,7 +32,6 @@ class DatabaseService {
         username: _config.user,
         password: _config.password,
         useSSL: _config.useSSL,
-        requireSSL: _config.useSSL,
       );
 
       await _connection!.open();
