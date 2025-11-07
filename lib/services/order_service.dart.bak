@@ -1,0 +1,84 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/order_model.dart';
+
+class OrderService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Future<String> createOrder(MedicationOrderModel order) async {
+    try {
+      await _firestore
+          .collection('orders')
+          .doc(order.id)
+          .set(order.toMap());
+      
+      return order.id;
+    } catch (e) {
+      print('خطأ في إنشاء الطلب: $e');
+      rethrow;
+    }
+  }
+
+  Future<MedicationOrderModel?> getOrder(String orderId) async {
+    try {
+      final doc = await _firestore
+          .collection('orders')
+          .doc(orderId)
+          .get();
+      
+      if (doc.exists) {
+        return MedicationOrderModel.fromMap(doc.data()!, doc.id);
+      }
+      return null;
+    } catch (e) {
+      print('خطأ في جلب الطلب: $e');
+      return null;
+    }
+  }
+
+  Stream<List<MedicationOrderModel>> getOrdersByPatient(String patientId) {
+    return _firestore
+        .collection('orders')
+        .where('patientId', isEqualTo: patientId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => MedicationOrderModel.fromMap(doc.data(), doc.id))
+            .toList());
+  }
+
+  Stream<List<MedicationOrderModel>> getOrdersByPharmacy(String pharmacyId) {
+    return _firestore
+        .collection('orders')
+        .where('pharmacyId', isEqualTo: pharmacyId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => MedicationOrderModel.fromMap(doc.data(), doc.id))
+            .toList());
+  }
+
+  Future<void> updateOrderStatus(
+    String orderId,
+    OrderStatus status,
+  ) async {
+    try {
+      final updateData = <String, dynamic>{
+        'status': status.toString().split('.').last,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      if (status == OrderStatus.delivered) {
+        updateData['deliveredAt'] = FieldValue.serverTimestamp();
+      }
+
+      await _firestore
+          .collection('orders')
+          .doc(orderId)
+          .update(updateData);
+    } catch (e) {
+      print('خطأ في تحديث حالة الطلب: $e');
+      rethrow;
+    }
+  }
+}
+

@@ -1,0 +1,19 @@
+name: local_auth_windows
+description: Stub Windows implementation for local_auth that disables biometric features.
+version: 0.0.1
+publish_to: 'none'
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    implements: local_auth
+    platforms:
+      windows:
+        dartPluginClass: LocalAuthWindows
+

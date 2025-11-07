@@ -1,0 +1,26 @@
+name: shs_server
+description: خادم مركزي للنظام الصحي الذكي
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  # HTTP Server
+  shelf: ^1.4.2
+  shelf_router: ^1.1.4
+  shelf_cors_headers: ^0.1.5
+  
+  # Database
+  postgres: ^2.5.4
+  
+  # JSON & Utilities
+  uuid: ^4.5.1
+  crypto: ^3.0.5
+  
+  # Logging
+  logger: ^2.4.0
+
+dev_dependencies:
+  test: ^1.24.0
+

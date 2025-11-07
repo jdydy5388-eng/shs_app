@@ -1,0 +1,112 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:typed_data';
+import '../models/medical_record_model.dart';
+import 'firebase_service.dart';
+
+class MedicalRecordService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final FirebaseService _firebaseService = FirebaseService();
+
+  Future<String> createMedicalRecord(MedicalRecordModel record) async {
+    try {
+      await _firestore
+          .collection('medical_records')
+          .doc(record.id)
+          .set(record.toMap());
+      
+      return record.id;
+    } catch (e) {
+      print('خطأ في إنشاء السجل الصحي: $e');
+      rethrow;
+    }
+  }
+
+  Future<String> uploadMedicalFile(
+    String patientId,
+    String recordId,
+    String fileName,
+    Uint8List fileData,
+  ) async {
+    try {
+      final path = 'medical_records/$patientId/$recordId/$fileName';
+      final url = await _firebaseService.uploadFile(path, fileData);
+      
+      // تحديث السجل بإضافة رابط الملف
+      await _firestore
+          .collection('medical_records')
+          .doc(recordId)
+          .update({
+        'fileUrls': FieldValue.arrayUnion([url]),
+      });
+      
+      return url;
+    } catch (e) {
+      print('خطأ في رفع ملف السجل الصحي: $e');
+      rethrow;
+    }
+  }
+
+  Future<MedicalRecordModel?> getMedicalRecord(String recordId) async {
+    try {
+      final doc = await _firestore
+          .collection('medical_records')
+          .doc(recordId)
+          .get();
+      
+      if (doc.exists) {
+        return MedicalRecordModel.fromMap(doc.data()!, doc.id);
+      }
+      return null;
+    } catch (e) {
+      print('خطأ في جلب السجل الصحي: $e');
+      return null;
+    }
+  }
+
+  Stream<List<MedicalRecordModel>> getMedicalRecordsByPatient(String patientId) {
+    return _firestore
+        .collection('medical_records')
+        .where('patientId', isEqualTo: patientId)
+        .orderBy('date', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => MedicalRecordModel.fromMap(doc.data(), doc.id))
+            .toList());
+  }
+
+  Future<void> updateMedicalRecord(MedicalRecordModel record) async {
+    try {
+      await _firestore
+          .collection('medical_records')
+          .doc(record.id)
+          .update(record.toMap());
+    } catch (e) {
+      print('خطأ في تحديث السجل الصحي: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> deleteMedicalRecord(String recordId) async {
+    try {
+      // حذف الملفات المرتبطة أولاً
+      final record = await getMedicalRecord(recordId);
+      if (record != null && record.fileUrls != null) {
+        for (final url in record.fileUrls!) {
+          await _firebaseService.deleteFile(url);
+        }
+      }
+      
+      // حذف السجل
+      await _firestore
+          .collection('medical_records')
+          .doc(recordId)
+          .delete();
+    } catch (e) {
+      print('خطأ في حذف السجل الصحي: $e');
+      rethrow;
+    }
+  }
+}
+

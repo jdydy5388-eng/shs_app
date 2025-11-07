@@ -1,0 +1,100 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/prescription_model.dart';
+import '../services/drug_interaction_service.dart';
+
+class PrescriptionService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final DrugInteractionService _drugInteractionService = DrugInteractionService();
+
+  Future<String> createPrescription(PrescriptionModel prescription) async {
+    try {
+      // التحقق من التفاعلات الدوائية
+      final drugInteractions = await _drugInteractionService
+          .checkDrugInteractions(prescription.medications);
+      
+      // إنشاء نسخة محدثة مع التحذيرات
+      final updatedPrescription = PrescriptionModel(
+        id: prescription.id,
+        doctorId: prescription.doctorId,
+        doctorName: prescription.doctorName,
+        patientId: prescription.patientId,
+        patientName: prescription.patientName,
+        diagnosis: prescription.diagnosis,
+        medications: prescription.medications,
+        drugInteractions: drugInteractions.isNotEmpty ? drugInteractions : null,
+        notes: prescription.notes,
+        status: prescription.status,
+        createdAt: prescription.createdAt,
+        expiresAt: prescription.expiresAt,
+      );
+
+      await _firestore
+          .collection('prescriptions')
+          .doc(prescription.id)
+          .set(updatedPrescription.toMap());
+      
+      return prescription.id;
+    } catch (e) {
+      print('خطأ في إنشاء الوصفة: $e');
+      rethrow;
+    }
+  }
+
+  Future<PrescriptionModel?> getPrescription(String prescriptionId) async {
+    try {
+      final doc = await _firestore
+          .collection('prescriptions')
+          .doc(prescriptionId)
+          .get();
+      
+      if (doc.exists) {
+        return PrescriptionModel.fromMap(doc.data()!, doc.id);
+      }
+      return null;
+    } catch (e) {
+      print('خطأ في جلب الوصفة: $e');
+      return null;
+    }
+  }
+
+  Stream<List<PrescriptionModel>> getPrescriptionsByPatient(String patientId) {
+    return _firestore
+        .collection('prescriptions')
+        .where('patientId', isEqualTo: patientId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => PrescriptionModel.fromMap(doc.data(), doc.id))
+            .toList());
+  }
+
+  Stream<List<PrescriptionModel>> getPrescriptionsByDoctor(String doctorId) {
+    return _firestore
+        .collection('prescriptions')
+        .where('doctorId', isEqualTo: doctorId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => PrescriptionModel.fromMap(doc.data(), doc.id))
+            .toList());
+  }
+
+  Future<void> updatePrescriptionStatus(
+    String prescriptionId,
+    PrescriptionStatus status,
+  ) async {
+    try {
+      await _firestore
+          .collection('prescriptions')
+          .doc(prescriptionId)
+          .update({
+        'status': status.toString().split('.').last,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('خطأ في تحديث حالة الوصفة: $e');
+      rethrow;
+    }
+  }
+}
+
