@@ -1,7 +1,9 @@
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:io' show Platform;
 
 /// خدمة قاعدة البيانات المحلية باستخدام SQLite
 class LocalDatabaseService {
@@ -17,11 +19,29 @@ class LocalDatabaseService {
   }
 
   Future<Database> _initDatabase() async {
+    // على الويب، لا يمكننا استخدام SQLite
+    if (kIsWeb) {
+      throw UnsupportedError('LocalDatabaseService is not supported on web');
+    }
+    
     // تهيئة sqflite_common_ffi للـ Windows/Desktop
     if (!_initialized) {
-      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-        sqfliteFfiInit();
-        databaseFactory = databaseFactoryFfi;
+      try {
+        // التحقق من المنصة فقط إذا لم نكن على الويب
+        if (!kIsWeb) {
+          try {
+            // ignore: undefined_class, undefined_getter
+            final isDesktop = Platform.isWindows || Platform.isLinux || Platform.isMacOS;
+            if (isDesktop) {
+              sqfliteFfiInit();
+              databaseFactory = databaseFactoryFfi;
+            }
+          } catch (e) {
+            // تجاهل خطأ Platform على الويب
+          }
+        }
+      } catch (e) {
+        // تجاهل خطأ Platform
       }
       _initialized = true;
     }

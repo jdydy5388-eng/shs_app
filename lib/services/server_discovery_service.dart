@@ -1,7 +1,9 @@
-import 'dart:io';
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:io' show NetworkInterface, InternetAddressType;
 
 /// خدمة اكتشاف الخادم تلقائياً في الشبكة المحلية
 class ServerDiscoveryService {
@@ -25,8 +27,8 @@ class ServerDiscoveryService {
       }
     }
     
-    // 2. على Windows/Linux/MacOS، محاولة localhost أولاً
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    // 2. على Desktop (وليس الويب)، محاولة localhost أولاً
+    if (!kIsWeb) {
       final localhostUrl = 'http://localhost:$defaultPort';
       if (await _testConnection(localhostUrl)) {
         await _saveServerInfo('localhost', defaultPort);
@@ -68,100 +70,113 @@ class ServerDiscoveryService {
   
   /// البحث عن الخادم في الشبكة المحلية
   static Future<String?> _discoverServerInNetwork(int port) async {
-    try {
-      // الحصول على جميع واجهات الشبكة
-      final interfaces = await NetworkInterface.list(
-        includeLinkLocal: false,
-        type: InternetAddressType.IPv4,
-      );
-      
-      // جمع جميع عناوين IP المحلية
-      final localIps = <String>[];
-      for (final interface in interfaces) {
-        for (final addr in interface.addresses) {
-          if (addr.type == InternetAddressType.IPv4) {
-            final ip = addr.address;
-            // تجاهل loopback و link-local
-            if (!ip.startsWith('127.') && !ip.startsWith('169.254.')) {
-              localIps.add(ip);
-            }
-          }
-        }
-      }
-      
-      // إذا لم نجد أي IP، نستخدم شبكة محلية افتراضية
-      if (localIps.isEmpty) {
-        // محاولة IPs شائعة في الشبكات المحلية
-        localIps.addAll([
-          '192.168.1.100',
-          '192.168.0.100',
-          '192.168.43.196', // IP المعروف سابقاً
-        ]);
-      }
-      
-      // اختبار كل IP
-      for (final ip in localIps) {
-        final url = 'http://$ip:$port';
-        if (await _testConnection(url)) {
-          return ip;
-        }
-      }
-      
-      // البحث في نطاق الشبكة المحلية (أول 3 octets)
-      if (localIps.isNotEmpty) {
-        final networkBase = _getNetworkBase(localIps.first);
-        if (networkBase != null) {
-          // اختبار IPs شائعة أولاً (أسرع)
-          final commonIps = [
-            '100', '101', '1', '2', '10', '20', '50', 
-            '196', '200', '254', '150', '102'
-          ];
-          
-          for (final ipSuffix in commonIps) {
-            final testIp = '$networkBase.$ipSuffix';
-            if (await _testConnection('http://$testIp:$port')) {
-              return testIp;
-            }
-          }
-          
-          // إذا لم نجد، نبحث في نطاق محدود (1-20, 100-120) لتسريع العملية
-          final limitedRanges = [
-            for (int i = 1; i <= 20; i++) i,
-            for (int i = 100; i <= 120; i++) i,
-          ];
-          
-          final futures = <Future<MapEntry<int, bool>>>[];
-          for (final i in limitedRanges) {
-            final testIp = '$networkBase.$i';
-            futures.add(
-              _testConnection('http://$testIp:$port')
-                  .then((result) => MapEntry(i, result)),
-            );
-          }
-          
-          // انتظار أول نتيجة نجاح (مع timeout)
-          try {
-            final results = await Future.wait(futures).timeout(
-              const Duration(seconds: 5),
-              onTimeout: () => <MapEntry<int, bool>>[],
-            );
-            
-            for (final result in results) {
-              if (result.value) {
-                final discoveredIp = '$networkBase.${result.key}';
-                return discoveredIp;
-              }
-            }
-          } catch (e) {
-            // تجاهل الأخطاء واستمر
-          }
-        }
-      }
-      
-      return null;
-    } catch (e) {
+    // على الويب، لا يمكننا البحث في الشبكة المحلية
+    if (kIsWeb) {
       return null;
     }
+    
+    // على الويب، لا يمكننا استخدام NetworkInterface
+    // لذا نستخدم IPs افتراضية فقط
+    final localIps = <String>[];
+    
+    if (!kIsWeb) {
+      try {
+        // الحصول على جميع واجهات الشبكة (فقط على Desktop)
+        // ignore: undefined_class, undefined_method
+        // ignore: avoid_web_libraries_in_flutter
+        final interfaces = await NetworkInterface.list(
+          includeLinkLocal: false,
+          type: InternetAddressType.IPv4,
+        );
+        
+        // جمع جميع عناوين IP المحلية
+        for (final interface in interfaces) {
+          for (final addr in interface.addresses) {
+            final isIPv4 = addr.type == InternetAddressType.IPv4;
+            if (isIPv4) {
+              final ip = addr.address;
+              // تجاهل loopback و link-local
+              if (!ip.startsWith('127.') && !ip.startsWith('169.254.')) {
+                localIps.add(ip);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // تجاهل خطأ NetworkInterface على الويب
+      }
+    }
+      
+    // إذا لم نجد أي IP، نستخدم شبكة محلية افتراضية
+    if (localIps.isEmpty) {
+      // محاولة IPs شائعة في الشبكات المحلية
+      localIps.addAll([
+        '192.168.1.100',
+        '192.168.0.100',
+        '192.168.43.196', // IP المعروف سابقاً
+      ]);
+    }
+    
+    // اختبار كل IP
+    for (final ip in localIps) {
+      final url = 'http://$ip:$port';
+      if (await _testConnection(url)) {
+        return ip;
+      }
+    }
+    
+    // البحث في نطاق الشبكة المحلية (أول 3 octets)
+    if (localIps.isNotEmpty) {
+      final networkBase = _getNetworkBase(localIps.first);
+      if (networkBase != null) {
+        // اختبار IPs شائعة أولاً (أسرع)
+        final commonIps = [
+          '100', '101', '1', '2', '10', '20', '50', 
+          '196', '200', '254', '150', '102'
+        ];
+        
+        for (final ipSuffix in commonIps) {
+          final testIp = '$networkBase.$ipSuffix';
+          if (await _testConnection('http://$testIp:$port')) {
+            return testIp;
+          }
+        }
+        
+        // إذا لم نجد، نبحث في نطاق محدود (1-20, 100-120) لتسريع العملية
+        final limitedRanges = [
+          for (int i = 1; i <= 20; i++) i,
+          for (int i = 100; i <= 120; i++) i,
+        ];
+        
+        final futures = <Future<MapEntry<int, bool>>>[];
+        for (final i in limitedRanges) {
+          final testIp = '$networkBase.$i';
+          futures.add(
+            _testConnection('http://$testIp:$port')
+                .then((result) => MapEntry(i, result)),
+          );
+        }
+        
+        // انتظار أول نتيجة نجاح (مع timeout)
+        try {
+          final results = await Future.wait(futures).timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => <MapEntry<int, bool>>[],
+          );
+          
+          for (final result in results) {
+            if (result.value) {
+              final discoveredIp = '$networkBase.${result.key}';
+              return discoveredIp;
+            }
+          }
+        } catch (e) {
+          // تجاهل الأخطاء واستمر
+        }
+      }
+    }
+    
+    return null;
   }
   
   /// استخراج قاعدة الشبكة (أول 3 octets)

@@ -1,21 +1,49 @@
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter/services.dart';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:io' show Platform;
 
 class BiometricAuthService {
   LocalAuthentication? _localAuth;
   
   BiometricAuthService() {
+    // على الويب، لا يمكننا استخدام المصادقة البيومترية
+    if (kIsWeb) {
+      return;
+    }
+    
     // تهيئة local_auth فقط على المنصات المدعومة
-    if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
-      _localAuth = LocalAuthentication();
+    try {
+      if (!kIsWeb) {
+        // ignore: undefined_class, undefined_getter
+        final isMobile = Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
+        if (isMobile) {
+          _localAuth = LocalAuthentication();
+        }
+      }
+    } catch (e) {
+      // تجاهل الخطأ إذا كان Platform غير متاح
     }
   }
 
   Future<bool> isBiometricAvailable() async {
-    // Windows و Linux لا يدعمان المصادقة البيومترية
-    if (Platform.isWindows || Platform.isLinux) {
+    // على الويب، لا يمكننا استخدام المصادقة البيومترية
+    if (kIsWeb) {
       return false;
+    }
+    
+    // Windows و Linux لا يدعمان المصادقة البيومترية
+    if (!kIsWeb) {
+      try {
+        // ignore: undefined_class, undefined_getter
+        final isDesktop = Platform.isWindows || Platform.isLinux;
+        if (isDesktop) {
+          return false;
+        }
+      } catch (e) {
+        return false;
+      }
     }
     
     if (_localAuth == null) {
@@ -74,8 +102,20 @@ class BiometricAuthService {
   }
 
   Future<List<BiometricType>> getAvailableBiometrics() async {
-    if (Platform.isWindows || Platform.isLinux || _localAuth == null) {
+    if (kIsWeb || _localAuth == null) {
       return [];
+    }
+    
+    if (!kIsWeb) {
+      try {
+        // ignore: undefined_class, undefined_getter
+        final isDesktop = Platform.isWindows || Platform.isLinux;
+        if (isDesktop) {
+          return [];
+        }
+      } catch (e) {
+        return [];
+      }
     }
     
     try {
@@ -89,13 +129,35 @@ class BiometricAuthService {
   }
 
   Future<Map<String, dynamic>> checkBiometricStatus() async {
-    if (Platform.isWindows || Platform.isLinux || _localAuth == null) {
+    if (kIsWeb || _localAuth == null) {
       return {
         'supported': false,
         'enrolled': false,
         'available': false,
         'message': 'المنصة لا تدعم المصادقة البيومترية',
       };
+    }
+    
+    if (!kIsWeb) {
+      try {
+        // ignore: undefined_class, undefined_getter
+        final isDesktop = Platform.isWindows || Platform.isLinux;
+        if (isDesktop) {
+          return {
+            'supported': false,
+            'enrolled': false,
+            'available': false,
+            'message': 'المنصة لا تدعم المصادقة البيومترية',
+          };
+        }
+      } catch (e) {
+        return {
+          'supported': false,
+          'enrolled': false,
+          'available': false,
+          'message': 'المنصة لا تدعم المصادقة البيومترية',
+        };
+      }
     }
     
     try {
@@ -171,9 +233,22 @@ class BiometricAuthService {
     bool useErrorDialogs = true,
     bool stickyAuth = true,
   }) async {
-    // Windows و Linux لا يدعمان المصادقة البيومترية
-    if (Platform.isWindows || Platform.isLinux) {
+    // على الويب، لا يمكننا استخدام المصادقة البيومترية
+    if (kIsWeb) {
       return false;
+    }
+    
+    // Windows و Linux لا يدعمان المصادقة البيومترية
+    if (!kIsWeb) {
+      try {
+        // ignore: undefined_class, undefined_getter
+        final isDesktop = Platform.isWindows || Platform.isLinux;
+        if (isDesktop) {
+          return false;
+        }
+      } catch (e) {
+        return false;
+      }
     }
     
     if (_localAuth == null) return false;
@@ -197,8 +272,20 @@ class BiometricAuthService {
   }
 
   Future<bool> stopAuthentication() async {
-    if (Platform.isWindows || Platform.isLinux || _localAuth == null) {
+    if (kIsWeb || _localAuth == null) {
       return false;
+    }
+    
+    if (!kIsWeb) {
+      try {
+        // ignore: undefined_class, undefined_getter
+        final isDesktop = Platform.isWindows || Platform.isLinux;
+        if (isDesktop) {
+          return false;
+        }
+      } catch (e) {
+        return false;
+      }
     }
     
     try {

@@ -1,6 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:io' show Platform;
 import 'package:provider/provider.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider_local.dart';
@@ -781,11 +783,19 @@ class _PatientSettingsScreenState extends State<PatientSettingsScreen> {
                                             ),
                                             onPressed: () async {
                                               try {
-                                                // محاولة فتح إعدادات الجهاز
-                                                if (Platform.isAndroid) {
-                                                  await _biometricAuthService.authenticate(
-                                                    localizedReason: 'سيتم فتح إعدادات الأمان',
-                                                  );
+                                                // محاولة فتح إعدادات الجهاز (فقط على Android وليس الويب)
+                                                if (!kIsWeb) {
+                                                  try {
+                                                    // ignore: undefined_class, undefined_getter
+                                                    final isAndroid = Platform.isAndroid;
+                                                    if (isAndroid) {
+                                                      await _biometricAuthService.authenticate(
+                                                        localizedReason: 'سيتم فتح إعدادات الأمان',
+                                                      );
+                                                    }
+                                                  } catch (e) {
+                                                    // تجاهل خطأ Platform
+                                                  }
                                                 }
                                               } catch (e) {
                                                 if (mounted) {

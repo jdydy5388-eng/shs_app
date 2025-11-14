@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -24,9 +25,15 @@ void main() async {
     debugPrint('Warning: Failed to initialize Arabic locale: $e');
   }
   
-  // تهيئة قاعدة البيانات المحلية
-  final localDb = LocalDatabaseService();
-  await localDb.database; // إنشاء قاعدة البيانات
+  // تهيئة قاعدة البيانات المحلية (فقط على المنصات المدعومة، وليس على الويب)
+  if (!kIsWeb) {
+    try {
+      final localDb = LocalDatabaseService();
+      await localDb.database; // إنشاء قاعدة البيانات
+    } catch (e) {
+      debugPrint('Warning: Failed to initialize local database: $e');
+    }
+  }
   
   runApp(const MyApp());
 }
