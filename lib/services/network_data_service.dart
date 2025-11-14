@@ -164,9 +164,9 @@ class NetworkDataService {
     final uri = Uri.parse('$baseUrl/$endpoint');
     final response = await _sendRequest(
       () => http.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
       ),
       'POST $endpoint',
     );
@@ -191,9 +191,9 @@ class NetworkDataService {
     final uri = Uri.parse('$baseUrl/$endpoint');
     final response = await _sendRequest(
       () => http.put(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
       ),
       'PUT $endpoint',
     );
@@ -415,14 +415,14 @@ class NetworkDataService {
       }
       
       return DoctorAppointment.fromMap({
-        'id': map['id'],
-        'doctor_id': map['doctorId'],
-        'patient_id': map['patientId'],
-        'patient_name': map['patientName'],
+      'id': map['id'],
+      'doctor_id': map['doctorId'],
+      'patient_id': map['patientId'],
+      'patient_name': map['patientName'],
         'date': parseDate(map['date']) ?? DateTime.now().millisecondsSinceEpoch,
-        'status': map['status'],
-        'type': map['type'],
-        'notes': map['notes'],
+      'status': map['status'],
+      'type': map['type'],
+      'notes': map['notes'],
         'created_at': parseDate(map['createdAt']) ?? DateTime.now().millisecondsSinceEpoch,
         'updated_at': parseDate(map['updatedAt']),
       });
@@ -450,14 +450,14 @@ class NetworkDataService {
       }
       
       return DoctorAppointment.fromMap({
-        'id': map['id'],
-        'doctor_id': map['doctorId'],
-        'patient_id': map['patientId'],
-        'patient_name': map['patientName'],
+      'id': map['id'],
+      'doctor_id': map['doctorId'],
+      'patient_id': map['patientId'],
+      'patient_name': map['patientName'],
         'date': parseDate(map['date']) ?? DateTime.now().millisecondsSinceEpoch,
-        'status': map['status'],
-        'type': map['type'],
-        'notes': map['notes'],
+      'status': map['status'],
+      'type': map['type'],
+      'notes': map['notes'],
         'created_at': parseDate(map['createdAt']) ?? DateTime.now().millisecondsSinceEpoch,
         'updated_at': parseDate(map['updatedAt']),
       });
