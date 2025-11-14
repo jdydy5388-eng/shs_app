@@ -6,7 +6,6 @@ import '../services/biometric_auth_service.dart';
 import '../services/data_service.dart';
 import '../config/app_config.dart';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:async';
 
 /// Provider للمصادقة - يدعم الوضع المحلي والشبكي
@@ -292,15 +291,16 @@ class AuthProviderLocal with ChangeNotifier {
   }
 
   String _mapLoginErrorToMessage(Object e) {
-    if (e is SocketException) {
-      return 'تعذّر الاتصال بالخادم. تحقق من اتصال الإنترنت أو إعدادات الخادم.';
-    }
+    final error = e.toString();
+    final lower = error.toLowerCase();
+    
+    // التحقق من أنواع الأخطاء عبر النص (متوافق مع الويب)
     if (e is TimeoutException) {
       return 'انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى.';
     }
-
-    final error = e.toString();
-    final lower = error.toLowerCase();
+    if (lower.contains('socket') || lower.contains('connection') || lower.contains('network')) {
+      return 'تعذّر الاتصال بالخادم. تحقق من اتصال الإنترنت أو إعدادات الخادم.';
+    }
 
     if (lower.contains('http 401') || lower.contains('invalid email or password')) {
       return 'البريد الإلكتروني أو كلمة المرور غير صحيحة';

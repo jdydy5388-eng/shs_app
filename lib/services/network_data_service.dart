@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:async';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 import '../config/app_config.dart';
@@ -100,13 +99,22 @@ class NetworkDataService {
   ) async {
     try {
       return await request().timeout(_requestTimeout);
-    } on SocketException {
-      throw Exception('لا يوجد اتصال بالشبكة. تحقق من اتصال الإنترنت وحاول مرة أخرى.');
     } on TimeoutException {
       throw Exception('انتهت مهلة الاتصال بالخادم. حاول مرة أخرى خلال لحظات.');
-    } on http.ClientException {
+    } on http.ClientException catch (e) {
+      final message = e.toString().toLowerCase();
+      if (message.contains('socket') || message.contains('connection') || message.contains('network')) {
+        throw Exception('لا يوجد اتصال بالشبكة. تحقق من اتصال الإنترنت وحاول مرة أخرى.');
+      }
       throw Exception('تعذّر الوصول إلى الخادم. تأكد من تشغيل الخادم أو حاول لاحقاً.');
     } catch (e) {
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('socket') || errorStr.contains('connection') || errorStr.contains('network')) {
+        throw Exception('لا يوجد اتصال بالشبكة. تحقق من اتصال الإنترنت وحاول مرة أخرى.');
+      }
+      if (errorStr.contains('timeout')) {
+        throw Exception('انتهت مهلة الاتصال بالخادم. حاول مرة أخرى خلال لحظات.');
+      }
       throw Exception('تعذّر إكمال الطلب ($description). يرجى المحاولة لاحقاً.');
     }
   }
