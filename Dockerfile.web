@@ -7,6 +7,7 @@ WORKDIR /app
 COPY pubspec.* ./
 COPY lib/ ./lib/
 COPY web/ ./web/
+COPY third_party/ ./third_party/
 # ملاحظة: assets/ غير موجود في المشروع، لذا تم حذف السطر
 
 # تثبيت الاعتمادات
