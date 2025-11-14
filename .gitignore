@@ -56,3 +56,8 @@ lib/services/ai_service.dart
 # Generated files
 *.g.dart
 *.freezed.dart
+
+# Android Keystore files
+*.jks
+*.keystore
+android/key.properties
