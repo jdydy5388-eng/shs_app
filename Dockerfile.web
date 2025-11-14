@@ -7,7 +7,7 @@ WORKDIR /app
 COPY pubspec.* ./
 COPY lib/ ./lib/
 COPY web/ ./web/
-COPY assets/ ./assets/ 2>/dev/null || true
+# ملاحظة: assets/ غير موجود في المشروع، لذا تم حذف السطر
 
 # تثبيت الاعتمادات
 RUN flutter pub get
