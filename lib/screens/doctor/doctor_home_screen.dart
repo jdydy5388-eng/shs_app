@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../utils/auth_helper.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'create_prescription_screen.dart';
 import 'patients_screen.dart';
 import 'appointments_tasks_screen.dart';
 import 'lab_requests_screen.dart';
 import 'settings_reports_screen.dart';
 import 'radiology_screen.dart';
+import 'radiology_web_screen.dart';
 import '../common/attendance_screen.dart';
 
 class DoctorFeature {
@@ -144,7 +146,7 @@ class DoctorDashboard extends StatelessWidget {
         'تحديث الحالة والجدولة',
         'إضافة تقرير ومرفقات الصور/الروابط'
       ],
-      builder: (_) => const RadiologyScreen(),
+      builder: (_) => kIsWeb ? const RadiologyWebScreen() : const RadiologyScreen(),
     ),
     DoctorFeature(
       title: 'الإعدادات والتقارير',
