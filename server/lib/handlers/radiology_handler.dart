@@ -263,6 +263,38 @@ class RadiologyHandler {
       return ResponseHelper.error(message: 'Failed to create report: $e');
     }
   }
+
+  Future<Response> _getReport(Request request, String id) async {
+    try {
+      final user = getRequestUser(request);
+      if (!isAuthenticated(user)) return Response.forbidden('Unauthorized');
+      if (!(user.isAdmin || Rbac.has(user.role, Permission.readRadiology))) {
+        return Response.forbidden('Unauthorized');
+      }
+      final conn = await DatabaseService().connection;
+      final rows = await conn.query(
+        '''
+        SELECT id, request_id, findings, impression, attachments, created_at
+        FROM radiology_reports WHERE id = @id
+        ''',
+        substitutionValues: {'id': id},
+      );
+      if (rows.isEmpty) return ResponseHelper.error(message: 'Report not found', statusCode: 404);
+      final r = rows.first;
+      final data = {
+        'id': r[0],
+        'requestId': r[1],
+        'findings': r[2],
+        'impression': r[3],
+        'attachments': r[4] != null ? jsonDecode(r[4] as String) : null,
+        'createdAt': r[5],
+      };
+      return ResponseHelper.success(data: data);
+    } catch (e) {
+      AppLogger.error('Get radiology report error', e);
+      return ResponseHelper.error(message: 'Failed to get report: $e');
+    }
+  }
 }
 
 

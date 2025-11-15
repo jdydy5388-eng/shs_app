@@ -308,6 +308,17 @@ class RoomsHandler {
     }
   }
 
+  Future<Response> _deleteBed(Request request, String bedId) async {
+    try {
+      final conn = await DatabaseService().connection;
+      await conn.execute('DELETE FROM beds WHERE id = @id', substitutionValues: {'id': bedId});
+      return ResponseHelper.success(data: {'message': 'Bed deleted'});
+    } catch (e) {
+      AppLogger.error('Delete bed error', e);
+      return ResponseHelper.error(message: 'Failed to delete bed: $e');
+    }
+  }
+
   // Transfers
   Future<Response> _getTransfers(Request request) async {
     try {
