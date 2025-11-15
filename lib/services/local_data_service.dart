@@ -15,6 +15,10 @@ import '../models/user_model.dart';
 import '../models/entity_model.dart';
 import '../models/audit_log_model.dart';
 import '../models/system_settings_model.dart';
+import '../models/invoice_model.dart';
+import '../models/room_bed_model.dart';
+import '../models/emergency_case_model.dart';
+import '../models/notification_model.dart';
 import 'local_database_service.dart';
 
 class DoctorStats {
@@ -1310,5 +1314,577 @@ class LocalDataService {
   }
 
   String generateId() => _uuid.v4();
+
+  // Billing - Invoices
+  Future<List<InvoiceModel>> getInvoices({String? patientId, InvoiceStatus? status}) async {
+    final db = await _db.database;
+    final where = <String>[];
+    final args = <Object>[];
+    if (patientId != null) {
+      where.add('patient_id = ?');
+      args.add(patientId);
+    }
+    if (status != null) {
+      where.add('status = ?');
+      args.add(status.toString().split('.').last);
+    }
+    final rows = await db.query(
+      'invoices',
+      where: where.isEmpty ? null : where.join(' AND '),
+      whereArgs: where.isEmpty ? null : args,
+      orderBy: 'created_at DESC',
+    );
+    return rows.map((r) {
+      final itemsStr = r['items'] as String?;
+      final items = itemsStr != null
+          ? List<Map<String, dynamic>>.from(jsonDecode(itemsStr) as List)
+          : <Map<String, dynamic>>[];
+      return InvoiceModel.fromMap({
+        'id': r['id'],
+        'patientId': r['patient_id'],
+        'patientName': r['patient_name'],
+        'relatedType': r['related_type'],
+        'relatedId': r['related_id'],
+        'items': items,
+        'subtotal': r['subtotal'],
+        'discount': r['discount'],
+        'tax': r['tax'],
+        'total': r['total'],
+        'currency': r['currency'],
+        'status': r['status'],
+        'insuranceProvider': r['insurance_provider'],
+        'insurancePolicy': r['insurance_policy'],
+        'createdAt': r['created_at'],
+        'updatedAt': r['updated_at'],
+        'paidAt': r['paid_at'],
+      }, r['id'] as String);
+    }).toList();
+  }
+
+  Future<void> createInvoice(InvoiceModel invoice) async {
+    final db = await _db.database;
+    await db.insert('invoices', {
+      'id': invoice.id,
+      'patient_id': invoice.patientId,
+      'patient_name': invoice.patientName,
+      'related_type': invoice.relatedType,
+      'related_id': invoice.relatedId,
+      'items': jsonEncode(invoice.items.map((e) => e.toMap()).toList()),
+      'subtotal': invoice.subtotal,
+      'discount': invoice.discount,
+      'tax': invoice.tax,
+      'total': invoice.total,
+      'currency': invoice.currency,
+      'status': invoice.status.toString().split('.').last,
+      'insurance_provider': invoice.insuranceProvider,
+      'insurance_policy': invoice.insurancePolicy,
+      'created_at': invoice.createdAt.millisecondsSinceEpoch,
+      'updated_at': invoice.updatedAt?.millisecondsSinceEpoch,
+      'paid_at': invoice.paidAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  Future<void> updateInvoice(String invoiceId, {
+    List<InvoiceItem>? items,
+    double? subtotal,
+    double? discount,
+    double? tax,
+    double? total,
+    String? currency,
+    String? insuranceProvider,
+    String? insurancePolicy,
+  }) async {
+    final db = await _db.database;
+    final updates = <String, Object?>{
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    };
+    if (items != null) updates['items'] = jsonEncode(items.map((e) => e.toMap()).toList());
+    if (subtotal != null) updates['subtotal'] = subtotal;
+    if (discount != null) updates['discount'] = discount;
+    if (tax != null) updates['tax'] = tax;
+    if (total != null) updates['total'] = total;
+    if (currency != null) updates['currency'] = currency;
+    if (insuranceProvider != null) updates['insurance_provider'] = insuranceProvider;
+    if (insurancePolicy != null) updates['insurance_policy'] = insurancePolicy;
+
+    await db.update('invoices', updates, where: 'id = ?', whereArgs: [invoiceId]);
+  }
+
+  Future<void> updateInvoiceStatus(String invoiceId, InvoiceStatus status) async {
+    final db = await _db.database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await db.update(
+      'invoices',
+      {
+        'status': status.toString().split('.').last,
+        'updated_at': now,
+        'paid_at': status == InvoiceStatus.paid ? now : null,
+      },
+      where: 'id = ?',
+      whereArgs: [invoiceId],
+    );
+  }
+
+  // Rooms & Beds
+  Future<List<RoomModel>> getRooms() async {
+    final db = await _db.database;
+    final rows = await db.query('rooms', orderBy: 'name ASC');
+    return rows.map((r) => RoomModel.fromMap({
+      'id': r['id'],
+      'name': r['name'],
+      'type': r['type'],
+      'floor': r['floor'],
+      'notes': r['notes'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    })).toList();
+  }
+
+  Future<void> createRoom(RoomModel room) async {
+    final db = await _db.database;
+    await db.insert('rooms', {
+      'id': room.id,
+      'name': room.name,
+      'type': room.type.toString().split('.').last,
+      'floor': room.floor,
+      'notes': room.notes,
+      'created_at': room.createdAt.millisecondsSinceEpoch,
+      'updated_at': room.updatedAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  Future<void> updateRoom(String roomId, {String? name, RoomType? type, int? floor, String? notes}) async {
+    final db = await _db.database;
+    final updates = <String, Object?>{
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    };
+    if (name != null) updates['name'] = name;
+    if (type != null) updates['type'] = type.toString().split('.').last;
+    if (floor != null) updates['floor'] = floor;
+    if (notes != null) updates['notes'] = notes;
+    await db.update('rooms', updates, where: 'id = ?', whereArgs: [roomId]);
+  }
+
+  Future<List<BedModel>> getBeds({String? roomId, BedStatus? status}) async {
+    final db = await _db.database;
+    final where = <String>[];
+    final args = <Object>[];
+    if (roomId != null) {
+      where.add('room_id = ?');
+      args.add(roomId);
+    }
+    if (status != null) {
+      where.add('status = ?');
+      args.add(status.toString().split('.').last);
+    }
+    final rows = await db.query(
+      'beds',
+      where: where.isEmpty ? null : where.join(' AND '),
+      whereArgs: where.isEmpty ? null : args,
+      orderBy: 'label ASC',
+    );
+    return rows.map((r) => BedModel.fromMap({
+      'id': r['id'],
+      'roomId': r['room_id'],
+      'label': r['label'],
+      'status': r['status'],
+      'patientId': r['patient_id'],
+      'occupiedSince': r['occupied_since'],
+      'updatedAt': r['updated_at'],
+    })).toList();
+  }
+
+  Future<void> createBed(BedModel bed) async {
+    final db = await _db.database;
+    await db.insert('beds', {
+      'id': bed.id,
+      'room_id': bed.roomId,
+      'label': bed.label,
+      'status': bed.status.toString().split('.').last,
+      'patient_id': bed.patientId,
+      'occupied_since': bed.occupiedSince?.millisecondsSinceEpoch,
+      'updated_at': bed.updatedAt?.millisecondsSinceEpoch ?? DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  Future<void> updateBed(String bedId, {String? label, BedStatus? status, String? patientId, DateTime? occupiedSince}) async {
+    final db = await _db.database;
+    final updates = <String, Object?>{
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    };
+    if (label != null) updates['label'] = label;
+    if (status != null) updates['status'] = status.toString().split('.').last;
+    if (patientId != null) updates['patient_id'] = patientId;
+    if (occupiedSince != null) updates['occupied_since'] = occupiedSince.millisecondsSinceEpoch;
+    await db.update('beds', updates, where: 'id = ?', whereArgs: [bedId]);
+  }
+
+  Future<void> assignBed(String bedId, String patientId) async {
+    final db = await _db.database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await db.update(
+      'beds',
+      {
+        'status': BedStatus.occupied.toString().split('.').last,
+        'patient_id': patientId,
+        'occupied_since': now,
+        'updated_at': now,
+      },
+      where: 'id = ?',
+      whereArgs: [bedId],
+    );
+  }
+
+  Future<void> releaseBed(String bedId) async {
+    final db = await _db.database;
+    await db.update(
+      'beds',
+      {
+        'status': BedStatus.available.toString().split('.').last,
+        'patient_id': null,
+        'occupied_since': null,
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'id = ?',
+      whereArgs: [bedId],
+    );
+  }
+
+  Future<void> createTransfer({
+    required String id,
+    required String patientId,
+    String? fromBedId,
+    required String toBedId,
+    String? reason,
+  }) async {
+    final db = await _db.database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await db.insert('bed_transfers', {
+      'id': id,
+      'patient_id': patientId,
+      'from_bed_id': fromBedId,
+      'to_bed_id': toBedId,
+      'reason': reason,
+      'created_at': now,
+    });
+    // تحديث حالة الأسرة
+    if (fromBedId != null) {
+      await releaseBed(fromBedId);
+    }
+    await assignBed(toBedId, patientId);
+  }
+
+  // Emergency
+  Future<List<EmergencyCaseModel>> getEmergencyCases({EmergencyStatus? status, TriageLevel? triage}) async {
+    final db = await _db.database;
+    final where = <String>[];
+    final args = <Object>[];
+    if (status != null) {
+      where.add('status = ?');
+      args.add(status.toString().split('.').last);
+    }
+    if (triage != null) {
+      where.add('triage_level = ?');
+      args.add(triage.toString().split('.').last);
+    }
+    final rows = await db.query(
+      'emergency_cases',
+      where: where.isEmpty ? null : where.join(' AND '),
+      whereArgs: where.isEmpty ? null : args,
+      orderBy: 'created_at DESC',
+    );
+    return rows.map((r) {
+      Map<String, dynamic>? vital;
+      final vs = r['vital_signs'] as String?;
+      if (vs != null) {
+        try {
+          vital = Map<String, dynamic>.from(jsonDecode(vs) as Map);
+        } catch (_) {}
+      }
+      return EmergencyCaseModel.fromMap({
+        'id': r['id'],
+        'patientId': r['patient_id'],
+        'patientName': r['patient_name'],
+        'triage_level': r['triage_level'],
+        'status': r['status'],
+        'vitalSigns': vital,
+        'symptoms': r['symptoms'],
+        'notes': r['notes'],
+        'createdAt': r['created_at'],
+        'updatedAt': r['updated_at'],
+      }, r['id'] as String);
+    }).toList();
+  }
+
+  Future<void> createEmergencyCase(EmergencyCaseModel c) async {
+    final db = await _db.database;
+    await db.insert('emergency_cases', {
+      'id': c.id,
+      'patient_id': c.patientId,
+      'patient_name': c.patientName,
+      'triage_level': c.triageLevel.toString().split('.').last,
+      'status': c.status.toString().split('.').last,
+      'vital_signs': c.vitalSigns != null ? jsonEncode(c.vitalSigns) : null,
+      'symptoms': c.symptoms,
+      'notes': c.notes,
+      'created_at': c.createdAt.millisecondsSinceEpoch,
+      'updated_at': c.updatedAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  Future<void> updateEmergencyCase(String caseId, {
+    String? patientId,
+    String? patientName,
+    TriageLevel? triageLevel,
+    EmergencyStatus? status,
+    Map<String, dynamic>? vitalSigns,
+    String? symptoms,
+    String? notes,
+  }) async {
+    final db = await _db.database;
+    final updates = <String, Object?>{
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    };
+    if (patientId != null) updates['patient_id'] = patientId;
+    if (patientName != null) updates['patient_name'] = patientName;
+    if (triageLevel != null) updates['triage_level'] = triageLevel.toString().split('.').last;
+    if (status != null) updates['status'] = status.toString().split('.').last;
+    if (vitalSigns != null) updates['vital_signs'] = jsonEncode(vitalSigns);
+    if (symptoms != null) updates['symptoms'] = symptoms;
+    if (notes != null) updates['notes'] = notes;
+    await db.update('emergency_cases', updates, where: 'id = ?', whereArgs: [caseId]);
+  }
+
+  Future<void> updateEmergencyStatus(String caseId, EmergencyStatus status) async {
+    final db = await _db.database;
+    await db.update(
+      'emergency_cases',
+      {
+        'status': status.toString().split('.').last,
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'id = ?',
+      whereArgs: [caseId],
+    );
+  }
+
+  Future<List<EmergencyEventModel>> getEmergencyEvents({String? caseId}) async {
+    final db = await _db.database;
+    final where = caseId != null ? 'case_id = ?' : null;
+    final rows = await db.query(
+      'emergency_events',
+      where: where,
+      whereArgs: where != null ? [caseId] : null,
+      orderBy: 'created_at DESC',
+    );
+    return rows.map((r) {
+      Map<String, dynamic>? details;
+      final d = r['details'] as String?;
+      if (d != null) {
+        try {
+          details = Map<String, dynamic>.from(jsonDecode(d) as Map);
+        } catch (_) {}
+      }
+      return EmergencyEventModel.fromMap({
+        'id': r['id'],
+        'caseId': r['case_id'],
+        'eventType': r['event_type'],
+        'details': details,
+        'createdAt': r['created_at'],
+      }, r['id'] as String);
+    }).toList();
+  }
+
+  Future<void> createEmergencyEvent(EmergencyEventModel e) async {
+    final db = await _db.database;
+    await db.insert('emergency_events', {
+      'id': e.id,
+      'case_id': e.caseId,
+      'event_type': e.eventType,
+      'details': e.details != null ? jsonEncode(e.details) : null,
+      'created_at': e.createdAt.millisecondsSinceEpoch,
+    });
+  }
+
+  // Notifications
+  Future<List<NotificationModel>> getNotifications({NotificationStatus? status, String? relatedType, String? relatedId}) async {
+    final db = await _db.database;
+    final where = <String>[];
+    final args = <Object>[];
+    if (status != null) { where.add('status = ?'); args.add(status.toString().split('.').last); }
+    if (relatedType != null) { where.add('related_type = ?'); args.add(relatedType); }
+    if (relatedId != null) { where.add('related_id = ?'); args.add(relatedId); }
+    final rows = await db.query(
+      'notifications',
+      where: where.isEmpty ? null : where.join(' AND '),
+      whereArgs: where.isEmpty ? null : args,
+      orderBy: 'scheduled_at ASC',
+    );
+    return rows.map((r) => NotificationModel.fromMap({
+      'id': r['id'],
+      'type': r['type'],
+      'recipient': r['recipient'],
+      'subject': r['subject'],
+      'message': r['message'],
+      'scheduledAt': r['scheduled_at'],
+      'status': r['status'],
+      'relatedType': r['related_type'],
+      'relatedId': r['related_id'],
+      'createdAt': r['created_at'],
+      'sentAt': r['sent_at'],
+      'error': r['error'],
+    }, r['id'] as String)).toList();
+  }
+
+  Future<void> scheduleNotification(NotificationModel n) async {
+    final db = await _db.database;
+    await db.insert('notifications', {
+      'id': n.id,
+      'type': n.type.toString().split('.').last,
+      'recipient': n.recipient,
+      'subject': n.subject,
+      'message': n.message,
+      'scheduled_at': n.scheduledAt.millisecondsSinceEpoch,
+      'status': n.status.toString().split('.').last,
+      'related_type': n.relatedType,
+      'related_id': n.relatedId,
+      'created_at': n.createdAt.millisecondsSinceEpoch,
+      'sent_at': n.sentAt?.millisecondsSinceEpoch,
+      'error': n.error,
+    });
+  }
+
+  Future<void> updateNotificationStatus(String id, NotificationStatus status, {String? error}) async {
+    final db = await _db.database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await db.update('notifications', {
+      'status': status.toString().split('.').last,
+      'sent_at': status == NotificationStatus.sent ? now : null,
+      'error': error,
+    }, where: 'id = ?', whereArgs: [id]);
+  }
+
+  // Attendance & Shifts
+  Future<List<AttendanceRecord>> getAttendance({String? userId, DateTime? from, DateTime? to}) async {
+    final db = await _db.database;
+    final where = <String>[];
+    final args = <Object>[];
+    if (userId != null) { where.add('user_id = ?'); args.add(userId); }
+    if (from != null) { where.add('check_in >= ?'); args.add(from.millisecondsSinceEpoch); }
+    if (to != null) { where.add('check_in <= ?'); args.add(to.millisecondsSinceEpoch); }
+    final rows = await db.query(
+      'attendance_records',
+      where: where.isEmpty ? null : where.join(' AND '),
+      whereArgs: where.isEmpty ? null : args,
+      orderBy: 'check_in DESC',
+    );
+    return rows.map((r) => AttendanceRecord.fromMap({
+      'id': r['id'],
+      'userId': r['user_id'],
+      'role': r['role'],
+      'checkIn': r['check_in'],
+      'checkOut': r['check_out'],
+      'locationLat': r['location_lat'],
+      'locationLng': r['location_lng'],
+      'notes': r['notes'],
+      'createdAt': r['created_at'],
+    }, r['id'] as String)).toList();
+  }
+
+  Future<void> createAttendance(AttendanceRecord r) async {
+    final db = await _db.database;
+    await db.insert('attendance_records', {
+      'id': r.id,
+      'user_id': r.userId,
+      'role': r.role,
+      'check_in': r.checkIn.millisecondsSinceEpoch,
+      'check_out': r.checkOut?.millisecondsSinceEpoch,
+      'location_lat': r.locationLat,
+      'location_lng': r.locationLng,
+      'notes': r.notes,
+      'created_at': r.createdAt.millisecondsSinceEpoch,
+    });
+  }
+
+  Future<void> updateAttendance(String id, {DateTime? checkOut, double? locationLat, double? locationLng, String? notes}) async {
+    final db = await _db.database;
+    final updates = <String, Object?>{};
+    if (checkOut != null) updates['check_out'] = checkOut.millisecondsSinceEpoch;
+    if (locationLat != null) updates['location_lat'] = locationLat;
+    if (locationLng != null) updates['location_lng'] = locationLng;
+    if (notes != null) updates['notes'] = notes;
+    if (updates.isEmpty) return;
+    await db.update('attendance_records', updates, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<ShiftModel>> getShifts({String? userId}) async {
+    final db = await _db.database;
+    final rows = await db.query(
+      'shifts',
+      where: userId != null ? 'user_id = ?' : null,
+      whereArgs: userId != null ? [userId] : null,
+      orderBy: 'start_time DESC',
+    );
+    return rows.map((r) => ShiftModel.fromMap({
+      'id': r['id'],
+      'userId': r['user_id'],
+      'role': r['role'],
+      'startTime': r['start_time'],
+      'endTime': r['end_time'],
+      'department': r['department'],
+      'recurrence': r['recurrence'],
+      'createdAt': r['created_at'],
+    }, r['id'] as String)).toList();
+  }
+
+  Future<void> createShift(ShiftModel s) async {
+    final db = await _db.database;
+    await db.insert('shifts', {
+      'id': s.id,
+      'user_id': s.userId,
+      'role': s.role,
+      'start_time': s.startTime.millisecondsSinceEpoch,
+      'end_time': s.endTime.millisecondsSinceEpoch,
+      'department': s.department,
+      'recurrence': s.recurrence,
+      'created_at': s.createdAt.millisecondsSinceEpoch,
+    });
+  }
+
+  Future<void> updateShift(String id, {DateTime? startTime, DateTime? endTime, String? department, String? recurrence}) async {
+    final db = await _db.database;
+    final updates = <String, Object?>{};
+    if (startTime != null) updates['start_time'] = startTime.millisecondsSinceEpoch;
+    if (endTime != null) updates['end_time'] = endTime.millisecondsSinceEpoch;
+    if (department != null) updates['department'] = department;
+    if (recurrence != null) updates['recurrence'] = recurrence;
+    if (updates.isEmpty) return;
+    await db.update('shifts', updates, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> deleteShift(String id) async {
+    final db = await _db.database;
+    await db.delete('shifts', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // File Upload (local)
+  Future<String> uploadFile({
+    required String filename,
+    required List<int> bytes,
+    String? contentType,
+  }) async {
+    // حفظ الملف محليًا ضمن مجلد التطبيق
+    // لعدم إضافة تبعيات هنا، سنحاول استخدام مجلد قاعدة البيانات كمرجع قريب
+    final db = await _db.database; // يضمن تهيئة المسار
+    (db); // لتجنب التحذير
+    final dir = await LocalDatabaseService().database; // نضمن التهيئة
+    (dir); // لا يستخدم مباشرة
+    // بديل: حفظ داخل مجلد التشغيل الحالي
+    final safeName = filename.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+    final path = 'uploads_local_$safeName';
+    final file = File(path);
+    await file.writeAsBytes(bytes, flush: true);
+    return file.path;
+  }
 }
 

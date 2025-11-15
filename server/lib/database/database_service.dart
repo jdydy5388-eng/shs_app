@@ -248,6 +248,89 @@ class DatabaseService {
       )
     ''');
 
+    // قسم الطوارئ - الحالات والأحداث
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS emergency_cases (
+        id TEXT PRIMARY KEY,
+        patient_id TEXT,
+        patient_name TEXT,
+        triage_level TEXT NOT NULL,        -- red / orange / yellow / green / blue
+        status TEXT NOT NULL,              -- waiting / in_treatment / stabilized / transferred / discharged
+        vital_signs JSONB,                 -- {hr, bp, rr, spo2, temp}
+        symptoms TEXT,
+        notes TEXT,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS emergency_events (
+        id TEXT PRIMARY KEY,
+        case_id TEXT NOT NULL,
+        event_type TEXT NOT NULL,          -- intake / update_vitals / medication / imaging / transfer / discharge
+        details JSONB,
+        created_at BIGINT NOT NULL,
+        FOREIGN KEY (case_id) REFERENCES emergency_cases(id) ON DELETE CASCADE
+      )
+    ''');
+
+    // قسم الأشعة: طلبات وتقارير
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS radiology_requests (
+        id TEXT PRIMARY KEY,
+        doctor_id TEXT NOT NULL,
+        patient_id TEXT NOT NULL,
+        patient_name TEXT NOT NULL,
+        modality TEXT NOT NULL,            -- xray / mri / ct / us / other
+        body_part TEXT,
+        status TEXT NOT NULL,              -- requested / scheduled / completed / cancelled
+        notes TEXT,
+        requested_at BIGINT NOT NULL,
+        scheduled_at BIGINT,
+        completed_at BIGINT
+      )
+    ''');
+
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS radiology_reports (
+        id TEXT PRIMARY KEY,
+        request_id TEXT NOT NULL,
+        findings TEXT,
+        impression TEXT,
+        attachments JSONB,                 -- image/report URLs
+        created_at BIGINT NOT NULL,
+        FOREIGN KEY (request_id) REFERENCES radiology_requests(id) ON DELETE CASCADE
+      )
+    ''');
+
+    // الحضور والمناوبات
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS attendance_records (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        check_in BIGINT NOT NULL,
+        check_out BIGINT,
+        location_lat REAL,
+        location_lng REAL,
+        notes TEXT,
+        created_at BIGINT NOT NULL
+      )
+    ''');
+
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS shifts (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        start_time BIGINT NOT NULL,
+        end_time BIGINT NOT NULL,
+        department TEXT,
+        recurrence TEXT,         -- none/daily/weekly
+        created_at BIGINT NOT NULL
+      )
+    ''');
     // جدول سجلات التدقيق
     await conn.execute('''
       CREATE TABLE IF NOT EXISTS audit_logs (
@@ -270,6 +353,98 @@ class DatabaseService {
         value TEXT NOT NULL,
         description TEXT,
         updated_at BIGINT NOT NULL
+      )
+    ''');
+
+    // جدول الإشعارات (SMS/Email) المجدولة
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS notifications (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,             -- sms / email
+        recipient TEXT NOT NULL,        -- phone or email
+        subject TEXT,
+        message TEXT NOT NULL,
+        scheduled_at BIGINT NOT NULL,
+        status TEXT NOT NULL,           -- scheduled / sent / failed / cancelled
+        related_type TEXT,              -- appointment
+        related_id TEXT,
+        created_at BIGINT NOT NULL,
+        sent_at BIGINT,
+        error TEXT
+      )
+    ''');
+
+    // إدارة الغرف
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS rooms (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,            -- ward / icu / operation / isolation
+        floor INTEGER,
+        notes TEXT,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS beds (
+        id TEXT PRIMARY KEY,
+        room_id TEXT NOT NULL,
+        label TEXT NOT NULL,
+        status TEXT NOT NULL,          -- available / occupied / reserved / maintenance
+        patient_id TEXT,
+        occupied_since BIGINT,
+        updated_at BIGINT,
+        FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
+      )
+    ''');
+
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS bed_transfers (
+        id TEXT PRIMARY KEY,
+        patient_id TEXT NOT NULL,
+        from_bed_id TEXT,
+        to_bed_id TEXT NOT NULL,
+        reason TEXT,
+        created_at BIGINT NOT NULL
+      )
+    ''');
+
+    // جدول الفواتير
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS invoices (
+        id TEXT PRIMARY KEY,
+        patient_id TEXT NOT NULL,
+        patient_name TEXT NOT NULL,
+        related_type TEXT,                 -- appointment / surgery / stay / order
+        related_id TEXT,                   -- id of related entity
+        items JSONB NOT NULL,              -- [{description, qty, unitPrice, total}]
+        subtotal REAL NOT NULL,
+        discount REAL NOT NULL DEFAULT 0,
+        tax REAL NOT NULL DEFAULT 0,
+        total REAL NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'SAR',
+        status TEXT NOT NULL,              -- draft / issued / paid / cancelled
+        insurance_provider TEXT,
+        insurance_policy TEXT,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT,
+        paid_at BIGINT
+      )
+    ''');
+
+    // جدول المدفوعات
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS payments (
+        id TEXT PRIMARY KEY,
+        invoice_id TEXT NOT NULL,
+        amount REAL NOT NULL,
+        method TEXT NOT NULL,             -- cash / card / transfer / insurance
+        reference TEXT,
+        created_at BIGINT NOT NULL,
+        notes TEXT,
+        FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
       )
     ''');
 

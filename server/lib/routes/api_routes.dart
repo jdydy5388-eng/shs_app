@@ -11,6 +11,13 @@ import '../handlers/lab_requests_handler.dart';
 import '../handlers/entities_handler.dart';
 import '../handlers/audit_logs_handler.dart';
 import '../handlers/system_settings_handler.dart';
+import '../handlers/billing_handler.dart';
+import '../handlers/rooms_handler.dart';
+import '../handlers/emergency_handler.dart';
+import '../handlers/notifications_handler.dart';
+import '../handlers/radiology_handler.dart';
+import '../handlers/attendance_handler.dart';
+import '../handlers/storage_handler.dart';
 
 class ApiRoutes {
   static Router createRouter() {
@@ -33,6 +40,13 @@ class ApiRoutes {
     router.mount('/api/entities', EntitiesHandler().router);
     router.mount('/api/audit-logs', AuditLogsHandler().router);
     router.mount('/api/system-settings', SystemSettingsHandler().router);
+    router.mount('/api/billing', BillingHandler().router);
+    router.mount('/api/rooms', RoomsHandler().router);
+    router.mount('/api/emergency', EmergencyHandler().router);
+    router.mount('/api/notifications', NotificationsHandler().router);
+    router.mount('/api/radiology', RadiologyHandler().router);
+    router.mount('/api/attendance', AttendanceHandler().router);
+    router.mount('/api/storage', StorageHandler().router);
 
     // 404 handler
     router.all('/<path|.*>', (Request request) {

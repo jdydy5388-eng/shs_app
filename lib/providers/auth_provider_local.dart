@@ -5,6 +5,7 @@ import '../services/local_auth_service.dart';
 import '../services/biometric_auth_service.dart';
 import '../services/data_service.dart';
 import '../config/app_config.dart';
+import '../services/network_auth_context.dart';
 import 'dart:convert';
 import 'dart:async';
 
@@ -29,6 +30,7 @@ class AuthProviderLocal with ChangeNotifier {
 
   Future<void> _loadCurrentUser() async {
     _currentUser = await _localAuthService.getCurrentUser();
+    NetworkAuthContext.setUser(_currentUser);
     notifyListeners();
   }
 
@@ -78,6 +80,7 @@ class AuthProviderLocal with ChangeNotifier {
           await prefs.setString('user_password_${user.id}', password);
           
           _currentUser = user;
+          NetworkAuthContext.setUser(_currentUser);
           notifyListeners();
           return true;
         } else {
@@ -148,6 +151,7 @@ class AuthProviderLocal with ChangeNotifier {
 
         await _localAuthService.setCurrentUser(user.id);
         _currentUser = user;
+      NetworkAuthContext.setUser(_currentUser);
         notifyListeners();
         return true;
       } else {
@@ -266,6 +270,7 @@ class AuthProviderLocal with ChangeNotifier {
     try {
       await _localAuthService.signOut();
       _currentUser = null;
+      NetworkAuthContext.setUser(null);
       _errorMessage = null;
     } catch (e) {
       _errorMessage = 'خطأ في تسجيل الخروج: ${e.toString()}';

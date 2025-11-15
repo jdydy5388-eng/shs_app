@@ -5,6 +5,8 @@ import 'patients_screen.dart';
 import 'appointments_tasks_screen.dart';
 import 'lab_requests_screen.dart';
 import 'settings_reports_screen.dart';
+import 'radiology_screen.dart';
+import '../common/attendance_screen.dart';
 
 class DoctorFeature {
   const DoctorFeature({
@@ -133,6 +135,18 @@ class DoctorDashboard extends StatelessWidget {
       builder: (_) => const LabRequestsScreen(),
     ),
     DoctorFeature(
+      title: 'الأشعة',
+      description: 'إنشاء طلبات أشعة وإضافة التقارير والمرفقات.',
+      icon: Icons.medical_services_outlined,
+      color: Colors.purpleAccent,
+      details: [
+        'إنشاء طلب أشعة جديد (X-Ray/MRI/CT/US)',
+        'تحديث الحالة والجدولة',
+        'إضافة تقرير ومرفقات الصور/الروابط'
+      ],
+      builder: (_) => const RadiologyScreen(),
+    ),
+    DoctorFeature(
       title: 'الإعدادات والتقارير',
       description: 'تحديث البيانات الشخصية وتتبع الأداء الإحصائي للطبيب.',
       icon: Icons.insights_outlined,
@@ -142,6 +156,18 @@ class DoctorDashboard extends StatelessWidget {
         'عرض التقارير الإحصائية حول المرضى المعالجين، الوصفات الصادرة، ومؤشرات الأداء العامة.',
       ],
       builder: (_) => const SettingsReportsScreen(),
+    ),
+    DoctorFeature(
+      title: 'الحضور',
+      description: 'تسجيل دخول/خروج وعرض سجل الحضور.',
+      icon: Icons.access_time,
+      color: Colors.brown,
+      details: [
+        'تسجيل الدخول عند بدء الدوام',
+        'تسجيل الخروج عند نهاية الدوام',
+        'عرض سجل الأيام السابقة'
+      ],
+      builder: (_) => const AttendanceScreen(),
     ),
   ];
 

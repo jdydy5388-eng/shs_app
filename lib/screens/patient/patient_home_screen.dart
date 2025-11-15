@@ -5,6 +5,7 @@ import 'prescriptions_screen.dart';
 import 'orders_screen.dart';
 import 'notifications_appointments_screen.dart';
 import 'patient_settings_screen.dart';
+import 'radiology_screen.dart';
 
 class PatientFeature {
   const PatientFeature({
@@ -145,6 +146,17 @@ class PatientDashboard extends StatelessWidget {
         'حجز المواعيد مع الأطباء المتاحين والبحث عن الأطباء المناسبين.',
       ],
       builder: (_) => const NotificationsAppointmentsScreen(),
+    ),
+    PatientFeature(
+      title: 'تقارير الأشعة',
+      description: 'عرض تقارير وصور الأشعة المرتبطة بملفك الطبي.',
+      icon: Icons.image_search,
+      color: Colors.purple,
+      details: [
+        'عرض طلبات الأشعة الصادرة',
+        'عرض تقارير الأشعة والمرفقات'
+      ],
+      builder: (_) => const PatientRadiologyScreen(),
     ),
     PatientFeature(
       title: 'الإعدادات الشخصية',

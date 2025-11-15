@@ -9,7 +9,7 @@ import 'dart:io' show Platform;
 class LocalDatabaseService {
   static Database? _database;
   static const String _databaseName = 'shs_app.db';
-  static const int _databaseVersion = 5;
+  static const int _databaseVersion = 11;
   static bool _initialized = false;
 
   Future<Database> get database async {
@@ -195,6 +195,191 @@ class LocalDatabaseService {
     await db.execute('CREATE INDEX idx_inventory_pharmacy ON inventory(pharmacy_id)');
     await _createDoctorIndexes(db);
     await _createAdminIndexes(db);
+
+    // غرف وأسِرّة
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS rooms (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        floor INTEGER,
+        notes TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS beds (
+        id TEXT PRIMARY KEY,
+        room_id TEXT NOT NULL,
+        label TEXT NOT NULL,
+        status TEXT NOT NULL,
+        patient_id TEXT,
+        occupied_since INTEGER,
+        updated_at INTEGER
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS bed_transfers (
+        id TEXT PRIMARY KEY,
+        patient_id TEXT NOT NULL,
+        from_bed_id TEXT,
+        to_bed_id TEXT NOT NULL,
+        reason TEXT,
+        created_at INTEGER NOT NULL
+      )
+    ''');
+
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_beds_room ON beds(room_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_beds_status ON beds(status)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_bed_transfers_patient ON bed_transfers(patient_id)');
+
+    // قسم الطوارئ
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS emergency_cases (
+        id TEXT PRIMARY KEY,
+        patient_id TEXT,
+        patient_name TEXT,
+        triage_level TEXT NOT NULL,
+        status TEXT NOT NULL,
+        vital_signs TEXT,
+        symptoms TEXT,
+        notes TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS emergency_events (
+        id TEXT PRIMARY KEY,
+        case_id TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        details TEXT,
+        created_at INTEGER NOT NULL
+      )
+    ''');
+
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_emergency_cases_status ON emergency_cases(status)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_emergency_cases_triage ON emergency_cases(triage_level)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_emergency_events_case ON emergency_events(case_id)');
+
+    // جدول الإشعارات
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS notifications (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        recipient TEXT NOT NULL,
+        subject TEXT,
+        message TEXT NOT NULL,
+        scheduled_at INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        related_type TEXT,
+        related_id TEXT,
+        created_at INTEGER NOT NULL,
+        sent_at INTEGER,
+        error TEXT
+      )
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_notifications_status ON notifications(status)');
+
+    // الأشعة
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS radiology_requests (
+        id TEXT PRIMARY KEY,
+        doctor_id TEXT NOT NULL,
+        patient_id TEXT NOT NULL,
+        patient_name TEXT NOT NULL,
+        modality TEXT NOT NULL,
+        body_part TEXT,
+        status TEXT NOT NULL,
+        notes TEXT,
+        requested_at INTEGER NOT NULL,
+        scheduled_at INTEGER,
+        completed_at INTEGER
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS radiology_reports (
+        id TEXT PRIMARY KEY,
+        request_id TEXT NOT NULL,
+        findings TEXT,
+        impression TEXT,
+        attachments TEXT,
+        created_at INTEGER NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_radiology_requests_patient ON radiology_requests(patient_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_radiology_requests_status ON radiology_requests(status)');
+
+    // الحضور والمناوبات
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS attendance_records (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        check_in INTEGER NOT NULL,
+        check_out INTEGER,
+        location_lat REAL,
+        location_lng REAL,
+        notes TEXT,
+        created_at INTEGER NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS shifts (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        start_time INTEGER NOT NULL,
+        end_time INTEGER NOT NULL,
+        department TEXT,
+        recurrence TEXT,
+        created_at INTEGER NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_attendance_user ON attendance_records(user_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_shifts_user ON shifts(user_id)');
+    // جداول الفوترة
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS invoices (
+        id TEXT PRIMARY KEY,
+        patient_id TEXT NOT NULL,
+        patient_name TEXT NOT NULL,
+        related_type TEXT,
+        related_id TEXT,
+        items TEXT NOT NULL,            -- JSON
+        subtotal REAL NOT NULL,
+        discount REAL NOT NULL DEFAULT 0,
+        tax REAL NOT NULL DEFAULT 0,
+        total REAL NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'SAR',
+        status TEXT NOT NULL,
+        insurance_provider TEXT,
+        insurance_policy TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER,
+        paid_at INTEGER
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS payments (
+        id TEXT PRIMARY KEY,
+        invoice_id TEXT NOT NULL,
+        amount REAL NOT NULL,
+        method TEXT NOT NULL,
+        reference TEXT,
+        created_at INTEGER NOT NULL,
+        notes TEXT
+      )
+    ''');
+
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_invoices_patient ON invoices(patient_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_payments_invoice ON payments(invoice_id)');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -254,6 +439,188 @@ class LocalDatabaseService {
           'ALTER TABLE order_items ADD COLUMN alternative_price REAL',
         );
       } catch (_) {}
+    }
+    if (oldVersion < 6) {
+      // إنشاء جداول الفوترة
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS invoices (
+          id TEXT PRIMARY KEY,
+          patient_id TEXT NOT NULL,
+          patient_name TEXT NOT NULL,
+          related_type TEXT,
+          related_id TEXT,
+          items TEXT NOT NULL,
+          subtotal REAL NOT NULL,
+          discount REAL NOT NULL DEFAULT 0,
+          tax REAL NOT NULL DEFAULT 0,
+          total REAL NOT NULL,
+          currency TEXT NOT NULL DEFAULT 'SAR',
+          status TEXT NOT NULL,
+          insurance_provider TEXT,
+          insurance_policy TEXT,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER,
+          paid_at INTEGER
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS payments (
+          id TEXT PRIMARY KEY,
+          invoice_id TEXT NOT NULL,
+          amount REAL NOT NULL,
+          method TEXT NOT NULL,
+          reference TEXT,
+          created_at INTEGER NOT NULL,
+          notes TEXT
+        )
+      ''');
+
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_invoices_patient ON invoices(patient_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_payments_invoice ON payments(invoice_id)');
+    }
+    if (oldVersion < 7) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS rooms (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          type TEXT NOT NULL,
+          floor INTEGER,
+          notes TEXT,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS beds (
+          id TEXT PRIMARY KEY,
+          room_id TEXT NOT NULL,
+          label TEXT NOT NULL,
+          status TEXT NOT NULL,
+          patient_id TEXT,
+          occupied_since INTEGER,
+          updated_at INTEGER
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS bed_transfers (
+          id TEXT PRIMARY KEY,
+          patient_id TEXT NOT NULL,
+          from_bed_id TEXT,
+          to_bed_id TEXT NOT NULL,
+          reason TEXT,
+          created_at INTEGER NOT NULL
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_beds_room ON beds(room_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_beds_status ON beds(status)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_bed_transfers_patient ON bed_transfers(patient_id)');
+    }
+    if (oldVersion < 8) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS emergency_cases (
+          id TEXT PRIMARY KEY,
+          patient_id TEXT,
+          patient_name TEXT,
+          triage_level TEXT NOT NULL,
+          status TEXT NOT NULL,
+          vital_signs TEXT,
+          symptoms TEXT,
+          notes TEXT,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS emergency_events (
+          id TEXT PRIMARY KEY,
+          case_id TEXT NOT NULL,
+          event_type TEXT NOT NULL,
+          details TEXT,
+          created_at INTEGER NOT NULL
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_emergency_cases_status ON emergency_cases(status)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_emergency_cases_triage ON emergency_cases(triage_level)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_emergency_events_case ON emergency_events(case_id)');
+    }
+    if (oldVersion < 9) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS notifications (
+          id TEXT PRIMARY KEY,
+          type TEXT NOT NULL,
+          recipient TEXT NOT NULL,
+          subject TEXT,
+          message TEXT NOT NULL,
+          scheduled_at INTEGER NOT NULL,
+          status TEXT NOT NULL,
+          related_type TEXT,
+          related_id TEXT,
+          created_at INTEGER NOT NULL,
+          sent_at INTEGER,
+          error TEXT
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_notifications_status ON notifications(status)');
+    }
+    if (oldVersion < 10) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS radiology_requests (
+          id TEXT PRIMARY KEY,
+          doctor_id TEXT NOT NULL,
+          patient_id TEXT NOT NULL,
+          patient_name TEXT NOT NULL,
+          modality TEXT NOT NULL,
+          body_part TEXT,
+          status TEXT NOT NULL,
+          notes TEXT,
+          requested_at INTEGER NOT NULL,
+          scheduled_at INTEGER,
+          completed_at INTEGER
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS radiology_reports (
+          id TEXT PRIMARY KEY,
+          request_id TEXT NOT NULL,
+          findings TEXT,
+          impression TEXT,
+          attachments TEXT,
+          created_at INTEGER NOT NULL
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_radiology_requests_patient ON radiology_requests(patient_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_radiology_requests_status ON radiology_requests(status)');
+    }
+    if (oldVersion < 11) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS attendance_records (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          role TEXT NOT NULL,
+          check_in INTEGER NOT NULL,
+          check_out INTEGER,
+          location_lat REAL,
+          location_lng REAL,
+          notes TEXT,
+          created_at INTEGER NOT NULL
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS shifts (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          role TEXT NOT NULL,
+          start_time INTEGER NOT NULL,
+          end_time INTEGER NOT NULL,
+          department TEXT,
+          recurrence TEXT,
+          created_at INTEGER NOT NULL
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_attendance_user ON attendance_records(user_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_shifts_user ON shifts(user_id)');
     }
   }
 

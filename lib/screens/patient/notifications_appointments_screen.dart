@@ -590,7 +590,7 @@ class _NotificationsAppointmentsScreenState
             createdAt: DateTime.now(),
           );
 
-          await _dataService.createAppointment(appointment);
+          await _dataService.createAppointmentWithReminders(appointment);
           
           // إغلاق مؤشر التحميل
           if (mounted) {

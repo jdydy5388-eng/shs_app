@@ -481,7 +481,7 @@ class _AppointmentsTasksScreenState extends State<AppointmentsTasksScreen>
           createdAt: DateTime.now(),
         );
 
-        await _dataService.createAppointment(appointment);
+        await _dataService.createAppointmentWithReminders(appointment);
         await _loadData();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

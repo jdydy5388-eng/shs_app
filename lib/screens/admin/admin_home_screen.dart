@@ -3,6 +3,7 @@ import '../../utils/auth_helper.dart';
 import 'manage_users_screen.dart';
 import 'manage_entities_screen.dart';
 import 'system_monitoring_screen.dart';
+import 'shifts_management_screen.dart';
 
 class AdminFeature {
   AdminFeature({
@@ -123,6 +124,18 @@ class AdminDashboard extends StatelessWidget {
         'إدارة الإعدادات العامة: التحكم في الإعدادات العامة للنظام.',
       ],
       builder: (_) => const SystemMonitoringScreen(),
+    ),
+    AdminFeature(
+      title: 'إدارة المناوبات',
+      description: 'إنشاء وتعديل وحذف المناوبات للأطباء والتمريض.',
+      icon: Icons.schedule,
+      color: Colors.deepPurple,
+      details: [
+        'إنشاء مناوبات فردية أو متكررة',
+        'عرض قوائم المناوبات حسب المستخدم أو القسم',
+        'حذف أو تعديل مناوبة'
+      ],
+      builder: (_) => const ShiftsManagementScreen(),
     ),
   ];
 

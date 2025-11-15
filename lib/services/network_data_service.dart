@@ -14,6 +14,13 @@ import '../models/entity_model.dart';
 import '../models/audit_log_model.dart';
 import '../models/system_settings_model.dart';
 import '../models/doctor_task_model.dart';
+import '../models/invoice_model.dart';
+import '../models/room_bed_model.dart';
+import '../models/emergency_case_model.dart';
+import '../models/notification_model.dart';
+import '../models/radiology_model.dart';
+import '../models/attendance_model.dart';
+import 'network_auth_context.dart';
 
 /// خدمة البيانات الشبكية - الاتصال بالخادم المركزي عبر REST API
 class NetworkDataService {
@@ -74,9 +81,9 @@ class NetworkDataService {
     if (statusCode == 400) {
       generic = 'تعذّر معالجة الطلب.';
     } else if (statusCode == 401) {
-      generic = 'غير مصرح. يرجى تسجيل الدخول.';
+      generic = 'غير مصرح. يرجى تسجيل الدخول بالحساب الصحيح والمحاولة مجددًا.';
     } else if (statusCode == 403) {
-      generic = 'لا تملك صلاحية الوصول.';
+      generic = 'لا تملك صلاحية الوصول. تأكد من تسجيل الدخول بالحساب الصحيح أو تواصل مع المسؤول لمنح الصلاحية.';
     } else if (statusCode == 404) {
       generic = 'المورد المطلوب غير موجود.';
     } else if (statusCode == 408) {
@@ -122,7 +129,7 @@ class NetworkDataService {
   Future<Map<String, dynamic>> _get(String endpoint, {Map<String, String>? queryParams}) async {
     final baseUrl = await _baseUrl;
     final uri = Uri.parse('$baseUrl/$endpoint').replace(queryParameters: queryParams);
-    final response = await _sendRequest(() => http.get(uri), 'GET $endpoint');
+    final response = await _sendRequest(() => http.get(uri, headers: NetworkAuthContext.headers()), 'GET $endpoint');
     
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -142,7 +149,7 @@ class NetworkDataService {
   Future<List<Map<String, dynamic>>> _getList(String endpoint, {Map<String, String>? queryParams}) async {
     final baseUrl = await _baseUrl;
     final uri = Uri.parse('$baseUrl/$endpoint').replace(queryParameters: queryParams);
-    final response = await _sendRequest(() => http.get(uri), 'GET $endpoint');
+    final response = await _sendRequest(() => http.get(uri, headers: NetworkAuthContext.headers()), 'GET $endpoint');
     
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -165,7 +172,10 @@ class NetworkDataService {
     final response = await _sendRequest(
       () => http.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        ...NetworkAuthContext.headers(),
+      },
       body: jsonEncode(body),
       ),
       'POST $endpoint',
@@ -192,7 +202,10 @@ class NetworkDataService {
     final response = await _sendRequest(
       () => http.put(
       uri,
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        ...NetworkAuthContext.headers(),
+      },
       body: jsonEncode(body),
       ),
       'PUT $endpoint',
@@ -216,7 +229,7 @@ class NetworkDataService {
   Future<Map<String, dynamic>> _delete(String endpoint) async {
     final baseUrl = await _baseUrl;
     final uri = Uri.parse('$baseUrl/$endpoint');
-    final response = await _sendRequest(() => http.delete(uri), 'DELETE $endpoint');
+    final response = await _sendRequest(() => http.delete(uri, headers: NetworkAuthContext.headers()), 'DELETE $endpoint');
     
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -842,6 +855,305 @@ class NetworkDataService {
 
   Future<void> logoutUser() async {
     await _post('auth/logout', {});
+  }
+
+  // Billing - Invoices
+  Future<List<InvoiceModel>> getInvoices({String? patientId, InvoiceStatus? status}) async {
+    final query = <String, String>{};
+    if (patientId != null) query['patientId'] = patientId;
+    if (status != null) query['status'] = status.toString().split('.').last;
+    final data = await _getList('billing/invoices', queryParams: query);
+    return data.map((map) => InvoiceModel.fromMap(map, map['id'] as String)).toList();
+  }
+
+  Future<void> createInvoice(InvoiceModel invoice) async {
+    await _post('billing/invoices', invoice.toMap());
+  }
+
+  Future<void> updateInvoice(String invoiceId, {
+    List<InvoiceItem>? items,
+    double? subtotal,
+    double? discount,
+    double? tax,
+    double? total,
+    String? currency,
+    String? insuranceProvider,
+    String? insurancePolicy,
+  }) async {
+    final body = <String, dynamic>{};
+    if (items != null) body['items'] = items.map((e) => e.toMap()).toList();
+    if (subtotal != null) body['subtotal'] = subtotal;
+    if (discount != null) body['discount'] = discount;
+    if (tax != null) body['tax'] = tax;
+    if (total != null) body['total'] = total;
+    if (currency != null) body['currency'] = currency;
+    if (insuranceProvider != null) body['insuranceProvider'] = insuranceProvider;
+    if (insurancePolicy != null) body['insurancePolicy'] = insurancePolicy;
+    await _put('billing/invoices/$invoiceId', body);
+  }
+
+  Future<void> updateInvoiceStatus(String invoiceId, InvoiceStatus status) async {
+    await _put('billing/invoices/$invoiceId/status', {
+      'status': status.toString().split('.').last,
+    });
+  }
+
+  // Rooms & Beds
+  Future<List<RoomModel>> getRooms() async {
+    final data = await _getList('rooms/rooms');
+    return data.map((m) => RoomModel.fromMap({
+      'id': m['id'],
+      'name': m['name'],
+      'type': m['type'],
+      'floor': m['floor'],
+      'notes': m['notes'],
+      'createdAt': m['createdAt'],
+      'updatedAt': m['updatedAt'],
+    })).toList();
+  }
+
+  Future<void> createRoom(RoomModel room) async {
+    await _post('rooms/rooms', room.toMap());
+  }
+
+  Future<void> updateRoom(String roomId, {String? name, RoomType? type, int? floor, String? notes}) async {
+    final body = <String, dynamic>{};
+    if (name != null) body['name'] = name;
+    if (type != null) body['type'] = type.toString().split('.').last;
+    if (floor != null) body['floor'] = floor;
+    if (notes != null) body['notes'] = notes;
+    await _put('rooms/rooms/$roomId', body);
+  }
+
+  Future<List<BedModel>> getBeds({String? roomId, BedStatus? status}) async {
+    final query = <String, String>{};
+    if (roomId != null) query['roomId'] = roomId;
+    if (status != null) query['status'] = status.toString().split('.').last;
+    final data = await _getList('rooms/beds', queryParams: query);
+    return data.map((m) => BedModel.fromMap(m)).toList();
+  }
+
+  Future<void> createBed(BedModel bed) async {
+    await _post('rooms/beds', bed.toMap());
+  }
+
+  Future<void> updateBed(String bedId, {String? label, BedStatus? status, String? patientId, DateTime? occupiedSince}) async {
+    final body = <String, dynamic>{};
+    if (label != null) body['label'] = label;
+    if (status != null) body['status'] = status.toString().split('.').last;
+    if (patientId != null) body['patientId'] = patientId;
+    if (occupiedSince != null) body['occupiedSince'] = occupiedSince.millisecondsSinceEpoch;
+    await _put('rooms/beds/$bedId', body);
+  }
+
+  Future<void> assignBed(String bedId, String patientId) async {
+    await _put('rooms/beds/$bedId/assign', {'patientId': patientId});
+  }
+
+  Future<void> releaseBed(String bedId) async {
+    await _put('rooms/beds/$bedId/release', {});
+  }
+
+  Future<void> createTransfer({
+    required String id,
+    required String patientId,
+    String? fromBedId,
+    required String toBedId,
+    String? reason,
+  }) async {
+    await _post('rooms/transfers', {
+      'id': id,
+      'patientId': patientId,
+      'fromBedId': fromBedId,
+      'toBedId': toBedId,
+      'reason': reason,
+      'createdAt': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  // Emergency
+  Future<List<EmergencyCaseModel>> getEmergencyCases({EmergencyStatus? status, TriageLevel? triage}) async {
+    final query = <String, String>{};
+    if (status != null) query['status'] = status.toString().split('.').last;
+    if (triage != null) query['triage'] = triage.toString().split('.').last;
+    final data = await _getList('emergency/cases', queryParams: query);
+    return data.map((m) => EmergencyCaseModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createEmergencyCase(EmergencyCaseModel c) async {
+    await _post('emergency/cases', c.toMap());
+  }
+
+  Future<void> updateEmergencyCase(String caseId, {
+    String? patientId,
+    String? patientName,
+    TriageLevel? triageLevel,
+    EmergencyStatus? status,
+    Map<String, dynamic>? vitalSigns,
+    String? symptoms,
+    String? notes,
+  }) async {
+    final body = <String, dynamic>{};
+    if (patientId != null) body['patientId'] = patientId;
+    if (patientName != null) body['patientName'] = patientName;
+    if (triageLevel != null) body['triageLevel'] = triageLevel.toString().split('.').last;
+    if (status != null) body['status'] = status.toString().split('.').last;
+    if (vitalSigns != null) body['vitalSigns'] = vitalSigns;
+    if (symptoms != null) body['symptoms'] = symptoms;
+    if (notes != null) body['notes'] = notes;
+    await _put('emergency/cases/$caseId', body);
+  }
+
+  Future<void> updateEmergencyStatus(String caseId, EmergencyStatus status) async {
+    await _put('emergency/cases/$caseId/status', {'status': status.toString().split('.').last});
+  }
+
+  Future<List<EmergencyEventModel>> getEmergencyEvents({String? caseId}) async {
+    final query = <String, String>{};
+    if (caseId != null) query['caseId'] = caseId;
+    final data = await _getList('emergency/events', queryParams: query);
+    return data.map((m) => EmergencyEventModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createEmergencyEvent(EmergencyEventModel e) async {
+    await _post('emergency/events', e.toMap());
+  }
+
+  // Notifications (SMS/Email)
+  Future<List<NotificationModel>> getNotifications({NotificationStatus? status, String? relatedType, String? relatedId}) async {
+    final query = <String, String>{};
+    if (status != null) query['status'] = status.toString().split('.').last;
+    if (relatedType != null) query['relatedType'] = relatedType;
+    if (relatedId != null) query['relatedId'] = relatedId;
+    final data = await _getList('notifications', queryParams: query);
+    return data.map((m) => NotificationModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> scheduleNotification(NotificationModel n) async {
+    await _post('notifications', n.toMap());
+  }
+
+  Future<void> updateNotificationStatus(String id, NotificationStatus status, {String? error}) async {
+    final body = <String, dynamic>{'status': status.toString().split('.').last};
+    if (error != null) body['error'] = error;
+    await _put('notifications/$id/status', body);
+  }
+
+  // Radiology
+  Future<List<RadiologyRequestModel>> getRadiologyRequests({String? doctorId, String? patientId, String? status, String? modality}) async {
+    final query = <String, String>{};
+    if (doctorId != null) query['doctorId'] = doctorId;
+    if (patientId != null) query['patientId'] = patientId;
+    if (status != null) query['status'] = status;
+    if (modality != null) query['modality'] = modality;
+    final data = await _getList('radiology/requests', queryParams: query);
+    return data.map((m) => RadiologyRequestModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createRadiologyRequest(RadiologyRequestModel r) async {
+    await _post('radiology/requests', r.toMap());
+  }
+
+  Future<void> updateRadiologyRequest(String id, {String? modality, String? bodyPart, String? notes, DateTime? scheduledAt, DateTime? completedAt}) async {
+    final body = <String, dynamic>{};
+    if (modality != null) body['modality'] = modality;
+    if (bodyPart != null) body['bodyPart'] = bodyPart;
+    if (notes != null) body['notes'] = notes;
+    if (scheduledAt != null) body['scheduledAt'] = scheduledAt.millisecondsSinceEpoch;
+    if (completedAt != null) body['completedAt'] = completedAt.millisecondsSinceEpoch;
+    await _put('radiology/requests/$id', body);
+  }
+
+  Future<void> updateRadiologyStatus(String id, RadiologyStatus status) async {
+    await _put('radiology/requests/$id/status', {'status': status.toString().split('.').last});
+  }
+
+  Future<List<RadiologyReportModel>> getRadiologyReports({String? requestId}) async {
+    final query = <String, String>{};
+    if (requestId != null) query['requestId'] = requestId;
+    final data = await _getList('radiology/reports', queryParams: query);
+    return data.map((m) => RadiologyReportModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createRadiologyReport(RadiologyReportModel report) async {
+    await _post('radiology/reports', report.toMap());
+  }
+
+  // Attendance & Shifts
+  Future<List<AttendanceRecord>> getAttendance({String? userId, DateTime? from, DateTime? to}) async {
+    final query = <String, String>{};
+    if (userId != null) query['userId'] = userId;
+    if (from != null) query['from'] = from.millisecondsSinceEpoch.toString();
+    if (to != null) query['to'] = to.millisecondsSinceEpoch.toString();
+    final data = await _getList('attendance/attendance', queryParams: query);
+    return data.map((m) => AttendanceRecord.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createAttendance(AttendanceRecord r) async {
+    await _post('attendance/attendance', r.toMap());
+  }
+
+  Future<void> updateAttendance(String id, {DateTime? checkOut, double? locationLat, double? locationLng, String? notes}) async {
+    final body = <String, dynamic>{};
+    if (checkOut != null) body['checkOut'] = checkOut.millisecondsSinceEpoch;
+    if (locationLat != null) body['locationLat'] = locationLat;
+    if (locationLng != null) body['locationLng'] = locationLng;
+    if (notes != null) body['notes'] = notes;
+    await _put('attendance/attendance/$id', body);
+  }
+
+  Future<List<ShiftModel>> getShifts({String? userId}) async {
+    final query = <String, String>{};
+    if (userId != null) query['userId'] = userId;
+    final data = await _getList('attendance/shifts', queryParams: query);
+    return data.map((m) => ShiftModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createShift(ShiftModel s) async {
+    await _post('attendance/shifts', s.toMap());
+  }
+
+  Future<void> updateShift(String id, {DateTime? startTime, DateTime? endTime, String? department, String? recurrence}) async {
+    final body = <String, dynamic>{};
+    if (startTime != null) body['startTime'] = startTime.millisecondsSinceEpoch;
+    if (endTime != null) body['endTime'] = endTime.millisecondsSinceEpoch;
+    if (department != null) body['department'] = department;
+    if (recurrence != null) body['recurrence'] = recurrence;
+    await _put('attendance/shifts/$id', body);
+  }
+
+  Future<void> deleteShift(String id) async {
+    await _delete('attendance/shifts/$id');
+  }
+
+  // File Uploads
+  Future<String> uploadFile({
+    required String filename,
+    required List<int> bytes,
+    String? contentType,
+  }) async {
+    final id = _uuid.v4();
+    final data = await _post('storage/upload', {
+      'id': id,
+      'filename': filename,
+      'contentBase64': base64Encode(bytes),
+      if (contentType != null) 'contentType': contentType,
+    });
+    return data['url'] as String;
+  }
+
+  Future<String> getSignedFileUrl(String fileUrlOrName, {int expiresSeconds = 300}) async {
+    // إذا كان الإدخال URL على شكل /api/storage/files/<name> نستخرج الاسم فقط
+    String path = fileUrlOrName;
+    final idx = fileUrlOrName.indexOf('/api/storage/files/');
+    if (idx >= 0) {
+      path = fileUrlOrName.substring(idx + '/api/storage/files/'.length);
+    }
+    final data = await _post('storage/sign', {
+      'path': path,
+      'expiresSeconds': expiresSeconds,
+    });
+    return data['url'] as String;
   }
 }
 
