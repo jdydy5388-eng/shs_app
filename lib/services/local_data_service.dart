@@ -19,6 +19,7 @@ import '../models/invoice_model.dart';
 import '../models/room_bed_model.dart';
 import '../models/emergency_case_model.dart';
 import '../models/notification_model.dart';
+import '../models/attendance_model.dart';
 import 'local_database_service.dart';
 
 class DoctorStats {
@@ -1873,18 +1874,10 @@ class LocalDataService {
     required List<int> bytes,
     String? contentType,
   }) async {
-    // حفظ الملف محليًا ضمن مجلد التطبيق
-    // لعدم إضافة تبعيات هنا، سنحاول استخدام مجلد قاعدة البيانات كمرجع قريب
-    final db = await _db.database; // يضمن تهيئة المسار
-    (db); // لتجنب التحذير
-    final dir = await LocalDatabaseService().database; // نضمن التهيئة
-    (dir); // لا يستخدم مباشرة
-    // بديل: حفظ داخل مجلد التشغيل الحالي
-    final safeName = filename.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
-    final path = 'uploads_local_$safeName';
-    final file = File(path);
-    await file.writeAsBytes(bytes, flush: true);
-    return file.path;
+    // للويب: نعيد Data URL حتى تعمل المعاينة بدون dart:io
+    final mime = contentType ?? 'application/octet-stream';
+    final b64 = base64Encode(bytes);
+    return 'data:$mime;base64,$b64';
   }
 }
 

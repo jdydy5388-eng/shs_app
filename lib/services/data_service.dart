@@ -324,8 +324,8 @@ class DataService {
 
   Future<void> _tryScheduleAppointmentReminders(DoctorAppointment appointment) async {
     try {
-      if (appointment.patientId.isEmpty) return;
-      final user = await getUser(appointment.patientId) as UserModel;
+      if ((appointment.patientId ?? '').isEmpty) return;
+      final user = await getUser(appointment.patientId as String) as UserModel;
       final date = appointment.date;
       final now = DateTime.now();
 
