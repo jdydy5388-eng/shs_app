@@ -313,9 +313,8 @@ class _RadiologyScreenState extends State<RadiologyScreen> {
     if (url.startsWith('http') || url.startsWith('/')) {
       return Image.network(url, fit: fit);
     }
-    final file = File(url);
-    if (file.existsSync()) return Image.file(file, fit: fit);
-    return const Icon(Icons.broken_image);
+    // مسار محلي غير مدعوم على الويب: نعامله كرابط شبكة
+    return Image.network(url, fit: fit);
   }
 
   Future<void> _openImagePreview(String url) async {
@@ -326,13 +325,173 @@ class _RadiologyScreenState extends State<RadiologyScreen> {
     } else if (url.startsWith('http') || url.startsWith('/')) {
       provider = NetworkImage(url);
     } else {
-      final file = File(url);
-      provider = FileImage(file);
+      provider = NetworkImage(url);
     }
     if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => _ImagePreviewScreen(imageProvider: provider, tag: url)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = DateFormat('yyyy-MM-dd HH:mm');
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('طلبات الأشعة'),
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
+          IconButton(icon: const Icon(Icons.add), onPressed: _openCreateDialog),
+        ],
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                _buildFilters(),
+                const Divider(height: 0),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: _requests.length,
+                    separatorBuilder: (_, __) => const Divider(height: 0),
+                    itemBuilder: (context, index) {
+                      final r = _requests[index];
+                      final reps = _reports[r.id] ?? const <RadiologyReportModel>[];
+                      return ExpansionTile(
+                        leading: const Icon(Icons.image_search),
+                        title: Text('${r.modality.toUpperCase()} • ${r.bodyPart ?? '-'}'),
+                        subtitle: Text('المريض: ${r.patientName} • ${fmt.format(r.requestedAt)}'),
+                        trailing: PopupMenuButton<String>(
+                          onSelected: (value) async {
+                            if (value == 'report') {
+                              await _openAddReport(r);
+                            } else if (value == 'schedule') {
+                              final now = DateTime.now().add(const Duration(hours: 4));
+                              await _dataService.updateRadiologyRequest(r.id, scheduledAt: now);
+                              await _dataService.updateRadiologyStatus(r.id, RadiologyStatus.scheduled.toString().split('.').last);
+                              await _load();
+                            } else if (value == 'cancel') {
+                              await _dataService.updateRadiologyStatus(r.id, RadiologyStatus.cancelled.toString().split('.').last);
+                              await _load();
+                            } else if (value == 'refresh') {
+                              await _load();
+                            }
+                          },
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(value: 'report', child: Text('إضافة تقرير')),
+                            PopupMenuItem(value: 'schedule', child: Text('جدولة')),
+                            PopupMenuItem(value: 'cancel', child: Text('إلغاء')),
+                            PopupMenuItem(value: 'refresh', child: Text('تحديث')),
+                          ],
+                        ),
+                        children: [
+                          if (reps.isEmpty)
+                            const ListTile(
+                              leading: Icon(Icons.info_outline),
+                              title: Text('لا توجد تقارير بعد'),
+                            )
+                          else
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: reps.map((rep) {
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      ListTile(
+                                        leading: const Icon(Icons.description),
+                                        title: Text(rep.impression ?? 'Report'),
+                                        subtitle: Text(rep.findings ?? ''),
+                                      ),
+                                      if (rep.attachments != null && rep.attachments!.isNotEmpty)
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          children: rep.attachments!.map((u) {
+                                            return InkWell(
+                                              onTap: () => _openImagePreview(u),
+                                              child: Container(
+                                                width: 90,
+                                                height: 90,
+                                                color: Colors.black12,
+                                                child: _buildImage(u, fit: BoxFit.cover),
+                                              ),
+                                            );
+                                          }).toList(),
+                                        ),
+                                      const SizedBox(height: 8),
+                                      const Divider(height: 0),
+                                    ],
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildFilters() {
+    final statusItems = <DropdownMenuItem<String?>>[
+      const DropdownMenuItem(value: null, child: Text('كل الحالات')),
+      const DropdownMenuItem(value: 'requested', child: Text('Requested')),
+      const DropdownMenuItem(value: 'scheduled', child: Text('Scheduled')),
+      const DropdownMenuItem(value: 'completed', child: Text('Completed')),
+      const DropdownMenuItem(value: 'cancelled', child: Text('Cancelled')),
+    ];
+    final modalityItems = <DropdownMenuItem<String?>>[
+      const DropdownMenuItem(value: null, child: Text('كل الأنواع')),
+      const DropdownMenuItem(value: 'xray', child: Text('X-Ray')),
+      const DropdownMenuItem(value: 'ct', child: Text('CT')),
+      const DropdownMenuItem(value: 'mri', child: Text('MRI')),
+      const DropdownMenuItem(value: 'us', child: Text('Ultrasound')),
+      const DropdownMenuItem(value: 'other', child: Text('Other')),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: DropdownButtonFormField<String?>(
+              value: _filterStatus,
+              items: statusItems,
+              onChanged: (v) async {
+                setState(() => _filterStatus = v);
+                await _load();
+              },
+              decoration: const InputDecoration(
+                labelText: 'الحالة',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: DropdownButtonFormField<String?>(
+              value: _filterModality,
+              items: modalityItems,
+              onChanged: (v) async {
+                setState(() => _filterModality = v);
+                await _load();
+              },
+              decoration: const InputDecoration(
+                labelText: 'النوع',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -342,29 +501,6 @@ class _ImagePreviewScreen extends StatelessWidget {
 
   final ImageProvider imageProvider;
   final String tag;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text('معاينة', style: TextStyle(color: Colors.white)),
-        elevation: 0,
-      ),
-      body: Center(
-        child: InteractiveViewer(
-          minScale: 0.5,
-          maxScale: 4.0,
-          child: Image(
-            image: imageProvider,
-            fit: BoxFit.contain,
-          ),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
