@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../services/data_service.dart';
 import '../../models/radiology_model.dart';
 import '../../providers/auth_provider_local.dart';
-import 'dart:io';
 import 'package:url_launcher/url_launcher.dart';
 import '../../utils/ui_snackbar.dart';
 
@@ -32,12 +31,25 @@ class _PatientRadiologyScreenState extends State<PatientRadiologyScreen> {
     try {
       final auth = Provider.of<AuthProviderLocal>(context, listen: false);
       final patient = auth.currentUser;
-      final list = await _dataService.getRadiologyRequests(patientId: patient?.id) as List;
+      if (patient?.id == null || patient!.id.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('يرجى تسجيل الدخول أولاً')),
+          );
+        }
+        return;
+      }
+      final list = await _dataService.getRadiologyRequests(patientId: patient.id) as List;
       final requests = list.cast<RadiologyRequestModel>();
       final allReports = <String, List<RadiologyReportModel>>{};
       for (final r in requests) {
-        final reps = await _dataService.getRadiologyReports(requestId: r.id) as List;
-        allReports[r.id] = reps.cast<RadiologyReportModel>();
+        try {
+          final reps = await _dataService.getRadiologyReports(requestId: r.id) as List;
+          allReports[r.id] = reps.cast<RadiologyReportModel>();
+        } catch (e) {
+          // إذا فشل جلب التقارير لطلب معين، نستمر مع الطلبات الأخرى
+          allReports[r.id] = [];
+        }
       }
       setState(() {
         _requests = requests;
@@ -45,7 +57,10 @@ class _PatientRadiologyScreenState extends State<PatientRadiologyScreen> {
           ..clear()
           ..addAll(allReports);
       });
-    } catch (e) { if (mounted) showFriendlyAuthError(context, e);
+    } catch (e) {
+      if (mounted) {
+        showFriendlyAuthError(context, e);
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -153,12 +168,8 @@ class _PatientRadiologyScreenState extends State<PatientRadiologyScreen> {
     if (url.startsWith('/')) {
       return Image.network(url, fit: fit);
     }
-    // مسار ملف محلي
-    final file = File(url);
-    if (file.existsSync()) {
-      return Image.file(file, fit: fit);
-    }
-    return const Icon(Icons.broken_image);
+    // مسار محلي غير مدعوم على الويب: نعامله كرابط شبكة
+    return Image.network(url, fit: fit, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image));
   }
 
   Future<void> _openImagePreview(String url) async {
@@ -169,8 +180,8 @@ class _PatientRadiologyScreenState extends State<PatientRadiologyScreen> {
     } else if (url.startsWith('http') || url.startsWith('/')) {
       provider = NetworkImage(url);
     } else {
-      final file = File(url);
-      provider = FileImage(file);
+      // مسار محلي غير مدعوم على الويب: نعامله كرابط شبكة
+      provider = NetworkImage(url);
     }
     if (!mounted) return;
     Navigator.push(
@@ -182,7 +193,19 @@ class _PatientRadiologyScreenState extends State<PatientRadiologyScreen> {
   }
 
   Future<void> _openUrl(String url) async {
-    final uri = url.startsWith('http') ? Uri.parse(url) : Uri.parse(url.startsWith('/') ? url : 'file://$url');
+    Uri uri;
+    if (url.startsWith('http')) {
+      uri = Uri.parse(url);
+    } else if (url.startsWith('/')) {
+      // ربط نسبي: نحتاج إلى إضافة base URL للخادم
+      uri = Uri.parse(url);
+    } else {
+      // مسار محلي غير مدعوم على الويب: نعرض رسالة خطأ
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الملفات المحلية غير مدعومة على الويب')));
+      }
+      return;
+    }
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر فتح الرابط')));
