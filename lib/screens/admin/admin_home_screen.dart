@@ -4,6 +4,7 @@ import 'manage_users_screen.dart';
 import 'manage_entities_screen.dart';
 import 'system_monitoring_screen.dart';
 import 'shifts_management_screen.dart';
+import '../auth/login_screen.dart';
 
 class AdminFeature {
   AdminFeature({
@@ -50,9 +51,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await AuthHelper.signOut(context);
-            },
+            tooltip: 'تسجيل الخروج',
+            onPressed: () => _showLogoutConfirmation(context),
           ),
         ],
       ),
@@ -81,6 +81,67 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _showLogoutConfirmation(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.logout, color: Colors.red),
+            SizedBox(width: 12),
+            Text('تأكيد تسجيل الخروج'),
+          ],
+        ),
+        content: const Text('هل أنت متأكد من رغبتك في تسجيل الخروج؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('تسجيل الخروج'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+    
+    try {
+      await AuthHelper.signOut(context);
+      if (!mounted) return;
+      
+      // إعادة التوجيه إلى شاشة تسجيل الدخول وإزالة جميع الشاشات السابقة
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false, // إزالة جميع الشاشات السابقة
+      );
+      
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تم تسجيل الخروج بنجاح'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('خطأ في تسجيل الخروج: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
 

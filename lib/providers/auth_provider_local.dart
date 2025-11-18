@@ -268,12 +268,19 @@ class AuthProviderLocal with ChangeNotifier {
   Future<void> signOut() async {
     _setLoading(true);
     try {
+      // تنظيف البيانات المحلية
       await _localAuthService.signOut();
+      
+      // تنظيف حالة المستخدم
       _currentUser = null;
       NetworkAuthContext.setUser(null);
       _errorMessage = null;
+      
+      // إشعار المستمعين بالتغيير
+      notifyListeners();
     } catch (e) {
       _errorMessage = 'خطأ في تسجيل الخروج: ${e.toString()}';
+      notifyListeners();
     } finally {
       _setLoading(false);
     }
