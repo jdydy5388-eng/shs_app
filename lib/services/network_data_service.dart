@@ -33,29 +33,37 @@ class NetworkDataService {
   
   /// إيقاظ الخادم تلقائياً (لـ Render Free Tier)
   Future<void> _wakeUpServerIfNeeded() async {
-    // إذا تم إيقاظه مؤخراً (خلال آخر 5 دقائق)، لا نحتاج إعادة إيقاظ
+    // إذا تم إيقاظه مؤخراً (خلال آخر 3 دقائق)، لا نحتاج إعادة إيقاظ
     if (_serverWokenUp && _lastWakeUpAttempt != null) {
       final elapsed = DateTime.now().difference(_lastWakeUpAttempt!);
-      if (elapsed.inMinutes < 5) return;
+      if (elapsed.inMinutes < 3) return;
     }
     
     try {
       final baseUrl = await AppConfig.serverBaseUrl;
       final healthUrl = Uri.parse('$baseUrl/health');
       
-      // محاولة إيقاظ الخادم مع timeout قصير
-      await http.get(healthUrl).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          // تجاهل timeout - الخادم قد يستيقظ لاحقاً
-          return http.Response('', 408);
-        },
-      );
-      
-      _serverWokenUp = true;
-      _lastWakeUpAttempt = DateTime.now();
+      // محاولة إيقاظ الخادم مع timeout أطول (60 ثانية)
+      // نستخدم await بدون catch هنا لأننا نريد أن ينتظر حتى يستيقظ الخادم
+      try {
+        await http.get(healthUrl, headers: NetworkAuthContext.headers()).timeout(
+          const Duration(seconds: 60),
+          onTimeout: () {
+            // حتى لو timeout، نعتبر أننا حاولنا
+            _lastWakeUpAttempt = DateTime.now();
+            return http.Response('', 408);
+          },
+        );
+        _serverWokenUp = true;
+        _lastWakeUpAttempt = DateTime.now();
+      } catch (e) {
+        // حتى لو فشل، نعتبر أننا حاولنا
+        _lastWakeUpAttempt = DateTime.now();
+        // لا نرمي الاستثناء - سنحاول الطلب الفعلي بعد ذلك
+      }
     } catch (_) {
       // تجاهل الأخطاء - سنحاول مرة أخرى في الطلب التالي
+      _lastWakeUpAttempt = DateTime.now();
     }
   }
 
@@ -141,8 +149,8 @@ class NetworkDataService {
     // إيقاظ الخادم قبل أول محاولة
     if (attempt == 0) {
       await _wakeUpServerIfNeeded();
-      // انتظار قصير بعد إيقاظ الخادم
-      await Future.delayed(const Duration(seconds: 2));
+      // انتظار أطول بعد إيقاظ الخادم (لإعطاء الخادم وقت للاستيقاظ)
+      await Future.delayed(const Duration(seconds: 5));
     }
     
     try {
