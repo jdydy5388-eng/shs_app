@@ -1,4 +1,5 @@
 import 'package:shelf/shelf.dart';
+import 'rbac.dart';
 
 class RequestUser {
   final String? id;
@@ -34,5 +35,50 @@ bool canAccessDoctorData(RequestUser user, String? doctorId) {
 }
 
 bool isAuthenticated(RequestUser user) => user.role != 'guest';
+
+/// Middleware للتحقق من المصادقة
+Middleware requireAuth() {
+  return (Handler handler) {
+    return (Request request) async {
+      final user = getRequestUser(request);
+      if (!isAuthenticated(user)) {
+        return Response(
+          401,
+          body: '{"error": "Unauthorized. Please login first."}',
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+      return await handler(request);
+    };
+  };
+}
+
+/// Middleware للتحقق من الصلاحيات
+Middleware requirePermission(Permission permission) {
+  return (Handler handler) {
+    return (Request request) async {
+      final user = getRequestUser(request);
+      if (!isAuthenticated(user)) {
+        return Response(
+          401,
+          body: '{"error": "Unauthorized. Please login first."}',
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+      
+      // التحقق من الصلاحية
+      final hasPermission = Rbac.has(user.role, permission);
+      if (!hasPermission) {
+        return Response(
+          403,
+          body: '{"error": "Forbidden. You do not have permission to perform this action."}',
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+      
+      return await handler(request);
+    };
+  };
+}
 
 

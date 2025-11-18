@@ -6,6 +6,9 @@ import '../../models/prescription_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider_local.dart';
 import '../../services/data_service.dart';
+import '../../widgets/loading_widgets.dart';
+import '../../widgets/status_banner.dart';
+import '../../utils/ui_snackbar.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -18,6 +21,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
   final _dataService = DataService();
   List<MedicationOrderModel> _orders = [];
   bool _isLoading = true;
+  String? _errorMessage;
+  String _searchQuery = '';
+  OrderStatus? _filterStatus;
 
   @override
   void initState() {
@@ -26,7 +32,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Future<void> _loadOrders() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
     try {
       final authProvider = Provider.of<AuthProviderLocal>(context, listen: false);
       final patientId = authProvider.currentUser?.id ?? '';
@@ -34,15 +43,38 @@ class _OrdersScreenState extends State<OrdersScreen> {
       setState(() {
         _orders = orders.cast<MedicationOrderModel>();
         _isLoading = false;
+        _errorMessage = null;
       });
     } catch (e) {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString();
+      });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ في تحميل الطلبات: $e')),
-        );
+        showFriendlyAuthError(context, e);
       }
     }
+  }
+
+  List<MedicationOrderModel> get _filteredOrders {
+    var filtered = _orders;
+    
+    // فلترة حسب الحالة
+    if (_filterStatus != null) {
+      filtered = filtered.where((o) => o.status == _filterStatus).toList();
+    }
+    
+    // فلترة حسب البحث
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      filtered = filtered.where((order) {
+        return order.id.toLowerCase().contains(query) ||
+            order.pharmacyName.toLowerCase().contains(query) ||
+            order.patientName.toLowerCase().contains(query);
+      }).toList();
+    }
+    
+    return filtered;
   }
 
   @override
@@ -61,33 +93,113 @@ class _OrdersScreenState extends State<OrdersScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _buildOrdersList(),
+      body: Column(
+        children: [
+          // شريط البحث والفلترة
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'بحث في الطلبات...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                    ),
+                    onChanged: (value) {
+                      setState(() => _searchQuery = value);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                PopupMenuButton<OrderStatus?>(
+                  icon: const Icon(Icons.filter_list),
+                  tooltip: 'فلترة حسب الحالة',
+                  onSelected: (status) {
+                    setState(() => _filterStatus = status);
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: null,
+                      child: Text('جميع الطلبات'),
+                    ),
+                    const PopupMenuItem(
+                      value: OrderStatus.pending,
+                      child: Text('قيد الانتظار'),
+                    ),
+                    const PopupMenuItem(
+                      value: OrderStatus.confirmed,
+                      child: Text('مؤكدة'),
+                    ),
+                    const PopupMenuItem(
+                      value: OrderStatus.preparing,
+                      child: Text('قيد التحضير'),
+                    ),
+                    const PopupMenuItem(
+                      value: OrderStatus.ready,
+                      child: Text('جاهزة'),
+                    ),
+                    const PopupMenuItem(
+                      value: OrderStatus.delivered,
+                      child: Text('تم التسليم'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // رسالة الخطأ إن وجدت
+          if (_errorMessage != null && !_isLoading)
+            StatusBanner(
+              message: 'فشل تحميل الطلبات. اضغط على "إعادة المحاولة" للتحميل مرة أخرى.',
+              type: StatusBannerType.error,
+              onDismiss: () {
+                setState(() => _errorMessage = null);
+              },
+            ),
+          // المحتوى الرئيسي
+          Expanded(
+            child: _isLoading
+                ? const ListSkeletonLoader(itemCount: 5)
+                : _buildOrdersList(),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildOrdersList() {
-    if (_orders.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.shopping_cart_outlined,
-                size: 64,
-                color: Colors.grey[400],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'لا توجد طلبات',
-                style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-              ),
-            ],
-          ),
-        ),
+    final filtered = _filteredOrders;
+    
+    if (filtered.isEmpty) {
+      return EmptyStateWidget(
+        icon: Icons.shopping_cart_outlined,
+        title: _searchQuery.isNotEmpty || _filterStatus != null
+            ? 'لا توجد نتائج'
+            : 'لا توجد طلبات',
+        subtitle: _searchQuery.isNotEmpty || _filterStatus != null
+            ? 'جرب تغيير معايير البحث أو الفلترة'
+            : 'لم يتم إنشاء أي طلبات بعد',
+        action: _searchQuery.isEmpty && _filterStatus == null
+            ? ElevatedButton.icon(
+                onPressed: () => _showCreateOrderDialog(),
+                icon: const Icon(Icons.add),
+                label: const Text('إنشاء طلب جديد'),
+              )
+            : null,
       );
     }
 
@@ -95,9 +207,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
       onRefresh: _loadOrders,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: _orders.length,
+        itemCount: filtered.length,
         itemBuilder: (context, index) {
-          final order = _orders[index];
+          final order = filtered[index];
           return _buildOrderCard(order);
         },
       ),

@@ -9,6 +9,8 @@ import '../../services/biometric_auth_service.dart';
 import '../../services/local_auth_service.dart';
 import '../../services/data_service.dart';
 import '../../utils/auth_helper.dart';
+import '../../widgets/loading_widgets.dart';
+import '../../widgets/status_banner.dart';
 
 class SystemMonitoringScreen extends StatefulWidget {
   const SystemMonitoringScreen({super.key});
@@ -470,11 +472,16 @@ class _SystemMonitoringScreenState extends State<SystemMonitoringScreen>
       future: _loadStatistics(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const ListSkeletonLoader(itemCount: 8);
         }
 
         if (snapshot.hasError) {
-          return Center(child: Text('خطأ: ${snapshot.error}'));
+          return ErrorStateWidget(
+            message: 'فشل تحميل الإحصائيات: ${snapshot.error}',
+            onRetry: () {
+              setState(() {});
+            },
+          );
         }
 
         final stats = snapshot.data ?? {};
@@ -654,6 +661,10 @@ class _SystemMonitoringScreenState extends State<SystemMonitoringScreen>
   }
 
   Widget _buildAuditLogsTab() {
+    final filteredLogs = _filterAction == null
+        ? _auditLogs
+        : _auditLogs.where((log) => log.action == _filterAction).toList();
+
     return Column(
       children: [
         Padding(
@@ -665,6 +676,8 @@ class _SystemMonitoringScreenState extends State<SystemMonitoringScreen>
                   decoration: const InputDecoration(
                     labelText: 'فلترة حسب الإجراء',
                     border: OutlineInputBorder(),
+                    filled: true,
+                    fillColor: Colors.white,
                   ),
                   value: _filterAction,
                   items: [
@@ -689,36 +702,23 @@ class _SystemMonitoringScreenState extends State<SystemMonitoringScreen>
         ),
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _buildAuditLogsList(),
+              ? const ListSkeletonLoader(itemCount: 5)
+              : _buildAuditLogsList(filteredLogs),
         ),
       ],
     );
   }
 
-  Widget _buildAuditLogsList() {
-    final filtered = _filteredLogs;
-
+  Widget _buildAuditLogsList(List<AuditLogModel> filtered) {
     if (filtered.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.history,
-                size: 64,
-                color: Colors.grey[400],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'لا توجد سجلات',
-                style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-              ),
-            ],
-          ),
-        ),
+      return EmptyStateWidget(
+        icon: Icons.history,
+        title: _filterAction == null
+            ? 'لا توجد سجلات'
+            : 'لا توجد سجلات لهذا الإجراء',
+        subtitle: _filterAction == null
+            ? 'لم يتم تسجيل أي أحداث حتى الآن'
+            : 'جرب اختيار إجراء آخر أو إزالة الفلترة',
       );
     }
 

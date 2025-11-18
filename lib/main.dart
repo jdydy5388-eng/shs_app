@@ -12,7 +12,9 @@ import 'screens/admin/admin_home_screen.dart';
 
 // Local imports (للوضع المحلي)
 import 'providers/auth_provider_local.dart';
+import 'providers/notification_provider.dart';
 import 'services/local_database_service.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,6 +49,12 @@ class MyApp extends StatelessWidget {
       providers: [
         // استخدام Provider المناسب حسب الوضع
         ChangeNotifierProvider(create: (_) => AuthProviderLocal()),
+        ChangeNotifierProvider(create: (_) {
+          final provider = NotificationProvider();
+          // تهيئة خدمة الإشعارات
+          provider.notificationService.initialize();
+          return provider;
+        }),
       ],
       child: MaterialApp(
         title: 'النظام الصحي الذكي',

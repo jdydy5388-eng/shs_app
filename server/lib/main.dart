@@ -8,6 +8,8 @@ import 'config/database_config.dart';
 import 'database/database_service.dart';
 import 'routes/api_routes.dart';
 import 'logger/app_logger.dart';
+import 'utils/rate_limiter.dart';
+import 'utils/audit_middleware.dart';
 
 void main(List<String> args) async {
   try {
@@ -39,13 +41,15 @@ void main(List<String> args) async {
     final router = ApiRoutes.createRouter();
     print('✅ Routes configured');
 
-    // إضافة CORS headers
+    // إضافة CORS headers و Security Middleware
     print('🔒 Adding middleware...');
     final handler = Pipeline()
         .addMiddleware(corsHeaders())
+        .addMiddleware(rateLimitMiddleware()) // Rate Limiting
+        .addMiddleware(auditMiddleware()) // Audit Logging
         .addMiddleware(logRequests())
         .addHandler(router);
-    print('✅ Middleware added');
+    print('✅ Middleware added (CORS, Rate Limiting, Audit Logging)');
 
     // بدء الخادم
     print('🌐 Starting HTTP server...');

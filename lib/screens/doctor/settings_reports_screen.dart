@@ -8,6 +8,8 @@ import '../../services/data_service.dart';
 import '../../services/local_data_service.dart';
 import '../../services/local_auth_service.dart';
 import '../../utils/auth_helper.dart';
+import '../../widgets/loading_widgets.dart';
+import '../../widgets/status_banner.dart';
 
 class SettingsReportsScreen extends StatefulWidget {
   const SettingsReportsScreen({super.key});
@@ -814,14 +816,18 @@ class _SettingsReportsScreenState extends State<SettingsReportsScreen>
     return RefreshIndicator(
       onRefresh: _loadStats,
       child: _isLoadingStats
-          ? const Center(child: CircularProgressIndicator())
+          ? const ListSkeletonLoader(itemCount: 6)
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: _stats == null
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Text('لا توجد بيانات إحصائية متاحة'),
+                  ? EmptyStateWidget(
+                      icon: Icons.insights_outlined,
+                      title: 'لا توجد بيانات إحصائية متاحة',
+                      subtitle: 'سيتم عرض الإحصائيات بعد بدء استخدام النظام',
+                      action: ElevatedButton.icon(
+                        onPressed: _loadStats,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('تحديث'),
                       ),
                     )
                   : Column(
