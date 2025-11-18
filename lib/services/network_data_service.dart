@@ -98,7 +98,7 @@ class NetworkDataService {
     return mapped.isNotEmpty ? mapped : generic;
   }
 
-  static const Duration _requestTimeout = Duration(seconds: 15);
+  static const Duration _requestTimeout = Duration(seconds: 60);
 
   Future<http.Response> _sendRequest(
     Future<http.Response> Function() request,
@@ -107,7 +107,7 @@ class NetworkDataService {
     try {
       return await request().timeout(_requestTimeout);
     } on TimeoutException {
-      throw Exception('انتهت مهلة الاتصال بالخادم. حاول مرة أخرى خلال لحظات.');
+      throw Exception('الخادم يستيقظ من حالة السكون. يرجى الانتظار 30-60 ثانية ثم المحاولة مرة أخرى.');
     } on http.ClientException catch (e) {
       final message = e.toString().toLowerCase();
       if (message.contains('socket') || message.contains('connection') || message.contains('network')) {
