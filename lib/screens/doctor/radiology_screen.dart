@@ -61,59 +61,155 @@ class _RadiologyScreenState extends State<RadiologyScreen> {
   }
 
   Future<void> _openCreateDialog() async {
-    final patientIdController = TextEditingController();
     final patientNameController = TextEditingController();
     final modality = ValueNotifier<String>('xray');
     final bodyPartController = TextEditingController();
     final notesController = TextEditingController();
+    String? selectedPatientId;
+    List<UserModel> patients = [];
+
+    // تحميل قائمة المرضى
+    try {
+      patients = (await _dataService.getPatients()).cast<UserModel>();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ في تحميل المرضى: $e')),
+        );
+      }
+    }
 
     final result = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('طلب أشعة جديد'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: patientIdController, decoration: const InputDecoration(labelText: 'معرّف المريض')),
-              TextField(controller: patientNameController, decoration: const InputDecoration(labelText: 'اسم المريض')),
-              const SizedBox(height: 8),
-              ValueListenableBuilder<String>(
-                valueListenable: modality,
-                builder: (_, value, __) => DropdownButtonFormField<String>(
-                  value: value,
-                  decoration: const InputDecoration(labelText: 'النوع'),
-                  onChanged: (v) => modality.value = v ?? 'xray',
-                  items: const [
-                    DropdownMenuItem(value: 'xray', child: Text('X-Ray')),
-                    DropdownMenuItem(value: 'ct', child: Text('CT')),
-                    DropdownMenuItem(value: 'mri', child: Text('MRI')),
-                    DropdownMenuItem(value: 'us', child: Text('Ultrasound')),
-                    DropdownMenuItem(value: 'other', child: Text('Other')),
-                  ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('طلب أشعة جديد'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (patients.isNotEmpty) ...[
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                      labelText: 'اختر المريض *',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.person),
+                    ),
+                    value: selectedPatientId,
+                    items: patients.map((patient) {
+                      return DropdownMenuItem(
+                        value: patient.id,
+                        child: Text('${patient.name} - ${patient.email}'),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedPatientId = value;
+                        if (value != null) {
+                          final patient = patients.firstWhere((p) => p.id == value);
+                          patientNameController.text = patient.name;
+                        }
+                      });
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'يرجى اختيار مريض';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                TextField(
+                  controller: patientNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'اسم المريض *',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.badge),
+                  ),
+                  enabled: false, // معطل لأنه يتم ملؤه تلقائياً
                 ),
-              ),
-              TextField(controller: bodyPartController, decoration: const InputDecoration(labelText: 'الجزء/المنطقة')),
-              TextField(controller: notesController, decoration: const InputDecoration(labelText: 'ملاحظات'), maxLines: 3),
-            ],
+                const SizedBox(height: 16),
+                ValueListenableBuilder<String>(
+                  valueListenable: modality,
+                  builder: (_, value, __) => DropdownButtonFormField<String>(
+                    value: value,
+                    decoration: const InputDecoration(
+                      labelText: 'نوع الأشعة *',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.image),
+                    ),
+                    onChanged: (v) => modality.value = v ?? 'xray',
+                    items: const [
+                      DropdownMenuItem(value: 'xray', child: Text('X-Ray - أشعة سينية')),
+                      DropdownMenuItem(value: 'ct', child: Text('CT - أشعة مقطعية')),
+                      DropdownMenuItem(value: 'mri', child: Text('MRI - رنين مغناطيسي')),
+                      DropdownMenuItem(value: 'us', child: Text('Ultrasound - موجات فوق صوتية')),
+                      DropdownMenuItem(value: 'other', child: Text('Other - أخرى')),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: bodyPartController,
+                  decoration: const InputDecoration(
+                    labelText: 'الجزء/المنطقة',
+                    hintText: 'مثل: الصدر، البطن، الرأس...',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.location_on),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: notesController,
+                  decoration: const InputDecoration(
+                    labelText: 'ملاحظات (اختياري)',
+                    hintText: 'أي معلومات إضافية حول الفحص المطلوب',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.note),
+                  ),
+                  maxLines: 3,
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (selectedPatientId == null || selectedPatientId!.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('يرجى اختيار مريض')),
+                  );
+                  return;
+                }
+                if (patientNameController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('يرجى ملء اسم المريض')),
+                  );
+                  return;
+                }
+                Navigator.pop(context, true);
+              },
+              child: const Text('حفظ'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء')),
-          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('حفظ')),
-        ],
       ),
     );
 
-    if (result == true && patientIdController.text.trim().isNotEmpty) {
+    if (result == true && selectedPatientId != null && selectedPatientId!.isNotEmpty) {
       try {
         final auth = Provider.of<AuthProviderLocal>(context, listen: false);
         final doctor = auth.currentUser as UserModel;
         final req = RadiologyRequestModel(
           id: const Uuid().v4(),
           doctorId: doctor.id,
-          patientId: patientIdController.text.trim(),
-          patientName: patientNameController.text.trim().isEmpty ? 'مريض' : patientNameController.text.trim(),
+          patientId: selectedPatientId!,
+          patientName: patientNameController.text.trim(),
           modality: modality.value,
           bodyPart: bodyPartController.text.trim().isEmpty ? null : bodyPartController.text.trim(),
           status: RadiologyStatus.requested,
@@ -122,8 +218,23 @@ class _RadiologyScreenState extends State<RadiologyScreen> {
         );
         await _dataService.createRadiologyRequest(req);
         await _load();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تم إرسال طلب الأشعة بنجاح'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطأ: $e')));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('خطأ في إرسال الطلب: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
