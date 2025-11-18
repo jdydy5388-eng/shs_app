@@ -25,9 +25,39 @@ import 'network_auth_context.dart';
 /// خدمة البيانات الشبكية - الاتصال بالخادم المركزي عبر REST API
 class NetworkDataService {
   final Uuid _uuid = const Uuid();
+  static bool _serverWokenUp = false;
+  static DateTime? _lastWakeUpAttempt;
   
   /// الحصول على عنوان API (مع اكتشاف تلقائي)
   Future<String> get _baseUrl async => await AppConfig.apiBaseUrl;
+  
+  /// إيقاظ الخادم تلقائياً (لـ Render Free Tier)
+  Future<void> _wakeUpServerIfNeeded() async {
+    // إذا تم إيقاظه مؤخراً (خلال آخر 5 دقائق)، لا نحتاج إعادة إيقاظ
+    if (_serverWokenUp && _lastWakeUpAttempt != null) {
+      final elapsed = DateTime.now().difference(_lastWakeUpAttempt!);
+      if (elapsed.inMinutes < 5) return;
+    }
+    
+    try {
+      final baseUrl = await AppConfig.serverBaseUrl;
+      final healthUrl = Uri.parse('$baseUrl/health');
+      
+      // محاولة إيقاظ الخادم مع timeout قصير
+      await http.get(healthUrl).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          // تجاهل timeout - الخادم قد يستيقظ لاحقاً
+          return http.Response('', 408);
+        },
+      );
+      
+      _serverWokenUp = true;
+      _lastWakeUpAttempt = DateTime.now();
+    } catch (_) {
+      // تجاهل الأخطاء - سنحاول مرة أخرى في الطلب التالي
+    }
+  }
 
   String _extractServerError(String body) {
     try {
@@ -99,27 +129,58 @@ class NetworkDataService {
   }
 
   static const Duration _requestTimeout = Duration(seconds: 60);
+  static const int _maxRetries = 2;
+  static const Duration _retryDelay = Duration(seconds: 5);
 
   Future<http.Response> _sendRequest(
     Future<http.Response> Function() request,
-    String description,
-  ) async {
+    String description, {
+    bool retryOnFailure = true,
+    int attempt = 0,
+  }) async {
+    // إيقاظ الخادم قبل أول محاولة
+    if (attempt == 0) {
+      await _wakeUpServerIfNeeded();
+      // انتظار قصير بعد إيقاظ الخادم
+      await Future.delayed(const Duration(seconds: 2));
+    }
+    
     try {
       return await request().timeout(_requestTimeout);
     } on TimeoutException {
+      // إذا كان timeout وكانت هناك محاولات متبقية، نعيد المحاولة
+      if (retryOnFailure && attempt < _maxRetries) {
+        await Future.delayed(_retryDelay * (attempt + 1));
+        return _sendRequest(request, description, retryOnFailure: retryOnFailure, attempt: attempt + 1);
+      }
       throw Exception('الخادم يستيقظ من حالة السكون. يرجى الانتظار 30-60 ثانية ثم المحاولة مرة أخرى.');
     } on http.ClientException catch (e) {
       final message = e.toString().toLowerCase();
       if (message.contains('socket') || message.contains('connection') || message.contains('network')) {
+        // إعادة المحاولة مرة واحدة في حالة فشل الاتصال
+        if (retryOnFailure && attempt < _maxRetries) {
+          await Future.delayed(_retryDelay * (attempt + 1));
+          return _sendRequest(request, description, retryOnFailure: retryOnFailure, attempt: attempt + 1);
+        }
         throw Exception('لا يوجد اتصال بالشبكة. تحقق من اتصال الإنترنت وحاول مرة أخرى.');
       }
       throw Exception('تعذّر الوصول إلى الخادم. تأكد من تشغيل الخادم أو حاول لاحقاً.');
     } catch (e) {
       final errorStr = e.toString().toLowerCase();
       if (errorStr.contains('socket') || errorStr.contains('connection') || errorStr.contains('network')) {
+        // إعادة المحاولة مرة واحدة في حالة فشل الاتصال
+        if (retryOnFailure && attempt < _maxRetries) {
+          await Future.delayed(_retryDelay * (attempt + 1));
+          return _sendRequest(request, description, retryOnFailure: retryOnFailure, attempt: attempt + 1);
+        }
         throw Exception('لا يوجد اتصال بالشبكة. تحقق من اتصال الإنترنت وحاول مرة أخرى.');
       }
       if (errorStr.contains('timeout')) {
+        // إعادة المحاولة مرة واحدة في حالة timeout
+        if (retryOnFailure && attempt < _maxRetries) {
+          await Future.delayed(_retryDelay * (attempt + 1));
+          return _sendRequest(request, description, retryOnFailure: retryOnFailure, attempt: attempt + 1);
+        }
         throw Exception('انتهت مهلة الاتصال بالخادم. حاول مرة أخرى خلال لحظات.');
       }
       throw Exception('تعذّر إكمال الطلب ($description). يرجى المحاولة لاحقاً.');
