@@ -22,12 +22,16 @@ class NotificationProvider extends ChangeNotifier {
   NotificationService get notificationService => _notificationService;
 
   /// تحميل الإشعارات من الخادم
-  Future<void> loadNotifications({String? userId}) async {
+  Future<void> loadNotifications({String? userId, NotificationStatus? status}) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      final notifications = await _dataService.getNotifications(userId: userId);
+      final notifications = await _dataService.getNotifications(
+        status: status,
+        relatedType: userId != null ? 'user' : null,
+        relatedId: userId,
+      );
       _notifications = notifications.cast<NotificationModel>();
       _unreadCount = _notifications.where((n) => n.status == NotificationStatus.sent).length;
       _isLoading = false;
@@ -96,15 +100,22 @@ class NotificationProvider extends ChangeNotifier {
     String? relatedId,
   }) async {
     try {
-      final notification = await _dataService.scheduleNotification(
+      // إنشاء NotificationModel
+      final notification = NotificationModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
         type: type,
         recipient: recipient,
-        message: message,
         subject: subject,
+        message: message,
         scheduledAt: scheduledAt,
+        status: NotificationStatus.scheduled,
         relatedType: relatedType,
         relatedId: relatedId,
+        createdAt: DateTime.now(),
       );
+
+      // حفظ الإشعار
+      await _dataService.scheduleNotification(notification);
 
       _notifications.insert(0, notification);
       notifyListeners();
