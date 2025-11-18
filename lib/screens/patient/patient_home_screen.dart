@@ -9,6 +9,7 @@ import 'orders_screen.dart';
 import 'notifications_appointments_screen.dart';
 import 'patient_settings_screen.dart';
 import 'radiology_screen.dart';
+import 'lab_requests_screen.dart';
 
 class PatientFeature {
   const PatientFeature({
@@ -178,6 +179,18 @@ class PatientDashboard extends StatelessWidget {
         'عرض تقارير الأشعة والمرفقات'
       ],
       builder: (_) => const PatientRadiologyScreen(),
+    ),
+    PatientFeature(
+      title: 'طلبات الفحوصات والتحاليل',
+      description: 'عرض طلبات الفحوصات والتحاليل التي يطلبها الأطباء.',
+      icon: Icons.biotech,
+      color: Colors.cyan,
+      details: [
+        'عرض جميع طلبات الفحوصات والتحاليل',
+        'متابعة حالة الطلبات (قيد الانتظار، قيد التنفيذ، مكتملة)',
+        'عرض نتائج الفحوصات والمرفقات عند اكتمالها',
+      ],
+      builder: (_) => const PatientLabRequestsScreen(),
     ),
     PatientFeature(
       title: 'الإعدادات الشخصية',

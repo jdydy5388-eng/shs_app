@@ -82,121 +82,243 @@ class _RadiologyScreenState extends State<RadiologyScreen> {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('طلب أشعة جديد'),
-          content: SingleChildScrollView(
+        builder: (context, setState) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (patients.isNotEmpty) ...[
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
-                      labelText: 'اختر المريض *',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.person),
+                // العنوان
+                Row(
+                  children: [
+                    const Icon(Icons.add_circle_outline, color: Colors.blue, size: 28),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'طلب أشعة جديد',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                    value: selectedPatientId,
-                    items: patients.map((patient) {
-                      return DropdownMenuItem(
-                        value: patient.id,
-                        child: Text('${patient.name} - ${patient.email}'),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedPatientId = value;
-                        if (value != null) {
-                          final patient = patients.firstWhere((p) => p.id == value);
-                          patientNameController.text = patient.name;
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context, false),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // المحتوى
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (patients.isNotEmpty) ...[
+                          DropdownButtonFormField<String>(
+                            isExpanded: true,
+                            decoration: InputDecoration(
+                              labelText: 'اختر المريض *',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              prefixIcon: const Icon(Icons.person),
+                              filled: true,
+                              fillColor: Colors.grey[50],
+                            ),
+                            value: selectedPatientId,
+                            selectedItemBuilder: (context) {
+                              return patients.map((patient) {
+                                return Text(
+                                  patient.name,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 16),
+                                );
+                              }).toList();
+                            },
+                            items: patients.map((patient) {
+                              return DropdownMenuItem(
+                                value: patient.id,
+                                child: Text(
+                                  '${patient.name} - ${patient.email}',
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                selectedPatientId = value;
+                                if (value != null) {
+                                  final patient = patients.firstWhere((p) => p.id == value);
+                                  patientNameController.text = patient.name;
+                                }
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'يرجى اختيار مريض';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        TextField(
+                          controller: patientNameController,
+                          decoration: InputDecoration(
+                            labelText: 'اسم المريض *',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            prefixIcon: const Icon(Icons.badge),
+                            filled: true,
+                            fillColor: Colors.grey[100],
+                          ),
+                          enabled: false,
+                        ),
+                        const SizedBox(height: 16),
+                        ValueListenableBuilder<String>(
+                          valueListenable: modality,
+                          builder: (_, value, __) {
+                            final modalityNames = {
+                              'xray': 'أشعة سينية',
+                              'ct': 'أشعة مقطعية',
+                              'mri': 'رنين مغناطيسي',
+                              'us': 'موجات فوق صوتية',
+                              'other': 'أخرى',
+                            };
+                            return DropdownButtonFormField<String>(
+                              isExpanded: true,
+                              value: value,
+                              decoration: InputDecoration(
+                                labelText: 'نوع الأشعة *',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                prefixIcon: const Icon(Icons.image),
+                                filled: true,
+                                fillColor: Colors.grey[50],
+                              ),
+                              selectedItemBuilder: (context) {
+                                return modalityNames.values.map((name) {
+                                  return Text(
+                                    name,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 16),
+                                  );
+                                }).toList();
+                              },
+                              onChanged: (v) => modality.value = v ?? 'xray',
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'xray',
+                                  child: Text('أشعة سينية - X-Ray', overflow: TextOverflow.ellipsis, maxLines: 1),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'ct',
+                                  child: Text('أشعة مقطعية - CT', overflow: TextOverflow.ellipsis, maxLines: 1),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'mri',
+                                  child: Text('رنين مغناطيسي - MRI', overflow: TextOverflow.ellipsis, maxLines: 1),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'us',
+                                  child: Text('موجات فوق صوتية - Ultrasound', overflow: TextOverflow.ellipsis, maxLines: 1),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'other',
+                                  child: Text('أخرى - Other', overflow: TextOverflow.ellipsis, maxLines: 1),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: bodyPartController,
+                          decoration: InputDecoration(
+                            labelText: 'الجزء / المنطقة',
+                            hintText: 'مثل: الصدر، البطن، الرأس...',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            prefixIcon: const Icon(Icons.location_on),
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: notesController,
+                          decoration: InputDecoration(
+                            labelText: 'ملاحظات (اختياري)',
+                            hintText: 'أي معلومات إضافية حول الفحص المطلوب',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            prefixIcon: const Icon(Icons.note),
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                          ),
+                          maxLines: 3,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // الأزرار
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
+                      child: const Text('إلغاء', style: TextStyle(fontSize: 16)),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (selectedPatientId == null || selectedPatientId!.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('يرجى اختيار مريض')),
+                          );
+                          return;
                         }
-                      });
-                    },
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'يرجى اختيار مريض';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                TextField(
-                  controller: patientNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'اسم المريض *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.badge),
-                  ),
-                  enabled: false, // معطل لأنه يتم ملؤه تلقائياً
-                ),
-                const SizedBox(height: 16),
-                ValueListenableBuilder<String>(
-                  valueListenable: modality,
-                  builder: (_, value, __) => DropdownButtonFormField<String>(
-                    value: value,
-                    decoration: const InputDecoration(
-                      labelText: 'نوع الأشعة *',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.image),
+                        if (patientNameController.text.trim().isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('يرجى ملء اسم المريض')),
+                          );
+                          return;
+                        }
+                        Navigator.pop(context, true);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('حفظ', style: TextStyle(fontSize: 16)),
                     ),
-                    onChanged: (v) => modality.value = v ?? 'xray',
-                    items: const [
-                      DropdownMenuItem(value: 'xray', child: Text('X-Ray - أشعة سينية')),
-                      DropdownMenuItem(value: 'ct', child: Text('CT - أشعة مقطعية')),
-                      DropdownMenuItem(value: 'mri', child: Text('MRI - رنين مغناطيسي')),
-                      DropdownMenuItem(value: 'us', child: Text('Ultrasound - موجات فوق صوتية')),
-                      DropdownMenuItem(value: 'other', child: Text('Other - أخرى')),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: bodyPartController,
-                  decoration: const InputDecoration(
-                    labelText: 'الجزء/المنطقة',
-                    hintText: 'مثل: الصدر، البطن، الرأس...',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.location_on),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: notesController,
-                  decoration: const InputDecoration(
-                    labelText: 'ملاحظات (اختياري)',
-                    hintText: 'أي معلومات إضافية حول الفحص المطلوب',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.note),
-                  ),
-                  maxLines: 3,
+                  ],
                 ),
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (selectedPatientId == null || selectedPatientId!.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('يرجى اختيار مريض')),
-                  );
-                  return;
-                }
-                if (patientNameController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('يرجى ملء اسم المريض')),
-                  );
-                  return;
-                }
-                Navigator.pop(context, true);
-              },
-              child: const Text('حفظ'),
-            ),
-          ],
         ),
       ),
     );
@@ -246,112 +368,223 @@ class _RadiologyScreenState extends State<RadiologyScreen> {
 
     final result = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('إضافة تقرير أشعة'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: findingsController, decoration: const InputDecoration(labelText: 'Findings'), maxLines: 3),
-              TextField(controller: impressionController, decoration: const InputDecoration(labelText: 'Impression'), maxLines: 3),
-              const SizedBox(height: 8),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 500, maxHeight: 700),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+              // العنوان
               Row(
                 children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.image),
-                      label: const Text('اختر صورة'),
-                      onPressed: () async {
-                        try {
-                          final picker = ImagePicker();
-                          final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
-                          if (picked != null) {
-                            final bytes = await picked.readAsBytes();
-                            final url = await DataService().uploadFile(
-                              filename: picked.name,
-                              bytes: bytes,
-                              contentType: 'image/${picked.name.toLowerCase().endsWith('png') ? 'png' : 'jpeg'}',
-                            );
-                            uploadedUrls.add(url);
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم رفع الصورة')));
-                            }
-                          }
-                        } catch (e) { if (mounted) showFriendlyAuthError(context, e); }
-                      },
+                  const Icon(Icons.description, color: Colors.blue, size: 28),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'إضافة تقرير أشعة',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.camera_alt),
-                      label: const Text('التقاط كاميرا'),
-                      onPressed: () async {
-                        try {
-                          final picker = ImagePicker();
-                          final picked = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
-                          if (picked != null) {
-                            final bytes = await picked.readAsBytes();
-                            final url = await DataService().uploadFile(
-                              filename: picked.name,
-                              bytes: bytes,
-                              contentType: 'image/${picked.name.toLowerCase().endsWith('png') ? 'png' : 'jpeg'}',
-                            );
-                            uploadedUrls.add(url);
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم رفع الصورة من الكاميرا')));
-                            }
-                          }
-                        } catch (e) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('فشل الرفع: $e')));
-                          }
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.attach_file),
-                      label: const Text('اختر ملف'),
-                      onPressed: () async {
-                        try {
-                          final res = await FilePicker.platform.pickFiles(
-                            type: FileType.custom,
-                            allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
-                            withData: true,
-                          );
-                          if (res != null && res.files.isNotEmpty) {
-                            final f = res.files.first;
-                            if (f.bytes != null) {
-                              final url = await DataService().uploadFile(
-                                filename: f.name,
-                                bytes: f.bytes!,
-                                contentType: _inferContentType(f.name),
-                              );
-                              uploadedUrls.add(url);
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم رفع الملف')));
-                              }
-                            }
-                          }
-                        } catch (e) { if (mounted) showFriendlyAuthError(context, e); }
-                      },
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context, false),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
-              if (uploadedUrls.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('المرفقات:', style: const TextStyle(fontSize: 12)),
-                        const SizedBox(height: 6),
+              const SizedBox(height: 24),
+              // المحتوى
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: findingsController,
+                        decoration: InputDecoration(
+                          labelText: 'النتائج (Findings)',
+                          hintText: 'أدخل النتائج والملاحظات من الفحص...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          prefixIcon: const Icon(Icons.search),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                        maxLines: 4,
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: impressionController,
+                        decoration: InputDecoration(
+                          labelText: 'التشخيص (Impression)',
+                          hintText: 'أدخل التشخيص والخلاصة...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          prefixIcon: const Icon(Icons.medical_information),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                        maxLines: 4,
+                      ),
+                      const SizedBox(height: 24),
+                      // قسم المرفقات
+                      const Text(
+                        'المرفقات',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.attach_file),
+                              label: const Text('اختر ملف'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: () async {
+                                try {
+                                  final res = await FilePicker.platform.pickFiles(
+                                    type: FileType.custom,
+                                    allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+                                    withData: true,
+                                  );
+                                  if (res != null && res.files.isNotEmpty) {
+                                    final f = res.files.first;
+                                    if (f.bytes != null) {
+                                      final url = await DataService().uploadFile(
+                                        filename: f.name,
+                                        bytes: f.bytes!,
+                                        contentType: _inferContentType(f.name),
+                                      );
+                                    uploadedUrls.add(url);
+                                    setState(() {});
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('تم رفع الملف')),
+                                      );
+                                    }
+                                    }
+                                  }
+                                } catch (e) {
+                                  if (mounted) showFriendlyAuthError(context, e);
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.camera_alt),
+                              label: const Text('التقاط صورة'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: () async {
+                                try {
+                                  final picker = ImagePicker();
+                                  final picked = await picker.pickImage(
+                                    source: ImageSource.camera,
+                                    imageQuality: 85,
+                                  );
+                                  if (picked != null) {
+                                    final bytes = await picked.readAsBytes();
+                                    final url = await DataService().uploadFile(
+                                      filename: picked.name,
+                                      bytes: bytes,
+                                      contentType: 'image/${picked.name.toLowerCase().endsWith('png') ? 'png' : 'jpeg'}',
+                                    );
+                                    uploadedUrls.add(url);
+                                    setState(() {});
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('تم رفع الصورة من الكاميرا')),
+                                      );
+                                    }
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('فشل الرفع: $e')),
+                                    );
+                                  }
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.image),
+                              label: const Text('اختر صورة'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: () async {
+                                try {
+                                  final picker = ImagePicker();
+                                  final picked = await picker.pickImage(
+                                    source: ImageSource.gallery,
+                                    imageQuality: 85,
+                                  );
+                                  if (picked != null) {
+                                    final bytes = await picked.readAsBytes();
+                                    final url = await DataService().uploadFile(
+                                      filename: picked.name,
+                                      bytes: bytes,
+                                      contentType: 'image/${picked.name.toLowerCase().endsWith('png') ? 'png' : 'jpeg'}',
+                                    );
+                                    uploadedUrls.add(url);
+                                    setState(() {});
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('تم رفع الصورة')),
+                                      );
+                                    }
+                                  }
+                                } catch (e) {
+                                  if (mounted) showFriendlyAuthError(context, e);
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      if (uploadedUrls.isNotEmpty) ...[
+                        const Text(
+                          'المرفقات المرفوعة:',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
@@ -361,23 +594,57 @@ class _RadiologyScreenState extends State<RadiologyScreen> {
                               child: Container(
                                 width: 80,
                                 height: 80,
-                                color: Colors.black12,
+                                decoration: BoxDecoration(
+                                  color: Colors.black12,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
                                 child: _buildImage(u, fit: BoxFit.cover),
                               ),
                             );
                           }).toList(),
                         ),
                       ],
-                    ),
+                    ],
                   ),
                 ),
+              ),
+              const SizedBox(height: 24),
+              // الأزرار
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: const Text('إلغاء', style: TextStyle(fontSize: 16)),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (findingsController.text.trim().isEmpty && impressionController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('يرجى إدخال النتائج أو التشخيص')),
+                        );
+                        return;
+                      }
+                      Navigator.pop(context, true);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('حفظ', style: TextStyle(fontSize: 16)),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء')),
-          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('حفظ')),
-        ],
+        ),
       ),
     );
 

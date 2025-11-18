@@ -249,16 +249,30 @@ class _RadiologyWebScreenState extends State<RadiologyWebScreen> {
               children: [
                 if (patients.isNotEmpty) ...[
                   DropdownButtonFormField<String>(
+                    isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'اختر المريض *',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.person),
                     ),
                     value: selectedPatientId,
+                    selectedItemBuilder: (context) {
+                      return patients.map((patient) {
+                        return Text(
+                          patient.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 16),
+                        );
+                      }).toList();
+                    },
                     items: patients.map((patient) {
                       return DropdownMenuItem(
                         value: patient.id,
-                        child: Text('${patient.name} - ${patient.email}'),
+                        child: Text(
+                          '${patient.name} - ${patient.email}',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
                       );
                     }).toList(),
                     onChanged: (value) {
@@ -291,22 +305,56 @@ class _RadiologyWebScreenState extends State<RadiologyWebScreen> {
                 const SizedBox(height: 16),
                 ValueListenableBuilder<String>(
                   valueListenable: modality,
-                  builder: (_, value, __) => DropdownButtonFormField<String>(
-                    value: value,
-                    decoration: const InputDecoration(
-                      labelText: 'نوع الأشعة *',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.image),
-                    ),
-                    onChanged: (v) => modality.value = v ?? 'xray',
-                    items: const [
-                      DropdownMenuItem(value: 'xray', child: Text('X-Ray - أشعة سينية')),
-                      DropdownMenuItem(value: 'ct', child: Text('CT - أشعة مقطعية')),
-                      DropdownMenuItem(value: 'mri', child: Text('MRI - رنين مغناطيسي')),
-                      DropdownMenuItem(value: 'us', child: Text('Ultrasound - موجات فوق صوتية')),
-                      DropdownMenuItem(value: 'other', child: Text('Other - أخرى')),
-                    ],
-                  ),
+                  builder: (_, value, __) {
+                    final modalityNames = {
+                      'xray': 'أشعة سينية',
+                      'ct': 'أشعة مقطعية',
+                      'mri': 'رنين مغناطيسي',
+                      'us': 'موجات فوق صوتية',
+                      'other': 'أخرى',
+                    };
+                    return DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      value: value,
+                      decoration: const InputDecoration(
+                        labelText: 'نوع الأشعة *',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.image),
+                      ),
+                      selectedItemBuilder: (context) {
+                        return modalityNames.values.map((name) {
+                          return Text(
+                            name,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 16),
+                          );
+                        }).toList();
+                      },
+                      onChanged: (v) => modality.value = v ?? 'xray',
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'xray',
+                          child: Text('أشعة سينية - X-Ray', overflow: TextOverflow.ellipsis, maxLines: 1),
+                        ),
+                        DropdownMenuItem(
+                          value: 'ct',
+                          child: Text('أشعة مقطعية - CT', overflow: TextOverflow.ellipsis, maxLines: 1),
+                        ),
+                        DropdownMenuItem(
+                          value: 'mri',
+                          child: Text('رنين مغناطيسي - MRI', overflow: TextOverflow.ellipsis, maxLines: 1),
+                        ),
+                        DropdownMenuItem(
+                          value: 'us',
+                          child: Text('موجات فوق صوتية - Ultrasound', overflow: TextOverflow.ellipsis, maxLines: 1),
+                        ),
+                        DropdownMenuItem(
+                          value: 'other',
+                          child: Text('أخرى - Other', overflow: TextOverflow.ellipsis, maxLines: 1),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
                 TextField(

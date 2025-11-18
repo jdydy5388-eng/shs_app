@@ -304,80 +304,182 @@ class _LabRequestsScreenState extends State<LabRequestsScreen> {
 
     final result = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('طلب فحص جديد'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (patients.isNotEmpty) ...[
-                DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    labelText: 'اختر المريض *',
-                    border: OutlineInputBorder(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // العنوان
+                Row(
+                  children: [
+                    const Icon(Icons.add_circle_outline, color: Colors.blue, size: 28),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'طلب فحص جديد',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context, false),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // المحتوى
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (patients.isNotEmpty) ...[
+                          DropdownButtonFormField<String>(
+                            isExpanded: true,
+                            decoration: InputDecoration(
+                              labelText: 'اختر المريض *',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              prefixIcon: const Icon(Icons.person),
+                              filled: true,
+                              fillColor: Colors.grey[50],
+                            ),
+                            value: selectedPatientId,
+                            selectedItemBuilder: (context) {
+                              return patients.map((patient) {
+                                return Text(
+                                  patient.name,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 16),
+                                );
+                              }).toList();
+                            },
+                            items: patients.map((patient) {
+                              return DropdownMenuItem(
+                                value: patient.id,
+                                child: Text(
+                                  '${patient.name} - ${patient.email}',
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                selectedPatientId = value;
+                                if (value != null) {
+                                  final patient = patients.firstWhere((p) => p.id == value);
+                                  patientNameController.text = patient.name;
+                                }
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        TextField(
+                          controller: patientNameController,
+                          decoration: InputDecoration(
+                            labelText: 'اسم المريض *',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            prefixIcon: const Icon(Icons.badge),
+                            filled: true,
+                            fillColor: Colors.grey[100],
+                          ),
+                          enabled: false,
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: testTypeController,
+                          decoration: InputDecoration(
+                            labelText: 'نوع الفحص *',
+                            hintText: 'مثل: فحص دم شامل، أشعة سينية، تحليل البول...',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            prefixIcon: const Icon(Icons.medical_services),
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: notesController,
+                          decoration: InputDecoration(
+                            labelText: 'ملاحظات (اختياري)',
+                            hintText: 'أي معلومات إضافية حول الفحص المطلوب',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            prefixIcon: const Icon(Icons.note),
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                          ),
+                          maxLines: 3,
+                        ),
+                      ],
+                    ),
                   ),
-                  items: patients.map((patient) {
-                    return DropdownMenuItem(
-                      value: patient.id,
-                      child: Text('${patient.name} - ${patient.email}'),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    selectedPatientId = value;
-                    final patient = patients.firstWhere((p) => p.id == value);
-                    patientNameController.text = patient.name;
-                  },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
+                // الأزرار
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
+                      child: const Text('إلغاء', style: TextStyle(fontSize: 16)),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (selectedPatientId == null || selectedPatientId!.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('يرجى اختيار مريض')),
+                          );
+                          return;
+                        }
+                        if (patientNameController.text.trim().isEmpty ||
+                            testTypeController.text.trim().isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('يرجى ملء جميع الحقول المطلوبة')),
+                          );
+                          return;
+                        }
+                        Navigator.pop(context, true);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('إرسال الطلب', style: TextStyle(fontSize: 16)),
+                    ),
+                  ],
+                ),
               ],
-              TextField(
-                controller: patientNameController,
-                decoration: const InputDecoration(
-                  labelText: 'اسم المريض *',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: testTypeController,
-                decoration: const InputDecoration(
-                  labelText: 'نوع الفحص *',
-                  hintText: 'مثل: فحص دم شامل، أشعة سينية، تحليل البول...',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: notesController,
-                decoration: const InputDecoration(
-                  labelText: 'ملاحظات (اختياري)',
-                  hintText: 'أي معلومات إضافية حول الفحص المطلوب',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-              ),
-            ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (patientNameController.text.trim().isEmpty ||
-                  testTypeController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('يرجى ملء جميع الحقول المطلوبة')),
-                );
-                return;
-              }
-              Navigator.pop(context, true);
-            },
-            child: const Text('إرسال الطلب'),
-          ),
-        ],
       ),
     );
 
