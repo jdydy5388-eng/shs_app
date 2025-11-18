@@ -9,6 +9,7 @@ import 'screens/patient/patient_home_screen.dart';
 import 'screens/doctor/doctor_home_screen.dart';
 import 'screens/pharmacist/pharmacist_home_screen.dart';
 import 'screens/admin/admin_home_screen.dart';
+import 'screens/common/splash_screen.dart';
 
 // Local imports (للوضع المحلي)
 import 'providers/auth_provider_local.dart';
@@ -92,7 +93,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
-        home: const AuthWrapper(),
+        home: kIsWeb ? const AuthWrapper() : const SplashScreen(),
       ),
     );
   }
