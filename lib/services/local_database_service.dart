@@ -9,7 +9,7 @@ import 'dart:io' show Platform;
 class LocalDatabaseService {
   static Database? _database;
   static const String _databaseName = 'shs_app.db';
-  static const int _databaseVersion = 21;
+  static const int _databaseVersion = 22;
   static bool _initialized = false;
 
   Future<Database> get database async {
@@ -1968,6 +1968,45 @@ class LocalDatabaseService {
         await db.execute('CREATE INDEX IF NOT EXISTS idx_transportation_requests_patient ON transportation_requests(patient_id)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_location_tracking_ambulance ON location_tracking(ambulance_id)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_location_tracking_timestamp ON location_tracking(timestamp)');
+
+        // جداول التكاملات الخارجية
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS external_integrations (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            type TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            api_url TEXT,
+            api_key TEXT,
+            api_secret TEXT,
+            config TEXT,
+            description TEXT,
+            last_sync INTEGER,
+            last_sync_error TEXT,
+            metadata TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS integration_sync_logs (
+            id TEXT PRIMARY KEY,
+            integration_id TEXT NOT NULL,
+            integration_name TEXT NOT NULL,
+            sync_type TEXT NOT NULL,
+            success INTEGER NOT NULL DEFAULT 1,
+            error_message TEXT,
+            records_processed INTEGER,
+            details TEXT,
+            timestamp INTEGER NOT NULL
+          )
+        ''');
+
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_external_integrations_type ON external_integrations(type)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_external_integrations_status ON external_integrations(status)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_integration_sync_logs_integration ON integration_sync_logs(integration_id)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_integration_sync_logs_timestamp ON integration_sync_logs(timestamp)');
       }
     }
 

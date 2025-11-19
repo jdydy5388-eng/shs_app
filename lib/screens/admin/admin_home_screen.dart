@@ -19,6 +19,7 @@ import 'hr_management_screen.dart';
 import 'maintenance_management_screen.dart';
 import 'transportation_management_screen.dart';
 import 'security_settings_screen.dart';
+import 'integrations_management_screen.dart';
 import '../emergency/emergency_dashboard_screen.dart';
 import '../auth/login_screen.dart';
 
@@ -438,6 +439,19 @@ class AdminDashboard extends StatelessWidget {
           'نظام صلاحيات محسن - صلاحيات أكثر تفصيلاً',
         ],
         builder: (_) => const SecuritySettingsScreen(),
+      ),
+      AdminFeature(
+        title: 'التكامل مع الأنظمة الخارجية',
+        description: 'إدارة التكامل مع المختبرات والبنوك وأنظمة HL7/FHIR.',
+        icon: Icons.link,
+        color: Colors.cyan,
+        details: [
+          'تكامل مع المختبرات الخارجية - إرسال واستقبال طلبات الفحوصات',
+          'تكامل مع البنوك - معالجة المدفوعات',
+          'دعم HL7/FHIR - معايير التبادل الطبي',
+          'API للتكامل - واجهات برمجية للتكامل مع أنظمة أخرى',
+        ],
+        builder: (_) => const IntegrationsManagementScreen(),
       ),
     ];
 

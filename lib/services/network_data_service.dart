@@ -30,6 +30,7 @@ import '../models/quality_models.dart';
 import '../models/hr_models.dart';
 import '../models/maintenance_models.dart';
 import '../models/transportation_models.dart';
+import '../models/integration_models.dart';
 import 'network_auth_context.dart';
 
 /// خدمة البيانات الشبكية - الاتصال بالخادم المركزي عبر REST API
@@ -1770,6 +1771,24 @@ class NetworkDataService {
   Future<List<LocationTrackingModel>> getLocationTracking() async {
     final data = await _getList('transportation/location-tracking');
     return data.map((m) => LocationTrackingModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  // External Integrations
+  Future<List<ExternalIntegrationModel>> getExternalIntegrations() async {
+    final data = await _getList('integrations/external');
+    return data.map((m) => ExternalIntegrationModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createExternalIntegration(ExternalIntegrationModel integration) async {
+    await _post('integrations/external', integration.toMap());
+  }
+
+  Future<void> updateExternalIntegration(String id, Map<String, dynamic> updates) async {
+    await _put('integrations/external/$id', updates);
+  }
+
+  Future<void> deleteExternalIntegration(String id) async {
+    await _delete('integrations/external/$id');
   }
 }
 

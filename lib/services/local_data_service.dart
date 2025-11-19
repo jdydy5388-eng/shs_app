@@ -30,6 +30,7 @@ import '../models/quality_models.dart';
 import '../models/hr_models.dart';
 import '../models/maintenance_models.dart';
 import '../models/transportation_models.dart';
+import '../models/integration_models.dart';
 import 'local_database_service.dart';
 
 class DoctorStats {

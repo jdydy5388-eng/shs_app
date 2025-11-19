@@ -1163,6 +1163,46 @@ class DatabaseService {
     await conn.execute('CREATE INDEX IF NOT EXISTS idx_location_tracking_ambulance ON location_tracking(ambulance_id)');
     await conn.execute('CREATE INDEX IF NOT EXISTS idx_location_tracking_timestamp ON location_tracking(timestamp)');
 
+    // جداول التكاملات الخارجية
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS external_integrations (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        api_url TEXT,
+        api_key TEXT,
+        api_secret TEXT,
+        config JSONB,
+        description TEXT,
+        last_sync BIGINT,
+        last_sync_error TEXT,
+        metadata JSONB,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS integration_sync_logs (
+        id TEXT PRIMARY KEY,
+        integration_id TEXT NOT NULL,
+        integration_name TEXT NOT NULL,
+        sync_type TEXT NOT NULL,
+        success BOOLEAN NOT NULL DEFAULT true,
+        error_message TEXT,
+        records_processed INTEGER,
+        details JSONB,
+        timestamp BIGINT NOT NULL
+      )
+    ''');
+
+    // إنشاء فهارس التكاملات
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_external_integrations_type ON external_integrations(type)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_external_integrations_status ON external_integrations(status)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_integration_sync_logs_integration ON integration_sync_logs(integration_id)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_integration_sync_logs_timestamp ON integration_sync_logs(timestamp)');
+
     AppLogger.info('Database tables created/verified');
     print('✅ Database tables ready');
   }

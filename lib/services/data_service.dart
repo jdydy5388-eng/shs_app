@@ -533,5 +533,11 @@ class DataService {
 
   // Location Tracking
   Future<List> getLocationTracking() => _service.getLocationTracking();
+
+  // External Integrations
+  Future<List> getExternalIntegrations() => _service.getExternalIntegrations();
+  Future<void> createExternalIntegration(integration) => _service.createExternalIntegration(integration);
+  Future<void> updateExternalIntegration(String id, updates) => _service.updateExternalIntegration(id, updates);
+  Future<void> deleteExternalIntegration(String id) => _service.deleteExternalIntegration(id);
 }
 
