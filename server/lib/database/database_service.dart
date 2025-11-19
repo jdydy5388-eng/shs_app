@@ -1087,6 +1087,82 @@ class DatabaseService {
     await conn.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_vendors_type ON maintenance_vendors(type)');
     await conn.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_vendors_active ON maintenance_vendors(is_active)');
 
+    // جداول نظام المواصلات
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS ambulances (
+        id TEXT PRIMARY KEY,
+        vehicle_number TEXT UNIQUE NOT NULL,
+        vehicle_model TEXT,
+        type TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'available',
+        driver_id TEXT,
+        driver_name TEXT,
+        location TEXT,
+        latitude REAL,
+        longitude REAL,
+        last_location_update BIGINT,
+        equipment TEXT,
+        notes TEXT,
+        additional_info JSONB,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS transportation_requests (
+        id TEXT PRIMARY KEY,
+        patient_id TEXT,
+        patient_name TEXT,
+        type TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        pickup_location TEXT,
+        pickup_latitude REAL,
+        pickup_longitude REAL,
+        dropoff_location TEXT,
+        dropoff_latitude REAL,
+        dropoff_longitude REAL,
+        requested_date BIGINT NOT NULL,
+        scheduled_date BIGINT,
+        pickup_time BIGINT,
+        dropoff_time BIGINT,
+        ambulance_id TEXT,
+        ambulance_number TEXT,
+        driver_id TEXT,
+        driver_name TEXT,
+        reason TEXT,
+        notes TEXT,
+        requested_by TEXT,
+        requested_by_name TEXT,
+        additional_data JSONB,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS location_tracking (
+        id TEXT PRIMARY KEY,
+        ambulance_id TEXT NOT NULL,
+        ambulance_number TEXT,
+        latitude REAL NOT NULL,
+        longitude REAL NOT NULL,
+        address TEXT,
+        speed REAL,
+        heading REAL,
+        timestamp BIGINT NOT NULL,
+        metadata JSONB
+      )
+    ''');
+
+    // إنشاء فهارس نظام المواصلات
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_ambulances_status ON ambulances(status)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_ambulances_type ON ambulances(type)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_transportation_requests_status ON transportation_requests(status)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_transportation_requests_patient ON transportation_requests(patient_id)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_location_tracking_ambulance ON location_tracking(ambulance_id)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_location_tracking_timestamp ON location_tracking(timestamp)');
+
     AppLogger.info('Database tables created/verified');
     print('✅ Database tables ready');
   }

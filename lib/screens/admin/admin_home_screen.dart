@@ -17,6 +17,7 @@ import 'documents_management_screen.dart';
 import 'quality_management_screen.dart';
 import 'hr_management_screen.dart';
 import 'maintenance_management_screen.dart';
+import 'transportation_management_screen.dart';
 import '../emergency/emergency_dashboard_screen.dart';
 import '../auth/login_screen.dart';
 
@@ -411,6 +412,18 @@ class AdminDashboard extends StatelessWidget {
           'إدارة موردين الصيانة - إدارة الموردين الداخليين والخارجيين',
         ],
         builder: (_) => const MaintenanceManagementScreen(),
+      ),
+      AdminFeature(
+        title: 'نظام المواصلات',
+        description: 'إدارة سيارات الإسعاف وجدولة النقل للمرضى وتتبع المواقع.',
+        icon: Icons.local_shipping,
+        color: Colors.indigo,
+        details: [
+          'إدارة سيارات الإسعاف - إدارة أسطول سيارات الإسعاف',
+          'جدولة النقل للمرضى - طلبات نقل المرضى',
+          'تتبع المواقع - تتبع مواقع سيارات الإسعاف في الوقت الفعلي',
+        ],
+        builder: (_) => const TransportationManagementScreen(),
       ),
     ];
 

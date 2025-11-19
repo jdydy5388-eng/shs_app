@@ -9,7 +9,7 @@ import 'dart:io' show Platform;
 class LocalDatabaseService {
   static Database? _database;
   static const String _databaseName = 'shs_app.db';
-  static const int _databaseVersion = 20;
+  static const int _databaseVersion = 21;
   static bool _initialized = false;
 
   Future<Database> get database async {
@@ -1891,6 +1891,83 @@ class LocalDatabaseService {
         await db.execute('CREATE INDEX IF NOT EXISTS idx_equipment_statuses_condition ON equipment_statuses(condition)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_vendors_type ON maintenance_vendors(type)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_vendors_active ON maintenance_vendors(is_active)');
+      }
+
+      if (oldVersion < 21) {
+        // إضافة جداول نظام المواصلات
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS ambulances (
+            id TEXT PRIMARY KEY,
+            vehicle_number TEXT NOT NULL UNIQUE,
+            vehicle_model TEXT,
+            type TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'available',
+            driver_id TEXT,
+            driver_name TEXT,
+            location TEXT,
+            latitude REAL,
+            longitude REAL,
+            last_location_update INTEGER,
+            equipment TEXT,
+            notes TEXT,
+            additional_info TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS transportation_requests (
+            id TEXT PRIMARY KEY,
+            patient_id TEXT,
+            patient_name TEXT,
+            type TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            pickup_location TEXT,
+            pickup_latitude REAL,
+            pickup_longitude REAL,
+            dropoff_location TEXT,
+            dropoff_latitude REAL,
+            dropoff_longitude REAL,
+            requested_date INTEGER NOT NULL,
+            scheduled_date INTEGER,
+            pickup_time INTEGER,
+            dropoff_time INTEGER,
+            ambulance_id TEXT,
+            ambulance_number TEXT,
+            driver_id TEXT,
+            driver_name TEXT,
+            reason TEXT,
+            notes TEXT,
+            requested_by TEXT,
+            requested_by_name TEXT,
+            additional_data TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS location_tracking (
+            id TEXT PRIMARY KEY,
+            ambulance_id TEXT NOT NULL,
+            ambulance_number TEXT,
+            latitude REAL NOT NULL,
+            longitude REAL NOT NULL,
+            address TEXT,
+            speed REAL,
+            heading REAL,
+            timestamp INTEGER NOT NULL,
+            metadata TEXT
+          )
+        ''');
+
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_ambulances_status ON ambulances(status)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_ambulances_type ON ambulances(type)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_transportation_requests_status ON transportation_requests(status)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_transportation_requests_patient ON transportation_requests(patient_id)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_location_tracking_ambulance ON location_tracking(ambulance_id)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_location_tracking_timestamp ON location_tracking(timestamp)');
       }
     }
 

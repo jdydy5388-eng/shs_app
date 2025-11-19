@@ -522,5 +522,16 @@ class DataService {
   // Maintenance Vendors
   Future<List> getMaintenanceVendors() => _service.getMaintenanceVendors();
   Future<void> createMaintenanceVendor(vendor) => _service.createMaintenanceVendor(vendor);
+
+  // Transportation Management - Ambulances
+  Future<List> getAmbulances({status}) => _service.getAmbulances(status: status);
+  Future<void> createAmbulance(ambulance) => _service.createAmbulance(ambulance);
+
+  // Transportation Requests
+  Future<List> getTransportationRequests({status}) => _service.getTransportationRequests(status: status);
+  Future<void> createTransportationRequest(request) => _service.createTransportationRequest(request);
+
+  // Location Tracking
+  Future<List> getLocationTracking() => _service.getLocationTracking();
 }
 

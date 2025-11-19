@@ -29,6 +29,7 @@ import '../models/document_model.dart';
 import '../models/quality_models.dart';
 import '../models/hr_models.dart';
 import '../models/maintenance_models.dart';
+import '../models/transportation_models.dart';
 import 'network_auth_context.dart';
 
 /// خدمة البيانات الشبكية - الاتصال بالخادم المركزي عبر REST API
@@ -1737,6 +1738,38 @@ class NetworkDataService {
 
   Future<void> createMaintenanceVendor(MaintenanceVendorModel vendor) async {
     await _post('maintenance/vendors', vendor.toMap());
+  }
+
+  // Transportation Management - Ambulances
+  Future<List<AmbulanceModel>> getAmbulances({AmbulanceStatus? status}) async {
+    final query = <String, String>{};
+    if (status != null) query['status'] = status.toString().split('.').last;
+
+    final data = await _getList('transportation/ambulances', queryParams: query);
+    return data.map((m) => AmbulanceModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createAmbulance(AmbulanceModel ambulance) async {
+    await _post('transportation/ambulances', ambulance.toMap());
+  }
+
+  // Transportation Requests
+  Future<List<TransportationRequestModel>> getTransportationRequests({TransportationRequestStatus? status}) async {
+    final query = <String, String>{};
+    if (status != null) query['status'] = status.toString().split('.').last;
+
+    final data = await _getList('transportation/requests', queryParams: query);
+    return data.map((m) => TransportationRequestModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createTransportationRequest(TransportationRequestModel request) async {
+    await _post('transportation/requests', request.toMap());
+  }
+
+  // Location Tracking
+  Future<List<LocationTrackingModel>> getLocationTracking() async {
+    final data = await _getList('transportation/location-tracking');
+    return data.map((m) => LocationTrackingModel.fromMap(m, m['id'] as String)).toList();
   }
 }
 
