@@ -9,7 +9,7 @@ import 'dart:io' show Platform;
 class LocalDatabaseService {
   static Database? _database;
   static const String _databaseName = 'shs_app.db';
-  static const int _databaseVersion = 13;
+  static const int _databaseVersion = 14;
   static bool _initialized = false;
 
   Future<Database> get database async {
@@ -464,6 +464,92 @@ class LocalDatabaseService {
     await db.execute('CREATE INDEX IF NOT EXISTS idx_surgeries_surgeon ON surgeries(surgeon_id)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_surgeries_status ON surgeries(status)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_surgeries_date ON surgeries(scheduled_date)');
+
+    // جدول المستودع الطبي العام
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS medical_inventory (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        category TEXT,
+        description TEXT,
+        quantity INTEGER NOT NULL DEFAULT 0,
+        min_stock_level INTEGER,
+        unit TEXT,
+        unit_price REAL,
+        manufacturer TEXT,
+        model TEXT,
+        serial_number TEXT,
+        purchase_date INTEGER,
+        expiry_date INTEGER,
+        location TEXT,
+        status TEXT,
+        last_maintenance_date INTEGER,
+        next_maintenance_date INTEGER,
+        supplier_id TEXT,
+        supplier_name TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER
+      )
+    ''');
+
+    // جدول الموردين
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS suppliers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        contact_person TEXT,
+        email TEXT,
+        phone TEXT,
+        address TEXT,
+        notes TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER
+      )
+    ''');
+
+    // جدول طلبات الشراء
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS purchase_orders (
+        id TEXT PRIMARY KEY,
+        order_number TEXT NOT NULL UNIQUE,
+        supplier_id TEXT,
+        supplier_name TEXT,
+        items TEXT NOT NULL,
+        total_amount REAL NOT NULL,
+        status TEXT NOT NULL,
+        notes TEXT,
+        requested_by TEXT,
+        requested_date INTEGER,
+        approved_by TEXT,
+        approved_date INTEGER,
+        ordered_date INTEGER,
+        received_date INTEGER,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER
+      )
+    ''');
+
+    // جدول سجلات الصيانة
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS maintenance_records (
+        id TEXT PRIMARY KEY,
+        equipment_id TEXT NOT NULL,
+        equipment_name TEXT NOT NULL,
+        maintenance_date INTEGER NOT NULL,
+        maintenance_type TEXT NOT NULL,
+        description TEXT,
+        performed_by TEXT,
+        cost REAL,
+        next_maintenance_date INTEGER,
+        created_at INTEGER NOT NULL
+      )
+    ''');
+
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_medical_inventory_type ON medical_inventory(type)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_medical_inventory_status ON medical_inventory(status)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_purchase_orders_status ON purchase_orders(status)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_records_equipment ON maintenance_records(equipment_id)');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -792,6 +878,90 @@ class LocalDatabaseService {
         await db.execute('CREATE INDEX IF NOT EXISTS idx_surgeries_surgeon ON surgeries(surgeon_id)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_surgeries_status ON surgeries(status)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_surgeries_date ON surgeries(scheduled_date)');
+      }
+      if (oldVersion < 14) {
+        // إضافة جداول المستودع الطبي
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS medical_inventory (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            type TEXT NOT NULL,
+            category TEXT,
+            description TEXT,
+            quantity INTEGER NOT NULL DEFAULT 0,
+            min_stock_level INTEGER,
+            unit TEXT,
+            unit_price REAL,
+            manufacturer TEXT,
+            model TEXT,
+            serial_number TEXT,
+            purchase_date INTEGER,
+            expiry_date INTEGER,
+            location TEXT,
+            status TEXT,
+            last_maintenance_date INTEGER,
+            next_maintenance_date INTEGER,
+            supplier_id TEXT,
+            supplier_name TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS suppliers (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            contact_person TEXT,
+            email TEXT,
+            phone TEXT,
+            address TEXT,
+            notes TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS purchase_orders (
+            id TEXT PRIMARY KEY,
+            order_number TEXT NOT NULL UNIQUE,
+            supplier_id TEXT,
+            supplier_name TEXT,
+            items TEXT NOT NULL,
+            total_amount REAL NOT NULL,
+            status TEXT NOT NULL,
+            notes TEXT,
+            requested_by TEXT,
+            requested_date INTEGER,
+            approved_by TEXT,
+            approved_date INTEGER,
+            ordered_date INTEGER,
+            received_date INTEGER,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS maintenance_records (
+            id TEXT PRIMARY KEY,
+            equipment_id TEXT NOT NULL,
+            equipment_name TEXT NOT NULL,
+            maintenance_date INTEGER NOT NULL,
+            maintenance_type TEXT NOT NULL,
+            description TEXT,
+            performed_by TEXT,
+            cost REAL,
+            next_maintenance_date INTEGER,
+            created_at INTEGER NOT NULL
+          )
+        ''');
+
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_medical_inventory_type ON medical_inventory(type)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_medical_inventory_status ON medical_inventory(status)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_purchase_orders_status ON purchase_orders(status)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_records_equipment ON maintenance_records(equipment_id)');
       }
     }
 

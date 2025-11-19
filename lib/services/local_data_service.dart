@@ -22,6 +22,7 @@ import '../models/emergency_case_model.dart';
 import '../models/notification_model.dart';
 import '../models/attendance_model.dart';
 import '../models/surgery_model.dart';
+import '../models/medical_inventory_model.dart';
 import 'local_database_service.dart';
 
 class DoctorStats {
@@ -2130,6 +2131,247 @@ class LocalDataService {
     if (postOperativeNotes != null) updates['post_operative_notes'] = jsonEncode(postOperativeNotes);
 
     await db.update('surgeries', updates, where: 'id = ?', whereArgs: [surgeryId]);
+  }
+
+  // Medical Inventory
+  Future<List<MedicalInventoryItemModel>> getMedicalInventory({
+    InventoryItemType? type,
+    EquipmentStatus? status,
+    String? category,
+  }) async {
+    final db = await _db.database;
+    final where = <String>[];
+    final args = <Object>[];
+
+    if (type != null) {
+      where.add('type = ?');
+      args.add(type.toString().split('.').last);
+    }
+    if (status != null) {
+      where.add('status = ?');
+      args.add(status.toString().split('.').last);
+    }
+    if (category != null) {
+      where.add('category = ?');
+      args.add(category);
+    }
+
+    final rows = await db.query(
+      'medical_inventory',
+      where: where.isEmpty ? null : where.join(' AND '),
+      whereArgs: where.isEmpty ? null : args,
+      orderBy: 'name ASC',
+    );
+
+    return rows.map((r) => MedicalInventoryItemModel.fromMap({
+      'id': r['id'],
+      'name': r['name'],
+      'type': r['type'],
+      'category': r['category'],
+      'description': r['description'],
+      'quantity': r['quantity'],
+      'minStockLevel': r['min_stock_level'],
+      'unit': r['unit'],
+      'unitPrice': r['unit_price'],
+      'manufacturer': r['manufacturer'],
+      'model': r['model'],
+      'serialNumber': r['serial_number'],
+      'purchaseDate': r['purchase_date'],
+      'expiryDate': r['expiry_date'],
+      'location': r['location'],
+      'status': r['status'],
+      'lastMaintenanceDate': r['last_maintenance_date'],
+      'nextMaintenanceDate': r['next_maintenance_date'],
+      'supplierId': r['supplier_id'],
+      'supplierName': r['supplier_name'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    }, r['id'] as String)).toList();
+  }
+
+  Future<void> createMedicalInventoryItem(MedicalInventoryItemModel item) async {
+    final db = await _db.database;
+    await db.insert('medical_inventory', {
+      'id': item.id,
+      'name': item.name,
+      'type': item.type.toString().split('.').last,
+      'category': item.category,
+      'description': item.description,
+      'quantity': item.quantity,
+      'min_stock_level': item.minStockLevel,
+      'unit': item.unit,
+      'unit_price': item.unitPrice,
+      'manufacturer': item.manufacturer,
+      'model': item.model,
+      'serial_number': item.serialNumber,
+      'purchase_date': item.purchaseDate?.millisecondsSinceEpoch,
+      'expiry_date': item.expiryDate?.millisecondsSinceEpoch,
+      'location': item.location,
+      'status': item.status?.toString().split('.').last,
+      'last_maintenance_date': item.lastMaintenanceDate?.millisecondsSinceEpoch,
+      'next_maintenance_date': item.nextMaintenanceDate?.millisecondsSinceEpoch,
+      'supplier_id': item.supplierId,
+      'supplier_name': item.supplierName,
+      'created_at': item.createdAt.millisecondsSinceEpoch,
+      'updated_at': item.updatedAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  Future<void> updateMedicalInventoryItem(String itemId, {
+    int? quantity,
+    EquipmentStatus? status,
+    DateTime? nextMaintenanceDate,
+  }) async {
+    final db = await _db.database;
+    final updates = <String, Object?>{
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    };
+
+    if (quantity != null) updates['quantity'] = quantity;
+    if (status != null) updates['status'] = status.toString().split('.').last;
+    if (nextMaintenanceDate != null) updates['next_maintenance_date'] = nextMaintenanceDate.millisecondsSinceEpoch;
+
+    await db.update('medical_inventory', updates, where: 'id = ?', whereArgs: [itemId]);
+  }
+
+  // Suppliers
+  Future<List<SupplierModel>> getSuppliers() async {
+    final db = await _db.database;
+    final rows = await db.query('suppliers', orderBy: 'name ASC');
+
+    return rows.map((r) => SupplierModel.fromMap({
+      'id': r['id'],
+      'name': r['name'],
+      'contactPerson': r['contact_person'],
+      'email': r['email'],
+      'phone': r['phone'],
+      'address': r['address'],
+      'notes': r['notes'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    }, r['id'] as String)).toList();
+  }
+
+  Future<void> createSupplier(SupplierModel supplier) async {
+    final db = await _db.database;
+    await db.insert('suppliers', {
+      'id': supplier.id,
+      'name': supplier.name,
+      'contact_person': supplier.contactPerson,
+      'email': supplier.email,
+      'phone': supplier.phone,
+      'address': supplier.address,
+      'notes': supplier.notes,
+      'created_at': supplier.createdAt.millisecondsSinceEpoch,
+      'updated_at': supplier.updatedAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  // Purchase Orders
+  Future<List<PurchaseOrderModel>> getPurchaseOrders({PurchaseOrderStatus? status}) async {
+    final db = await _db.database;
+    final where = status != null ? 'status = ?' : null;
+    final whereArgs = status != null ? [status.toString().split('.').last] : null;
+
+    final rows = await db.query(
+      'purchase_orders',
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: 'created_at DESC',
+    );
+
+    return rows.map((r) {
+      Map<String, dynamic>? itemsMap;
+      if (r['items'] != null) {
+        try {
+          itemsMap = Map<String, dynamic>.from(jsonDecode(r['items'] as String) as Map);
+        } catch (_) {}
+      }
+
+      return PurchaseOrderModel.fromMap({
+        'id': r['id'],
+        'orderNumber': r['order_number'],
+        'supplierId': r['supplier_id'],
+        'supplierName': r['supplier_name'],
+        'items': itemsMap?['items'] ?? [],
+        'totalAmount': r['total_amount'],
+        'status': r['status'],
+        'notes': r['notes'],
+        'requestedBy': r['requested_by'],
+        'requestedDate': r['requested_date'],
+        'approvedBy': r['approved_by'],
+        'approvedDate': r['approved_date'],
+        'orderedDate': r['ordered_date'],
+        'receivedDate': r['received_date'],
+        'createdAt': r['created_at'],
+        'updatedAt': r['updated_at'],
+      }, r['id'] as String);
+    }).toList();
+  }
+
+  Future<void> createPurchaseOrder(PurchaseOrderModel order) async {
+    final db = await _db.database;
+    await db.insert('purchase_orders', {
+      'id': order.id,
+      'order_number': order.orderNumber,
+      'supplier_id': order.supplierId,
+      'supplier_name': order.supplierName,
+      'items': jsonEncode({'items': order.items.map((i) => i.toMap()).toList()}),
+      'total_amount': order.totalAmount,
+      'status': order.status.toString().split('.').last,
+      'notes': order.notes,
+      'requested_by': order.requestedBy,
+      'requested_date': order.requestedDate?.millisecondsSinceEpoch,
+      'approved_by': order.approvedBy,
+      'approved_date': order.approvedDate?.millisecondsSinceEpoch,
+      'ordered_date': order.orderedDate?.millisecondsSinceEpoch,
+      'received_date': order.receivedDate?.millisecondsSinceEpoch,
+      'created_at': order.createdAt.millisecondsSinceEpoch,
+      'updated_at': order.updatedAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  // Maintenance Records
+  Future<List<MaintenanceRecordModel>> getMaintenanceRecords({String? equipmentId}) async {
+    final db = await _db.database;
+    final where = equipmentId != null ? 'equipment_id = ?' : null;
+    final whereArgs = equipmentId != null ? [equipmentId] : null;
+
+    final rows = await db.query(
+      'maintenance_records',
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: 'maintenance_date DESC',
+    );
+
+    return rows.map((r) => MaintenanceRecordModel.fromMap({
+      'id': r['id'],
+      'equipmentId': r['equipment_id'],
+      'equipmentName': r['equipment_name'],
+      'maintenanceDate': r['maintenance_date'],
+      'maintenanceType': r['maintenance_type'],
+      'description': r['description'],
+      'performedBy': r['performed_by'],
+      'cost': r['cost'],
+      'nextMaintenanceDate': r['next_maintenance_date'],
+      'createdAt': r['created_at'],
+    }, r['id'] as String)).toList();
+  }
+
+  Future<void> createMaintenanceRecord(MaintenanceRecordModel record) async {
+    final db = await _db.database;
+    await db.insert('maintenance_records', {
+      'id': record.id,
+      'equipment_id': record.equipmentId,
+      'equipment_name': record.equipmentName,
+      'maintenance_date': record.maintenanceDate.millisecondsSinceEpoch,
+      'maintenance_type': record.maintenanceType,
+      'description': record.description,
+      'performed_by': record.performedBy,
+      'cost': record.cost,
+      'next_maintenance_date': record.nextMaintenanceDate?.millisecondsSinceEpoch,
+      'created_at': record.createdAt.millisecondsSinceEpoch,
+    });
   }
 }
 

@@ -482,6 +482,88 @@ class DatabaseService {
       )
     ''');
 
+    // جدول المستودع الطبي العام
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS medical_inventory (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,               -- equipment / supplies / consumables
+        category TEXT,
+        description TEXT,
+        quantity INTEGER NOT NULL DEFAULT 0,
+        min_stock_level INTEGER,
+        unit TEXT,
+        unit_price REAL,
+        manufacturer TEXT,
+        model TEXT,
+        serial_number TEXT,
+        purchase_date BIGINT,
+        expiry_date BIGINT,
+        location TEXT,
+        status TEXT,                      -- available / inUse / maintenance / outOfOrder (للمعدات)
+        last_maintenance_date BIGINT,
+        next_maintenance_date BIGINT,
+        supplier_id TEXT,
+        supplier_name TEXT,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    // جدول الموردين
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS suppliers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        contact_person TEXT,
+        email TEXT,
+        phone TEXT,
+        address TEXT,
+        notes TEXT,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    // جدول طلبات الشراء
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS purchase_orders (
+        id TEXT PRIMARY KEY,
+        order_number TEXT NOT NULL UNIQUE,
+        supplier_id TEXT,
+        supplier_name TEXT,
+        items JSONB NOT NULL,
+        total_amount REAL NOT NULL,
+        status TEXT NOT NULL,             -- draft / pending / approved / ordered / received / cancelled
+        notes TEXT,
+        requested_by TEXT,
+        requested_date BIGINT,
+        approved_by TEXT,
+        approved_date BIGINT,
+        ordered_date BIGINT,
+        received_date BIGINT,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    // جدول سجلات الصيانة
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS maintenance_records (
+        id TEXT PRIMARY KEY,
+        equipment_id TEXT NOT NULL,
+        equipment_name TEXT NOT NULL,
+        maintenance_date BIGINT NOT NULL,
+        maintenance_type TEXT NOT NULL,   -- scheduled / repair / inspection
+        description TEXT,
+        performed_by TEXT,
+        cost REAL,
+        next_maintenance_date BIGINT,
+        created_at BIGINT NOT NULL,
+        FOREIGN KEY (equipment_id) REFERENCES medical_inventory(id) ON DELETE CASCADE
+      )
+    ''');
+
     // جداول التمريض
     await conn.execute('''
       CREATE TABLE IF NOT EXISTS nursing_tasks (

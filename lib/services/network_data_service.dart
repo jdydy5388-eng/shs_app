@@ -22,6 +22,7 @@ import '../models/notification_model.dart';
 import '../models/radiology_model.dart';
 import '../models/attendance_model.dart';
 import '../models/surgery_model.dart';
+import '../models/medical_inventory_model.dart';
 import 'network_auth_context.dart';
 
 /// خدمة البيانات الشبكية - الاتصال بالخادم المركزي عبر REST API
@@ -1284,6 +1285,73 @@ class NetworkDataService {
     if (operativeNotes != null) body['operativeNotes'] = operativeNotes;
     if (postOperativeNotes != null) body['postOperativeNotes'] = postOperativeNotes;
     await _put('surgeries/$surgeryId', body);
+  }
+
+  // Medical Inventory
+  Future<List<MedicalInventoryItemModel>> getMedicalInventory({
+    InventoryItemType? type,
+    EquipmentStatus? status,
+    String? category,
+  }) async {
+    final query = <String, String>{};
+    if (type != null) query['type'] = type.toString().split('.').last;
+    if (status != null) query['status'] = status.toString().split('.').last;
+    if (category != null) query['category'] = category;
+    
+    final data = await _getList('medical-inventory', queryParams: query);
+    return data.map((m) => MedicalInventoryItemModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createMedicalInventoryItem(MedicalInventoryItemModel item) async {
+    await _post('medical-inventory', item.toMap());
+  }
+
+  Future<void> updateMedicalInventoryItem(String itemId, {
+    int? quantity,
+    EquipmentStatus? status,
+    DateTime? nextMaintenanceDate,
+  }) async {
+    final body = <String, dynamic>{};
+    if (quantity != null) body['quantity'] = quantity;
+    if (status != null) body['status'] = status.toString().split('.').last;
+    if (nextMaintenanceDate != null) body['nextMaintenanceDate'] = nextMaintenanceDate.millisecondsSinceEpoch;
+    await _put('medical-inventory/$itemId', body);
+  }
+
+  // Suppliers
+  Future<List<SupplierModel>> getSuppliers() async {
+    final data = await _getList('suppliers');
+    return data.map((m) => SupplierModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createSupplier(SupplierModel supplier) async {
+    await _post('suppliers', supplier.toMap());
+  }
+
+  // Purchase Orders
+  Future<List<PurchaseOrderModel>> getPurchaseOrders({PurchaseOrderStatus? status}) async {
+    final query = <String, String>{};
+    if (status != null) query['status'] = status.toString().split('.').last;
+    
+    final data = await _getList('purchase-orders', queryParams: query);
+    return data.map((m) => PurchaseOrderModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createPurchaseOrder(PurchaseOrderModel order) async {
+    await _post('purchase-orders', order.toMap());
+  }
+
+  // Maintenance Records
+  Future<List<MaintenanceRecordModel>> getMaintenanceRecords({String? equipmentId}) async {
+    final query = <String, String>{};
+    if (equipmentId != null) query['equipmentId'] = equipmentId;
+    
+    final data = await _getList('maintenance-records', queryParams: query);
+    return data.map((m) => MaintenanceRecordModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createMaintenanceRecord(MaintenanceRecordModel record) async {
+    await _post('maintenance-records', record.toMap());
   }
 }
 

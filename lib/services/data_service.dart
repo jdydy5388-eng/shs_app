@@ -301,6 +301,25 @@ class DataService {
   Future<void> updateSurgery(String id, {status, startTime, endTime, preOperativeNotes, operativeNotes, postOperativeNotes}) =>
       _service.updateSurgery(id, status: status, startTime: startTime, endTime: endTime, preOperativeNotes: preOperativeNotes, operativeNotes: operativeNotes, postOperativeNotes: postOperativeNotes);
 
+  // Medical Inventory
+  Future<List> getMedicalInventory({type, status, category}) => 
+      _service.getMedicalInventory(type: type, status: status, category: category);
+  Future<void> createMedicalInventoryItem(item) => _service.createMedicalInventoryItem(item);
+  Future<void> updateMedicalInventoryItem(String id, {quantity, status, nextMaintenanceDate}) =>
+      _service.updateMedicalInventoryItem(id, quantity: quantity, status: status, nextMaintenanceDate: nextMaintenanceDate);
+
+  // Suppliers
+  Future<List> getSuppliers() => _service.getSuppliers();
+  Future<void> createSupplier(supplier) => _service.createSupplier(supplier);
+
+  // Purchase Orders
+  Future<List> getPurchaseOrders({status}) => _service.getPurchaseOrders(status: status);
+  Future<void> createPurchaseOrder(order) => _service.createPurchaseOrder(order);
+
+  // Maintenance Records
+  Future<List> getMaintenanceRecords({equipmentId}) => _service.getMaintenanceRecords(equipmentId: equipmentId);
+  Future<void> createMaintenanceRecord(record) => _service.createMaintenanceRecord(record);
+
   // Notifications (SMS/Email)
   Future<List> getNotifications({status, String? relatedType, String? relatedId}) => 
       _service.getNotifications(status: status, relatedType: relatedType, relatedId: relatedId);

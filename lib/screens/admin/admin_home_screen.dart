@@ -7,6 +7,7 @@ import 'shifts_management_screen.dart';
 import 'billing_management_screen.dart';
 import 'rooms_beds_management_screen.dart';
 import 'surgery_management_screen.dart';
+import 'medical_inventory_management_screen.dart';
 import '../emergency/emergency_dashboard_screen.dart';
 import '../auth/login_screen.dart';
 
@@ -262,6 +263,22 @@ class AdminDashboard extends StatelessWidget {
         'إدارة المعدات الجراحية',
       ],
       builder: (_) => const SurgeryManagementScreen(),
+    ),
+    AdminFeature(
+      title: 'إدارة المستودع والمعدات',
+      description: 'إدارة المستودع الطبي والمعدات والمستلزمات.',
+      icon: Icons.inventory,
+      color: Colors.brown,
+      details: [
+        'إدارة المستودع الطبي (أدوات، معدات، مستلزمات)',
+        'تتبع المعدات الطبية (أجهزة، آلات)',
+        'جدولة صيانة المعدات',
+        'تتبع تواريخ انتهاء الصلاحية',
+        'تنبيهات المخزون المنخفض',
+        'طلبات الشراء (Purchase Orders)',
+        'تتبع الموردين',
+      ],
+      builder: (_) => const MedicalInventoryManagementScreen(),
     ),
   ];
 
