@@ -9,7 +9,7 @@ import 'dart:io' show Platform;
 class LocalDatabaseService {
   static Database? _database;
   static const String _databaseName = 'shs_app.db';
-  static const int _databaseVersion = 15;
+  static const int _databaseVersion = 16;
   static bool _initialized = false;
 
   Future<Database> get database async {
@@ -606,6 +606,79 @@ class LocalDatabaseService {
     await db.execute('CREATE INDEX IF NOT EXISTS idx_dispenses_scheduled_time ON hospital_pharmacy_dispenses(scheduled_time)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_schedules_patient ON medication_schedules(patient_id)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_schedules_active ON medication_schedules(is_active)');
+
+    // جدول أنواع الفحوصات المختبرية
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS lab_test_types (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        arabic_name TEXT,
+        category TEXT NOT NULL,
+        description TEXT,
+        price REAL NOT NULL DEFAULT 0,
+        estimated_duration_minutes INTEGER,
+        default_priority TEXT NOT NULL DEFAULT 'routine',
+        required_samples TEXT,
+        normal_ranges TEXT,
+        critical_values TEXT,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER
+      )
+    ''');
+
+    // جدول عينات الفحوصات
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS lab_samples (
+        id TEXT PRIMARY KEY,
+        lab_request_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        status TEXT NOT NULL,
+        collection_location TEXT,
+        collected_at INTEGER,
+        collected_by TEXT,
+        received_at INTEGER,
+        received_by TEXT,
+        notes TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER
+      )
+    ''');
+
+    // جدول نتائج الفحوصات
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS lab_results (
+        id TEXT PRIMARY KEY,
+        lab_request_id TEXT NOT NULL UNIQUE,
+        results TEXT NOT NULL,
+        interpretation TEXT,
+        is_critical INTEGER NOT NULL DEFAULT 0,
+        reviewed_by TEXT,
+        reviewed_at INTEGER,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER
+      )
+    ''');
+
+    // جدول جدولة الفحوصات
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS lab_schedules (
+        id TEXT PRIMARY KEY,
+        lab_request_id TEXT NOT NULL,
+        scheduled_date INTEGER NOT NULL,
+        scheduled_time TEXT,
+        priority TEXT NOT NULL DEFAULT 'routine',
+        notes TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER
+      )
+    ''');
+
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_lab_test_types_category ON lab_test_types(category)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_lab_test_types_active ON lab_test_types(is_active)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_lab_samples_request ON lab_samples(lab_request_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_lab_results_request ON lab_results(lab_request_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_lab_schedules_date ON lab_schedules(scheduled_date)');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -1074,6 +1147,77 @@ class LocalDatabaseService {
         await db.execute('CREATE INDEX IF NOT EXISTS idx_dispenses_scheduled_time ON hospital_pharmacy_dispenses(scheduled_time)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_schedules_patient ON medication_schedules(patient_id)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_schedules_active ON medication_schedules(is_active)');
+      }
+      if (oldVersion < 16) {
+        // إضافة جداول تحسينات المختبر
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS lab_test_types (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            arabic_name TEXT,
+            category TEXT NOT NULL,
+            description TEXT,
+            price REAL NOT NULL DEFAULT 0,
+            estimated_duration_minutes INTEGER,
+            default_priority TEXT NOT NULL DEFAULT 'routine',
+            required_samples TEXT,
+            normal_ranges TEXT,
+            critical_values TEXT,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS lab_samples (
+            id TEXT PRIMARY KEY,
+            lab_request_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            status TEXT NOT NULL,
+            collection_location TEXT,
+            collected_at INTEGER,
+            collected_by TEXT,
+            received_at INTEGER,
+            received_by TEXT,
+            notes TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS lab_results (
+            id TEXT PRIMARY KEY,
+            lab_request_id TEXT NOT NULL UNIQUE,
+            results TEXT NOT NULL,
+            interpretation TEXT,
+            is_critical INTEGER NOT NULL DEFAULT 0,
+            reviewed_by TEXT,
+            reviewed_at INTEGER,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS lab_schedules (
+            id TEXT PRIMARY KEY,
+            lab_request_id TEXT NOT NULL,
+            scheduled_date INTEGER NOT NULL,
+            scheduled_time TEXT,
+            priority TEXT NOT NULL DEFAULT 'routine',
+            notes TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_lab_test_types_category ON lab_test_types(category)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_lab_test_types_active ON lab_test_types(is_active)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_lab_samples_request ON lab_samples(lab_request_id)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_lab_results_request ON lab_results(lab_request_id)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_lab_schedules_date ON lab_schedules(scheduled_date)');
       }
     }
 

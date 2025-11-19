@@ -24,6 +24,7 @@ import '../models/attendance_model.dart';
 import '../models/surgery_model.dart';
 import '../models/medical_inventory_model.dart';
 import '../models/hospital_pharmacy_model.dart';
+import '../models/lab_test_type_model.dart';
 import 'local_database_service.dart';
 
 class DoctorStats {
@@ -2555,6 +2556,240 @@ class LocalDataService {
       'notes': schedule.notes,
       'created_at': schedule.createdAt.millisecondsSinceEpoch,
       'updated_at': schedule.updatedAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  // Lab Test Types
+  Future<List<LabTestTypeModel>> getLabTestTypes({
+    LabTestCategory? category,
+    bool? isActive,
+  }) async {
+    final db = await _db.database;
+    final where = <String>[];
+    final args = <Object>[];
+
+    if (category != null) {
+      where.add('category = ?');
+      args.add(category.toString().split('.').last);
+    }
+    if (isActive != null) {
+      where.add('is_active = ?');
+      args.add(isActive ? 1 : 0);
+    }
+
+    final rows = await db.query(
+      'lab_test_types',
+      where: where.isEmpty ? null : where.join(' AND '),
+      whereArgs: where.isEmpty ? null : args,
+      orderBy: 'name ASC',
+    );
+
+    return rows.map((r) => LabTestTypeModel.fromMap({
+      'id': r['id'],
+      'name': r['name'],
+      'arabicName': r['arabic_name'],
+      'category': r['category'],
+      'description': r['description'],
+      'price': r['price'],
+      'estimatedDurationMinutes': r['estimated_duration_minutes'],
+      'defaultPriority': r['default_priority'],
+      'requiredSamples': r['required_samples'],
+      'normalRanges': r['normal_ranges'],
+      'criticalValues': r['critical_values'],
+      'isActive': (r['is_active'] as int?) == 1,
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    }, r['id'] as String)).toList();
+  }
+
+  Future<void> createLabTestType(LabTestTypeModel testType) async {
+    final db = await _db.database;
+    await db.insert('lab_test_types', {
+      'id': testType.id,
+      'name': testType.name,
+      'arabic_name': testType.arabicName,
+      'category': testType.category.toString().split('.').last,
+      'description': testType.description,
+      'price': testType.price,
+      'estimated_duration_minutes': testType.estimatedDurationMinutes,
+      'default_priority': testType.defaultPriority.toString().split('.').last,
+      'required_samples': testType.requiredSamples != null ? jsonEncode(testType.requiredSamples) : null,
+      'normal_ranges': testType.normalRanges != null ? jsonEncode(testType.normalRanges) : null,
+      'critical_values': testType.criticalValues != null ? jsonEncode(testType.criticalValues) : null,
+      'is_active': testType.isActive ? 1 : 0,
+      'created_at': testType.createdAt.millisecondsSinceEpoch,
+      'updated_at': testType.updatedAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  // Lab Samples
+  Future<List<LabSampleModel>> getLabSamples({String? labRequestId}) async {
+    final db = await _db.database;
+    final where = labRequestId != null ? 'lab_request_id = ?' : null;
+    final whereArgs = labRequestId != null ? [labRequestId] : null;
+
+    final rows = await db.query(
+      'lab_samples',
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: 'created_at DESC',
+    );
+
+    return rows.map((r) => LabSampleModel.fromMap({
+      'id': r['id'],
+      'labRequestId': r['lab_request_id'],
+      'type': r['type'],
+      'status': r['status'],
+      'collectionLocation': r['collection_location'],
+      'collectedAt': r['collected_at'],
+      'collectedBy': r['collected_by'],
+      'receivedAt': r['received_at'],
+      'receivedBy': r['received_by'],
+      'notes': r['notes'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    }, r['id'] as String)).toList();
+  }
+
+  Future<void> createLabSample(LabSampleModel sample) async {
+    final db = await _db.database;
+    await db.insert('lab_samples', {
+      'id': sample.id,
+      'lab_request_id': sample.labRequestId,
+      'type': sample.type.toString().split('.').last,
+      'status': sample.status.toString().split('.').last,
+      'collection_location': sample.collectionLocation,
+      'collected_at': sample.collectedAt?.millisecondsSinceEpoch,
+      'collected_by': sample.collectedBy,
+      'received_at': sample.receivedAt?.millisecondsSinceEpoch,
+      'received_by': sample.receivedBy,
+      'notes': sample.notes,
+      'created_at': sample.createdAt.millisecondsSinceEpoch,
+      'updated_at': sample.updatedAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  Future<void> updateLabSampleStatus(String id, LabSampleStatus status, {String? receivedBy}) async {
+    final db = await _db.database;
+    final updates = <String, Object?>{
+      'status': status.toString().split('.').last,
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    };
+
+    if (status == LabSampleStatus.received) {
+      updates['received_at'] = DateTime.now().millisecondsSinceEpoch;
+      if (receivedBy != null) updates['received_by'] = receivedBy;
+    }
+
+    await db.update('lab_samples', updates, where: 'id = ?', whereArgs: [id]);
+  }
+
+  // Lab Results
+  Future<LabResultModel?> getLabResult(String labRequestId) async {
+    final db = await _db.database;
+    final rows = await db.query(
+      'lab_results',
+      where: 'lab_request_id = ?',
+      whereArgs: [labRequestId],
+    );
+
+    if (rows.isEmpty) return null;
+
+    final r = rows.first;
+    return LabResultModel.fromMap({
+      'id': r['id'],
+      'labRequestId': r['lab_request_id'],
+      'results': r['results'],
+      'interpretation': r['interpretation'],
+      'isCritical': (r['is_critical'] as int?) == 1,
+      'reviewedBy': r['reviewed_by'],
+      'reviewedAt': r['reviewed_at'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    }, r['id'] as String);
+  }
+
+  Future<void> createLabResult(LabResultModel result) async {
+    final db = await _db.database;
+    await db.insert('lab_results', {
+      'id': result.id,
+      'lab_request_id': result.labRequestId,
+      'results': jsonEncode(result.results),
+      'interpretation': result.interpretation,
+      'is_critical': result.isCritical ? 1 : 0,
+      'reviewed_by': result.reviewedBy,
+      'reviewed_at': result.reviewedAt?.millisecondsSinceEpoch,
+      'created_at': result.createdAt.millisecondsSinceEpoch,
+      'updated_at': result.updatedAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  Future<void> updateLabResult(String id, {Map<String, dynamic>? results, String? interpretation, bool? isCritical}) async {
+    final db = await _db.database;
+    final updates = <String, Object?>{
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    };
+
+    if (results != null) updates['results'] = jsonEncode(results);
+    if (interpretation != null) updates['interpretation'] = interpretation;
+    if (isCritical != null) updates['is_critical'] = isCritical ? 1 : 0;
+
+    await db.update('lab_results', updates, where: 'id = ?', whereArgs: [id]);
+  }
+
+  // Lab Schedules
+  Future<List<Map<String, dynamic>>> getLabSchedules({
+    DateTime? from,
+    DateTime? to,
+    LabTestPriority? priority,
+  }) async {
+    final db = await _db.database;
+    final where = <String>[];
+    final args = <Object>[];
+
+    if (from != null) {
+      where.add('scheduled_date >= ?');
+      args.add(from.millisecondsSinceEpoch);
+    }
+    if (to != null) {
+      where.add('scheduled_date <= ?');
+      args.add(to.millisecondsSinceEpoch);
+    }
+    if (priority != null) {
+      where.add('priority = ?');
+      args.add(priority.toString().split('.').last);
+    }
+
+    final rows = await db.query(
+      'lab_schedules',
+      where: where.isEmpty ? null : where.join(' AND '),
+      whereArgs: where.isEmpty ? null : args,
+      orderBy: 'scheduled_date ASC, scheduled_time ASC',
+    );
+
+    return rows.map((r) => {
+      'id': r['id'],
+      'labRequestId': r['lab_request_id'],
+      'scheduledDate': r['scheduled_date'],
+      'scheduledTime': r['scheduled_time'],
+      'priority': r['priority'],
+      'notes': r['notes'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    }).toList();
+  }
+
+  Future<void> createLabSchedule(Map<String, dynamic> schedule) async {
+    final db = await _db.database;
+    await db.insert('lab_schedules', {
+      'id': schedule['id'],
+      'lab_request_id': schedule['labRequestId'],
+      'scheduled_date': schedule['scheduledDate'],
+      'scheduled_time': schedule['scheduledTime'],
+      'priority': schedule['priority'],
+      'notes': schedule['notes'],
+      'created_at': schedule['createdAt'],
+      'updated_at': schedule['updatedAt'],
     });
   }
 }

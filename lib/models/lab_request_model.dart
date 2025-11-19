@@ -13,6 +13,9 @@ class LabRequestModel {
     this.resultNotes,
     this.attachments,
     this.completedAt,
+    this.diagnosisId,
+    this.diagnosisName,
+    this.medicalRecordId,
   });
 
   final String id;
@@ -26,6 +29,9 @@ class LabRequestModel {
   final List<String>? attachments;
   final DateTime requestedAt;
   final DateTime? completedAt;
+  final String? diagnosisId; // ربط بالحالة المرضية
+  final String? diagnosisName; // اسم الحالة المرضية
+  final String? medicalRecordId; // ربط بالسجل الطبي
 
   LabRequestModel copyWith({
     String? id,
@@ -39,6 +45,9 @@ class LabRequestModel {
     List<String>? attachments,
     DateTime? requestedAt,
     DateTime? completedAt,
+    String? diagnosisId,
+    String? diagnosisName,
+    String? medicalRecordId,
   }) {
     return LabRequestModel(
       id: id ?? this.id,
@@ -52,6 +61,9 @@ class LabRequestModel {
       attachments: attachments ?? this.attachments,
       requestedAt: requestedAt ?? this.requestedAt,
       completedAt: completedAt ?? this.completedAt,
+      diagnosisId: diagnosisId ?? this.diagnosisId,
+      diagnosisName: diagnosisName ?? this.diagnosisName,
+      medicalRecordId: medicalRecordId ?? this.medicalRecordId,
     );
   }
 
@@ -68,6 +80,9 @@ class LabRequestModel {
       'attachments': attachments != null ? attachments!.join('|') : null,
       'requested_at': requestedAt.millisecondsSinceEpoch,
       'completed_at': completedAt?.millisecondsSinceEpoch,
+      'diagnosis_id': diagnosisId,
+      'diagnosis_name': diagnosisName,
+      'medical_record_id': medicalRecordId,
     };
   }
 
@@ -90,6 +105,9 @@ class LabRequestModel {
       completedAt: map['completed_at'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['completed_at'] as int)
           : null,
+      diagnosisId: map['diagnosis_id'] as String?,
+      diagnosisName: map['diagnosis_name'] as String?,
+      medicalRecordId: map['medical_record_id'] as String?,
     );
   }
 }

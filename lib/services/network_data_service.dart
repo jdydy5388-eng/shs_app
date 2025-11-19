@@ -24,6 +24,7 @@ import '../models/attendance_model.dart';
 import '../models/surgery_model.dart';
 import '../models/medical_inventory_model.dart';
 import '../models/hospital_pharmacy_model.dart';
+import '../models/lab_test_type_model.dart';
 import 'network_auth_context.dart';
 
 /// خدمة البيانات الشبكية - الاتصال بالخادم المركزي عبر REST API
@@ -1398,6 +1399,88 @@ class NetworkDataService {
 
   Future<void> createMedicationSchedule(MedicationScheduleModel schedule) async {
     await _post('medication-schedules', schedule.toMap());
+  }
+
+  // Lab Test Types
+  Future<List<LabTestTypeModel>> getLabTestTypes({
+    LabTestCategory? category,
+    bool? isActive,
+  }) async {
+    final query = <String, String>{};
+    if (category != null) query['category'] = category.toString().split('.').last;
+    if (isActive != null) query['isActive'] = isActive.toString();
+    
+    final data = await _getList('lab-test-types', queryParams: query);
+    return data.map((m) => LabTestTypeModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createLabTestType(LabTestTypeModel testType) async {
+    await _post('lab-test-types', testType.toMap());
+  }
+
+  // Lab Samples
+  Future<List<LabSampleModel>> getLabSamples({String? labRequestId}) async {
+    final query = <String, String>{};
+    if (labRequestId != null) query['labRequestId'] = labRequestId;
+    
+    final data = await _getList('lab-samples', queryParams: query);
+    return data.map((m) => LabSampleModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createLabSample(LabSampleModel sample) async {
+    await _post('lab-samples', sample.toMap());
+  }
+
+  Future<void> updateLabSampleStatus(String id, LabSampleStatus status, {String? receivedBy}) async {
+    final body = <String, dynamic>{
+      'status': status.toString().split('.').last,
+    };
+    if (receivedBy != null) body['receivedBy'] = receivedBy;
+    await _put('lab-samples/$id', body);
+  }
+
+  // Lab Results
+  Future<LabResultModel?> getLabResult(String labRequestId) async {
+    try {
+      final data = await _get('lab-results/$labRequestId');
+      return LabResultModel.fromMap(data, data['id'] as String);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<void> createLabResult(LabResultModel result) async {
+    await _post('lab-results', result.toMap());
+  }
+
+  Future<void> updateLabResult(String id, {
+    Map<String, dynamic>? results,
+    String? interpretation,
+    bool? isCritical,
+  }) async {
+    final body = <String, dynamic>{};
+    if (results != null) body['results'] = results;
+    if (interpretation != null) body['interpretation'] = interpretation;
+    if (isCritical != null) body['isCritical'] = isCritical;
+    await _put('lab-results/$id', body);
+  }
+
+  // Lab Schedules
+  Future<List<Map<String, dynamic>>> getLabSchedules({
+    DateTime? from,
+    DateTime? to,
+    LabTestPriority? priority,
+  }) async {
+    final query = <String, String>{};
+    if (from != null) query['from'] = from.millisecondsSinceEpoch.toString();
+    if (to != null) query['to'] = to.millisecondsSinceEpoch.toString();
+    if (priority != null) query['priority'] = priority.toString().split('.').last;
+    
+    return await _getList('lab-schedules', queryParams: query);
+  }
+
+  Future<void> createLabSchedule(Map<String, dynamic> schedule) async {
+    await _post('lab-schedules', schedule);
   }
 }
 

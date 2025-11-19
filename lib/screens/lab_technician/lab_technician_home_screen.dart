@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../utils/auth_helper.dart';
 import 'lab_technician_requests_screen.dart';
 import 'lab_technician_settings_screen.dart';
+import 'lab_critical_alerts_screen.dart';
 import '../auth/login_screen.dart';
 
 class LabTechnicianFeature {
@@ -159,6 +160,18 @@ class LabTechnicianDashboard extends StatelessWidget {
         'تحديث الملف الشخصي لفني المختبر وبيانات الاتصال.',
       ],
       builder: (_) => const LabTechnicianSettingsScreen(),
+    ),
+    LabTechnicianFeature(
+      title: 'تنبيهات الفحوصات الحرجة',
+      description: 'مراقبة الفحوصات الحرجة التي تحتاج مراجعة فورية.',
+      icon: Icons.warning,
+      color: Colors.red,
+      details: [
+        'عرض الفحوصات الحرجة التي تحتاج مراجعة فورية',
+        'تنبيهات تلقائية للفحوصات الحرجة',
+        'متابعة الفحوصات العاجلة',
+      ],
+      builder: (_) => const LabCriticalAlertsScreen(),
     ),
   ];
 

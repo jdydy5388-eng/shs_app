@@ -614,6 +614,76 @@ class DatabaseService {
       )
     ''');
 
+    // جدول أنواع الفحوصات المختبرية
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS lab_test_types (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        arabic_name TEXT,
+        category TEXT NOT NULL,          -- hematology / biochemistry / microbiology / etc.
+        description TEXT,
+        price REAL NOT NULL DEFAULT 0,
+        estimated_duration_minutes INTEGER,
+        default_priority TEXT NOT NULL DEFAULT 'routine',  -- routine / urgent / stat
+        required_samples JSONB,
+        normal_ranges JSONB,
+        critical_values JSONB,
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    // جدول عينات الفحوصات
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS lab_samples (
+        id TEXT PRIMARY KEY,
+        lab_request_id TEXT NOT NULL,
+        type TEXT NOT NULL,              -- blood / urine / stool / etc.
+        status TEXT NOT NULL,             -- collected / received / processing / completed / rejected
+        collection_location TEXT,
+        collected_at BIGINT,
+        collected_by TEXT,
+        received_at BIGINT,
+        received_by TEXT,
+        notes TEXT,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT,
+        FOREIGN KEY (lab_request_id) REFERENCES lab_requests(id) ON DELETE CASCADE
+      )
+    ''');
+
+    // جدول نتائج الفحوصات
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS lab_results (
+        id TEXT PRIMARY KEY,
+        lab_request_id TEXT NOT NULL UNIQUE,
+        results JSONB NOT NULL,
+        interpretation TEXT,
+        is_critical BOOLEAN NOT NULL DEFAULT FALSE,
+        reviewed_by TEXT,
+        reviewed_at BIGINT,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT,
+        FOREIGN KEY (lab_request_id) REFERENCES lab_requests(id) ON DELETE CASCADE
+      )
+    ''');
+
+    // جدول جدولة الفحوصات
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS lab_schedules (
+        id TEXT PRIMARY KEY,
+        lab_request_id TEXT NOT NULL,
+        scheduled_date BIGINT NOT NULL,
+        scheduled_time TEXT,              -- وقت محدد (HH:mm)
+        priority TEXT NOT NULL DEFAULT 'routine',
+        notes TEXT,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT,
+        FOREIGN KEY (lab_request_id) REFERENCES lab_requests(id) ON DELETE CASCADE
+      )
+    ''');
+
     // جداول التمريض
     await conn.execute('''
       CREATE TABLE IF NOT EXISTS nursing_tasks (

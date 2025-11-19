@@ -330,6 +330,28 @@ class DataService {
       _service.getMedicationSchedules(patientId: patientId, isActive: isActive);
   Future<void> createMedicationSchedule(schedule) => _service.createMedicationSchedule(schedule);
 
+  // Lab Test Types
+  Future<List> getLabTestTypes({category, isActive}) =>
+      _service.getLabTestTypes(category: category, isActive: isActive);
+  Future<void> createLabTestType(testType) => _service.createLabTestType(testType);
+
+  // Lab Samples
+  Future<List> getLabSamples({labRequestId}) => _service.getLabSamples(labRequestId: labRequestId);
+  Future<void> createLabSample(sample) => _service.createLabSample(sample);
+  Future<void> updateLabSampleStatus(String id, status, {receivedBy}) =>
+      _service.updateLabSampleStatus(id, status, receivedBy: receivedBy);
+
+  // Lab Results
+  Future getLabResult(String labRequestId) => _service.getLabResult(labRequestId);
+  Future<void> createLabResult(result) => _service.createLabResult(result);
+  Future<void> updateLabResult(String id, {results, interpretation, isCritical}) =>
+      _service.updateLabResult(id, results: results, interpretation: interpretation, isCritical: isCritical);
+
+  // Lab Schedules
+  Future<List> getLabSchedules({from, to, priority}) =>
+      _service.getLabSchedules(from: from, to: to, priority: priority);
+  Future<void> createLabSchedule(schedule) => _service.createLabSchedule(schedule);
+
   // Notifications (SMS/Email)
   Future<List> getNotifications({status, String? relatedType, String? relatedId}) => 
       _service.getNotifications(status: status, relatedType: relatedType, relatedId: relatedId);

@@ -8,6 +8,8 @@ import 'billing_management_screen.dart';
 import 'rooms_beds_management_screen.dart';
 import 'surgery_management_screen.dart';
 import 'medical_inventory_management_screen.dart';
+import 'lab_test_types_management_screen.dart';
+import 'lab_reports_screen.dart';
 import '../emergency/emergency_dashboard_screen.dart';
 import '../auth/login_screen.dart';
 
@@ -280,7 +282,35 @@ class AdminDashboard extends StatelessWidget {
       ],
       builder: (_) => const MedicalInventoryManagementScreen(),
     ),
-  ];
+      AdminFeature(
+        title: 'إدارة أنواع الفحوصات المختبرية',
+        description: 'إدارة أنواع الفحوصات والأسعار والجدولة.',
+        icon: Icons.science,
+        color: Colors.teal,
+        details: [
+          'إدارة أنواع الفحوصات والأسعار',
+          'جدولة الفحوصات',
+          'ربط الفحوصات بالحالات المرضية',
+          'تقارير مختبرية متقدمة',
+          'إدارة عينات الفحوصات',
+          'تنبيهات للفحوصات الحرجة',
+        ],
+        builder: (_) => const LabTestTypesManagementScreen(),
+      ),
+      AdminFeature(
+        title: 'التقارير المختبرية',
+        description: 'تقارير وإحصائيات الفحوصات المختبرية.',
+        icon: Icons.assessment,
+        color: Colors.indigo,
+        details: [
+          'تقارير الفحوصات حسب الفترة',
+          'إحصائيات الفحوصات',
+          'ربط الفحوصات بالحالات المرضية',
+          'تحليل الأداء',
+        ],
+        builder: (_) => const LabReportsScreen(),
+      ),
+    ];
 
   @override
   Widget build(BuildContext context) {
