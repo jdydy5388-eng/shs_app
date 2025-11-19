@@ -506,5 +506,21 @@ class DataService {
   // Certifications
   Future<List> getCertifications() => _service.getCertifications();
   Future<void> createCertification(cert) => _service.createCertification(cert);
+
+  // Maintenance Management - Maintenance Requests
+  Future<List> getMaintenanceRequests({status}) => _service.getMaintenanceRequests(status: status);
+  Future<void> createMaintenanceRequest(request) => _service.createMaintenanceRequest(request);
+
+  // Scheduled Maintenance
+  Future<List> getScheduledMaintenances() => _service.getScheduledMaintenances();
+  Future<void> createScheduledMaintenance(maintenance) => _service.createScheduledMaintenance(maintenance);
+
+  // Equipment Status
+  Future<List> getEquipmentStatuses() => _service.getEquipmentStatuses();
+  Future<void> createEquipmentStatus(status) => _service.createEquipmentStatus(status);
+
+  // Maintenance Vendors
+  Future<List> getMaintenanceVendors() => _service.getMaintenanceVendors();
+  Future<void> createMaintenanceVendor(vendor) => _service.createMaintenanceVendor(vendor);
 }
 

@@ -16,6 +16,7 @@ import 'notifications_management_screen.dart';
 import 'documents_management_screen.dart';
 import 'quality_management_screen.dart';
 import 'hr_management_screen.dart';
+import 'maintenance_management_screen.dart';
 import '../emergency/emergency_dashboard_screen.dart';
 import '../auth/login_screen.dart';
 
@@ -397,6 +398,19 @@ class AdminDashboard extends StatelessWidget {
           'إدارة الشهادات والتراخيص - تتبع الشهادات وتواريخ انتهائها',
         ],
         builder: (_) => const HRManagementScreen(),
+      ),
+      AdminFeature(
+        title: 'نظام الصيانة',
+        description: 'إدارة طلبات الصيانة وجدولة الصيانة الدورية وتتبع حالة المعدات.',
+        icon: Icons.build,
+        color: Colors.orange,
+        details: [
+          'إدارة طلبات الصيانة - إنشاء ومتابعة طلبات الصيانة',
+          'جدولة الصيانة الدورية - جدولة صيانة دورية للمعدات',
+          'تتبع حالة المعدات - مراقبة حالة المعدات وصيانتها',
+          'إدارة موردين الصيانة - إدارة الموردين الداخليين والخارجيين',
+        ],
+        builder: (_) => const MaintenanceManagementScreen(),
       ),
     ];
 

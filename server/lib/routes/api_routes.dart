@@ -27,6 +27,7 @@ import '../handlers/hospital_pharmacy_handler.dart';
 import '../handlers/documents_handler.dart';
 import '../handlers/quality_handler.dart';
 import '../handlers/hr_handler.dart';
+import '../handlers/maintenance_handler.dart';
 
 class ApiRoutes {
   static Router createRouter() {
@@ -65,6 +66,7 @@ class ApiRoutes {
     router.mount('/api/documents', DocumentsHandler().router);
     router.mount('/api/quality', QualityHandler().router);
     router.mount('/api/hr', HRHandler().router);
+    router.mount('/api/maintenance', MaintenanceHandler().router);
 
     // 404 handler
     router.all('/<path|.*>', (Request request) {

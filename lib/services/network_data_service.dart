@@ -28,6 +28,7 @@ import '../models/lab_test_type_model.dart';
 import '../models/document_model.dart';
 import '../models/quality_models.dart';
 import '../models/hr_models.dart';
+import '../models/maintenance_models.dart';
 import 'network_auth_context.dart';
 
 /// خدمة البيانات الشبكية - الاتصال بالخادم المركزي عبر REST API
@@ -1693,6 +1694,49 @@ class NetworkDataService {
 
   Future<void> createCertification(CertificationModel cert) async {
     await _post('hr/certifications', cert.toMap());
+  }
+
+  // Maintenance Management - Maintenance Requests
+  Future<List<MaintenanceRequestModel>> getMaintenanceRequests({MaintenanceRequestStatus? status}) async {
+    final query = <String, String>{};
+    if (status != null) query['status'] = status.toString().split('.').last;
+
+    final data = await _getList('maintenance/requests', queryParams: query);
+    return data.map((m) => MaintenanceRequestModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createMaintenanceRequest(MaintenanceRequestModel request) async {
+    await _post('maintenance/requests', request.toMap());
+  }
+
+  // Scheduled Maintenance
+  Future<List<ScheduledMaintenanceModel>> getScheduledMaintenances() async {
+    final data = await _getList('maintenance/scheduled');
+    return data.map((m) => ScheduledMaintenanceModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createScheduledMaintenance(ScheduledMaintenanceModel maintenance) async {
+    await _post('maintenance/scheduled', maintenance.toMap());
+  }
+
+  // Equipment Status
+  Future<List<EquipmentStatusModel>> getEquipmentStatuses() async {
+    final data = await _getList('maintenance/equipment-status');
+    return data.map((m) => EquipmentStatusModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createEquipmentStatus(EquipmentStatusModel status) async {
+    await _post('maintenance/equipment-status', status.toMap());
+  }
+
+  // Maintenance Vendors
+  Future<List<MaintenanceVendorModel>> getMaintenanceVendors() async {
+    final data = await _getList('maintenance/vendors');
+    return data.map((m) => MaintenanceVendorModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createMaintenanceVendor(MaintenanceVendorModel vendor) async {
+    await _post('maintenance/vendors', vendor.toMap());
   }
 }
 

@@ -28,6 +28,7 @@ import '../models/lab_test_type_model.dart';
 import '../models/document_model.dart';
 import '../models/quality_models.dart';
 import '../models/hr_models.dart';
+import '../models/maintenance_models.dart';
 import 'local_database_service.dart';
 
 class DoctorStats {
