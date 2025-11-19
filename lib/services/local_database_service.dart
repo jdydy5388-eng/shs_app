@@ -1695,7 +1695,9 @@ class LocalDatabaseService {
         await db.execute('CREATE INDEX IF NOT EXISTS idx_certifications_employee ON certifications(employee_id)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_certifications_status ON certifications(status)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_certifications_expiry ON certifications(expiry_date)');
+      }
 
+      if (oldVersion < 20) {
         // جداول نظام الصيانة
         await db.execute('''
           CREATE TABLE IF NOT EXISTS maintenance_requests (
@@ -2067,7 +2069,7 @@ class LocalDatabaseService {
   }
 
   Future<void> clearAllData() async {
-    final db = await database;
+    final db = await this.database;
     await db.delete('users');
     await db.delete('prescriptions');
     await db.delete('prescription_medications');
