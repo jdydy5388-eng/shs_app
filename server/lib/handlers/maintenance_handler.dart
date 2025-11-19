@@ -79,8 +79,8 @@ class MaintenanceHandler {
 
       return ResponseHelper.list(data: requests);
     } catch (e, stackTrace) {
-      AppLogger.error('Get maintenance requests error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب طلبات الصيانة: $e', stackTrace);
+      AppLogger.error('Get maintenance requests error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب طلبات الصيانة: $e', error: stackTrace);
     }
   }
 
@@ -132,10 +132,10 @@ class MaintenanceHandler {
         'updatedAt': data['updatedAt'],
       });
 
-      return ResponseHelper.success({'message': 'تم إنشاء طلب الصيانة بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم إنشاء طلب الصيانة بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Create maintenance request error', e, stackTrace);
-      return ResponseHelper.error('خطأ في إنشاء طلب الصيانة: $e', stackTrace);
+      AppLogger.error('Create maintenance request error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في إنشاء طلب الصيانة: $e', error: stackTrace);
     }
   }
 
@@ -170,8 +170,8 @@ class MaintenanceHandler {
 
       return ResponseHelper.list(data: maintenances);
     } catch (e, stackTrace) {
-      AppLogger.error('Get scheduled maintenances error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب الصيانة المجدولة: $e', stackTrace);
+      AppLogger.error('Get scheduled maintenances error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب الصيانة المجدولة: $e', error: stackTrace);
     }
   }
 
@@ -213,10 +213,10 @@ class MaintenanceHandler {
         'updatedAt': data['updatedAt'],
       });
 
-      return ResponseHelper.success({'message': 'تم جدولة الصيانة بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم جدولة الصيانة بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Create scheduled maintenance error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جدولة الصيانة: $e', stackTrace);
+      AppLogger.error('Create scheduled maintenance error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جدولة الصيانة: $e', error: stackTrace);
     }
   }
 
@@ -248,8 +248,8 @@ class MaintenanceHandler {
 
       return ResponseHelper.list(data: statuses);
     } catch (e, stackTrace) {
-      AppLogger.error('Get equipment statuses error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب حالة المعدات: $e', stackTrace);
+      AppLogger.error('Get equipment statuses error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب حالة المعدات: $e', error: stackTrace);
     }
   }
 
@@ -288,10 +288,10 @@ class MaintenanceHandler {
         'updatedAt': data['updatedAt'],
       });
 
-      return ResponseHelper.success({'message': 'تم إنشاء حالة المعدات بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم إنشاء حالة المعدات بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Create equipment status error', e, stackTrace);
-      return ResponseHelper.error('خطأ في إنشاء حالة المعدات: $e', stackTrace);
+      AppLogger.error('Create equipment status error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في إنشاء حالة المعدات: $e', error: stackTrace);
     }
   }
 
@@ -322,8 +322,8 @@ class MaintenanceHandler {
 
       return ResponseHelper.list(data: vendors);
     } catch (e, stackTrace) {
-      AppLogger.error('Get maintenance vendors error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب موردين الصيانة: $e', stackTrace);
+      AppLogger.error('Get maintenance vendors error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب موردين الصيانة: $e', error: stackTrace);
     }
   }
 
@@ -359,10 +359,10 @@ class MaintenanceHandler {
         'updatedAt': data['updatedAt'],
       });
 
-      return ResponseHelper.success({'message': 'تم إنشاء المورد بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم إنشاء المورد بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Create maintenance vendor error', e, stackTrace);
-      return ResponseHelper.error('خطأ في إنشاء المورد: $e', stackTrace);
+      AppLogger.error('Create maintenance vendor error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في إنشاء المورد: $e', error: stackTrace);
     }
   }
 }

@@ -65,8 +65,8 @@ class TransportationHandler {
 
       return ResponseHelper.list(data: ambulances);
     } catch (e, stackTrace) {
-      AppLogger.error('Get ambulances error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب سيارات الإسعاف: $e', stackTrace);
+      AppLogger.error('Get ambulances error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب سيارات الإسعاف: $e', error: stackTrace);
     }
   }
 
@@ -107,10 +107,10 @@ class TransportationHandler {
         'updatedAt': data['updatedAt'],
       });
 
-      return ResponseHelper.success({'message': 'تم إنشاء سيارة الإسعاف بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم إنشاء سيارة الإسعاف بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Create ambulance error', e, stackTrace);
-      return ResponseHelper.error('خطأ في إنشاء سيارة الإسعاف: $e', stackTrace);
+      AppLogger.error('Create ambulance error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في إنشاء سيارة الإسعاف: $e', error: stackTrace);
     }
   }
 
@@ -164,8 +164,8 @@ class TransportationHandler {
 
       return ResponseHelper.list(data: requests);
     } catch (e, stackTrace) {
-      AppLogger.error('Get transportation requests error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب طلبات النقل: $e', stackTrace);
+      AppLogger.error('Get transportation requests error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب طلبات النقل: $e', error: stackTrace);
     }
   }
 
@@ -222,10 +222,10 @@ class TransportationHandler {
         'updatedAt': data['updatedAt'],
       });
 
-      return ResponseHelper.success({'message': 'تم إنشاء طلب النقل بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم إنشاء طلب النقل بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Create transportation request error', e, stackTrace);
-      return ResponseHelper.error('خطأ في إنشاء طلب النقل: $e', stackTrace);
+      AppLogger.error('Create transportation request error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في إنشاء طلب النقل: $e', error: stackTrace);
     }
   }
 
@@ -263,8 +263,8 @@ class TransportationHandler {
 
       return ResponseHelper.list(data: locations);
     } catch (e, stackTrace) {
-      AppLogger.error('Get location tracking error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب تتبع المواقع: $e', stackTrace);
+      AppLogger.error('Get location tracking error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب تتبع المواقع: $e', error: stackTrace);
     }
   }
 }

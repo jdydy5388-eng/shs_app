@@ -35,7 +35,7 @@ class DocumentsHandler {
     }
 
     final userRole = user['role'] as String;
-    if (!hasPermission(userRole, Permission.readStorage)) {
+    if (!Rbac.has(userRole, Permission.readStorage)) {
       return ResponseHelper.forbidden('ليس لديك صلاحية للوصول إلى الوثائق');
     }
     try {
@@ -129,8 +129,8 @@ class DocumentsHandler {
 
       return ResponseHelper.list(data: documents);
     } catch (e, stackTrace) {
-      AppLogger.error('Get documents error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب الوثائق: $e', stackTrace);
+      AppLogger.error('Get documents error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب الوثائق: $e', error: stackTrace);
     }
   }
 
@@ -141,7 +141,7 @@ class DocumentsHandler {
     }
 
     final userRole = user['role'] as String;
-    if (!hasPermission(userRole, Permission.readStorage)) {
+    if (!Rbac.has(userRole, Permission.readStorage)) {
       return ResponseHelper.forbidden('ليس لديك صلاحية للوصول إلى الوثائق');
     }
     try {
@@ -185,10 +185,10 @@ class DocumentsHandler {
         'createdBy': row[25],
       };
 
-      return ResponseHelper.success(document);
+      return ResponseHelper.success(data: document);
     } catch (e, stackTrace) {
-      AppLogger.error('Get document error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب الوثيقة: $e', stackTrace);
+      AppLogger.error('Get document error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب الوثيقة: $e', error: stackTrace);
     }
   }
 
@@ -199,7 +199,7 @@ class DocumentsHandler {
     }
 
     final userRole = user['role'] as String;
-    if (!hasPermission(userRole, Permission.writeStorage)) {
+    if (!Rbac.has(userRole, Permission.writeStorage)) {
       return ResponseHelper.forbidden('ليس لديك صلاحية لإنشاء وثائق');
     }
     try {
@@ -250,10 +250,10 @@ class DocumentsHandler {
         'createdBy': user['id'],
       });
 
-      return ResponseHelper.success({'message': 'تم إنشاء الوثيقة بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم إنشاء الوثيقة بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Create document error', e, stackTrace);
-      return ResponseHelper.error('خطأ في إنشاء الوثيقة: $e', stackTrace);
+      AppLogger.error('Create document error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في إنشاء الوثيقة: $e', error: stackTrace);
     }
   }
 
@@ -264,7 +264,7 @@ class DocumentsHandler {
     }
 
     final userRole = user['role'] as String;
-    if (!hasPermission(userRole, Permission.writeStorage)) {
+    if (!Rbac.has(userRole, Permission.writeStorage)) {
       return ResponseHelper.forbidden('ليس لديك صلاحية لتحديث الوثائق');
     }
     try {
@@ -333,10 +333,10 @@ class DocumentsHandler {
         substitutionValues: values,
       );
 
-      return ResponseHelper.success({'message': 'تم تحديث الوثيقة بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم تحديث الوثيقة بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Update document error', e, stackTrace);
-      return ResponseHelper.error('خطأ في تحديث الوثيقة: $e', stackTrace);
+      AppLogger.error('Update document error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في تحديث الوثيقة: $e', error: stackTrace);
     }
   }
 
@@ -347,7 +347,7 @@ class DocumentsHandler {
     }
 
     final userRole = user['role'] as String;
-    if (!hasPermission(userRole, Permission.writeStorage)) {
+    if (!Rbac.has(userRole, Permission.writeStorage)) {
       return ResponseHelper.forbidden('ليس لديك صلاحية لحذف الوثائق');
     }
     try {
@@ -361,10 +361,10 @@ class DocumentsHandler {
         },
       );
 
-      return ResponseHelper.success({'message': 'تم حذف الوثيقة بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم حذف الوثيقة بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Delete document error', e, stackTrace);
-      return ResponseHelper.error('خطأ في حذف الوثيقة: $e', stackTrace);
+      AppLogger.error('Delete document error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في حذف الوثيقة: $e', error: stackTrace);
     }
   }
 
@@ -375,7 +375,7 @@ class DocumentsHandler {
     }
 
     final userRole = user['role'] as String;
-    if (!hasPermission(userRole, Permission.writeStorage)) {
+    if (!Rbac.has(userRole, Permission.writeStorage)) {
       return ResponseHelper.forbidden('ليس لديك صلاحية لتوقيع الوثائق');
     }
     try {
@@ -399,10 +399,10 @@ class DocumentsHandler {
         'notes': data['notes'],
       });
 
-      return ResponseHelper.success({'message': 'تم إنشاء التوقيع بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم إنشاء التوقيع بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Create document signature error', e, stackTrace);
-      return ResponseHelper.error('خطأ في إنشاء التوقيع: $e', stackTrace);
+      AppLogger.error('Create document signature error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في إنشاء التوقيع: $e', error: stackTrace);
     }
   }
 
@@ -413,7 +413,7 @@ class DocumentsHandler {
     }
 
     final userRole = user['role'] as String;
-    if (!hasPermission(userRole, Permission.readStorage)) {
+    if (!Rbac.has(userRole, Permission.readStorage)) {
       return ResponseHelper.forbidden('ليس لديك صلاحية للوصول إلى التوقيعات');
     }
     try {
@@ -438,10 +438,10 @@ class DocumentsHandler {
         'notes': row[6],
       };
 
-      return ResponseHelper.success(signature);
+      return ResponseHelper.success(data: signature);
     } catch (e, stackTrace) {
-      AppLogger.error('Get document signature error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب التوقيع: $e', stackTrace);
+      AppLogger.error('Get document signature error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب التوقيع: $e', error: stackTrace);
     }
   }
 
@@ -452,7 +452,7 @@ class DocumentsHandler {
     }
 
     final userRole = user['role'] as String;
-    if (!hasPermission(userRole, Permission.readStorage)) {
+    if (!Rbac.has(userRole, Permission.readStorage)) {
       return ResponseHelper.forbidden('ليس لديك صلاحية للوصول إلى التوقيعات');
     }
     try {
@@ -485,8 +485,8 @@ class DocumentsHandler {
 
       return ResponseHelper.list(data: signatures);
     } catch (e, stackTrace) {
-      AppLogger.error('Get document signatures error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب التوقيعات: $e', stackTrace);
+      AppLogger.error('Get document signatures error', e, error: stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب التوقيعات: $e', error: stackTrace);
     }
   }
 }

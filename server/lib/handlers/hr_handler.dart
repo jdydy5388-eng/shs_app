@@ -75,7 +75,7 @@ class HRHandler {
       return ResponseHelper.list(data: employees);
     } catch (e, stackTrace) {
       AppLogger.error('Get employees error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب الموظفين: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب الموظفين: $e', error: stackTrace);
     }
   }
 
@@ -110,10 +110,10 @@ class HRHandler {
         'updatedAt': row[14],
       };
 
-      return ResponseHelper.success(employee);
+      return ResponseHelper.success(data: employee);
     } catch (e, stackTrace) {
       AppLogger.error('Get employee error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب الموظف: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب الموظف: $e', error: stackTrace);
     }
   }
 
@@ -153,10 +153,10 @@ class HRHandler {
         'updatedAt': data['updatedAt'],
       });
 
-      return ResponseHelper.success({'message': 'تم إنشاء الموظف بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم إنشاء الموظف بنجاح'});
     } catch (e, stackTrace) {
       AppLogger.error('Create employee error', e, stackTrace);
-      return ResponseHelper.error('خطأ في إنشاء الموظف: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في إنشاء الموظف: $e', error: stackTrace);
     }
   }
 
@@ -201,7 +201,7 @@ class HRHandler {
       return ResponseHelper.list(data: leaves);
     } catch (e, stackTrace) {
       AppLogger.error('Get leave requests error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب طلبات الإجازة: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب طلبات الإجازة: $e', error: stackTrace);
     }
   }
 
@@ -242,10 +242,10 @@ class HRHandler {
         'updatedAt': data['updatedAt'],
       });
 
-      return ResponseHelper.success({'message': 'تم إنشاء طلب الإجازة بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم إنشاء طلب الإجازة بنجاح'});
     } catch (e, stackTrace) {
       AppLogger.error('Create leave request error', e, stackTrace);
-      return ResponseHelper.error('خطأ في إنشاء طلب الإجازة: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في إنشاء طلب الإجازة: $e', error: stackTrace);
     }
   }
 
@@ -290,7 +290,7 @@ class HRHandler {
       return ResponseHelper.list(data: payrolls);
     } catch (e, stackTrace) {
       AppLogger.error('Get payrolls error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب الرواتب: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب الرواتب: $e', error: stackTrace);
     }
   }
 
@@ -329,10 +329,10 @@ class HRHandler {
         'updatedAt': data['updatedAt'],
       });
 
-      return ResponseHelper.success({'message': 'تم إنشاء الراتب بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم إنشاء الراتب بنجاح'});
     } catch (e, stackTrace) {
       AppLogger.error('Create payroll error', e, stackTrace);
-      return ResponseHelper.error('خطأ في إنشاء الراتب: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في إنشاء الراتب: $e', error: stackTrace);
     }
   }
 
@@ -364,7 +364,7 @@ class HRHandler {
       return ResponseHelper.list(data: trainings);
     } catch (e, stackTrace) {
       AppLogger.error('Get trainings error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب البرامج التدريبية: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب البرامج التدريبية: $e', error: stackTrace);
     }
   }
 
@@ -400,10 +400,10 @@ class HRHandler {
         'updatedAt': data['updatedAt'],
       });
 
-      return ResponseHelper.success({'message': 'تم إنشاء البرنامج التدريبي بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم إنشاء البرنامج التدريبي بنجاح'});
     } catch (e, stackTrace) {
       AppLogger.error('Create training error', e, stackTrace);
-      return ResponseHelper.error('خطأ في إنشاء البرنامج التدريبي: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في إنشاء البرنامج التدريبي: $e', error: stackTrace);
     }
   }
 
@@ -435,7 +435,7 @@ class HRHandler {
       return ResponseHelper.list(data: certifications);
     } catch (e, stackTrace) {
       AppLogger.error('Get certifications error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب الشهادات: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب الشهادات: $e', error: stackTrace);
     }
   }
 
@@ -473,10 +473,10 @@ class HRHandler {
         'updatedAt': data['updatedAt'],
       });
 
-      return ResponseHelper.success({'message': 'تم إنشاء الشهادة بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم إنشاء الشهادة بنجاح'});
     } catch (e, stackTrace) {
       AppLogger.error('Create certification error', e, stackTrace);
-      return ResponseHelper.error('خطأ في إنشاء الشهادة: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في إنشاء الشهادة: $e', error: stackTrace);
     }
   }
 }
