@@ -448,6 +448,45 @@ class DatabaseService {
       )
     ''');
 
+    // جداول التمريض
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS nursing_tasks (
+        id TEXT PRIMARY KEY,
+        nurse_id TEXT NOT NULL,
+        patient_id TEXT,
+        patient_name TEXT,
+        bed_id TEXT,
+        room_id TEXT,
+        type TEXT NOT NULL,               -- medication / vitalSigns / woundCare / patientCheck / documentation / other
+        title TEXT NOT NULL,
+        description TEXT,
+        status TEXT NOT NULL,              -- pending / inProgress / completed / cancelled
+        scheduled_at BIGINT NOT NULL,
+        completed_at BIGINT,
+        completed_by TEXT,
+        result_data JSONB,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS nursing_notes (
+        id TEXT PRIMARY KEY,
+        nurse_id TEXT NOT NULL,
+        nurse_name TEXT,
+        patient_id TEXT NOT NULL,
+        patient_name TEXT,
+        bed_id TEXT,
+        room_id TEXT,
+        note TEXT NOT NULL,
+        vital_signs JSONB,
+        observations TEXT,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
     AppLogger.info('Database tables created/verified');
     print('✅ Database tables ready');
   }

@@ -39,6 +39,7 @@ dependencies:
   file_picker: ^10.3.3
   image_picker: ^1.1.2
   pdf: ^3.11.1
+  printing: ^5.13.3
   
   # Notifications & Local Storage
   flutter_local_notifications: ^19.5.0

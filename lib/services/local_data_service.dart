@@ -16,6 +16,7 @@ import '../models/entity_model.dart';
 import '../models/audit_log_model.dart';
 import '../models/system_settings_model.dart';
 import '../models/invoice_model.dart';
+import '../models/payment_model.dart';
 import '../models/room_bed_model.dart';
 import '../models/emergency_case_model.dart';
 import '../models/notification_model.dart';
@@ -1424,6 +1425,91 @@ class LocalDataService {
       where: 'id = ?',
       whereArgs: [invoiceId],
     );
+  }
+
+  Future<InvoiceModel?> getInvoice(String invoiceId) async {
+    final db = await _db.database;
+    final rows = await db.query(
+      'invoices',
+      where: 'id = ?',
+      whereArgs: [invoiceId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    final r = rows.first;
+    final itemsStr = r['items'] as String?;
+    final items = itemsStr != null
+        ? List<Map<String, dynamic>>.from(jsonDecode(itemsStr) as List)
+        : <Map<String, dynamic>>[];
+    return InvoiceModel.fromMap({
+      'id': r['id'],
+      'patientId': r['patient_id'],
+      'patientName': r['patient_name'],
+      'relatedType': r['related_type'],
+      'relatedId': r['related_id'],
+      'items': items,
+      'subtotal': r['subtotal'],
+      'discount': r['discount'],
+      'tax': r['tax'],
+      'total': r['total'],
+      'currency': r['currency'],
+      'status': r['status'],
+      'insuranceProvider': r['insurance_provider'],
+      'insurancePolicy': r['insurance_policy'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+      'paidAt': r['paid_at'],
+    }, r['id'] as String);
+  }
+
+  // Payments
+  Future<List<PaymentModel>> getPayments({String? invoiceId}) async {
+    final db = await _db.database;
+    final where = <String>[];
+    final args = <Object>[];
+    if (invoiceId != null) {
+      where.add('invoice_id = ?');
+      args.add(invoiceId);
+    }
+    final rows = await db.query(
+      'payments',
+      where: where.isEmpty ? null : where.join(' AND '),
+      whereArgs: where.isEmpty ? null : args,
+      orderBy: 'created_at DESC',
+    );
+    return rows.map((r) {
+      return PaymentModel.fromMap({
+        'id': r['id'],
+        'invoiceId': r['invoice_id'],
+        'amount': r['amount'],
+        'method': r['method'],
+        'reference': r['reference'],
+        'createdAt': r['created_at'],
+        'notes': r['notes'],
+      }, r['id'] as String);
+    }).toList();
+  }
+
+  Future<void> createPayment(PaymentModel payment) async {
+    final db = await _db.database;
+    await db.insert('payments', {
+      'id': payment.id,
+      'invoice_id': payment.invoiceId,
+      'amount': payment.amount,
+      'method': payment.method.toString().split('.').last,
+      'reference': payment.reference,
+      'created_at': payment.createdAt.millisecondsSinceEpoch,
+      'notes': payment.notes,
+    });
+
+    // التحقق من إجمالي المدفوعات وتحديث حالة الفاتورة إذا لزم الأمر
+    final payments = await getPayments(invoiceId: payment.invoiceId);
+    final totalPaid = payments.fold(0.0, (sum, p) => sum + p.amount);
+    final invoice = await getInvoice(payment.invoiceId);
+    
+    if (invoice != null && totalPaid >= invoice.total) {
+      await updateInvoiceStatus(payment.invoiceId, InvoiceStatus.paid);
+    }
   }
 
   // Rooms & Beds

@@ -10,6 +10,7 @@ import 'notifications_appointments_screen.dart';
 import 'patient_settings_screen.dart';
 import 'radiology_screen.dart';
 import 'lab_requests_screen.dart';
+import 'patient_invoices_screen.dart';
 import '../auth/login_screen.dart';
 
 class PatientFeature {
@@ -263,6 +264,19 @@ class PatientDashboard extends StatelessWidget {
         'إدارة الأمان: التحكم في إعدادات المصادقة البيومترية وتغيير كلمة المرور.',
       ],
       builder: (_) => const PatientSettingsScreen(),
+    ),
+    PatientFeature(
+      title: 'الفواتير والمدفوعات',
+      description: 'عرض فواتيرك ومتابعة المدفوعات.',
+      icon: Icons.receipt_long_outlined,
+      color: Colors.teal,
+      details: [
+        'عرض جميع الفواتير (صادرة، مدفوعة، ملغاة).',
+        'عرض تفاصيل كل فاتورة (العناصر، المبالغ، التواريخ).',
+        'متابعة المدفوعات والمتبقي.',
+        'عرض معلومات التأمين الصحي المرتبطة بالفواتير.',
+      ],
+      builder: (_) => const PatientInvoicesScreen(),
     ),
   ];
 

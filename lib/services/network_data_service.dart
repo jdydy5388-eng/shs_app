@@ -15,6 +15,7 @@ import '../models/audit_log_model.dart';
 import '../models/system_settings_model.dart';
 import '../models/doctor_task_model.dart';
 import '../models/invoice_model.dart';
+import '../models/payment_model.dart';
 import '../models/room_bed_model.dart';
 import '../models/emergency_case_model.dart';
 import '../models/notification_model.dart';
@@ -965,6 +966,24 @@ class NetworkDataService {
     await _put('billing/invoices/$invoiceId/status', {
       'status': status.toString().split('.').last,
     });
+  }
+
+  Future<InvoiceModel?> getInvoice(String invoiceId) async {
+    final data = await _get('billing/invoices/$invoiceId');
+    if (data == null) return null;
+    return InvoiceModel.fromMap(data, data['id'] as String);
+  }
+
+  // Payments
+  Future<List<PaymentModel>> getPayments({String? invoiceId}) async {
+    final query = <String, String>{};
+    if (invoiceId != null) query['invoiceId'] = invoiceId;
+    final data = await _getList('billing/payments', queryParams: query);
+    return data.map((map) => PaymentModel.fromMap(map, map['id'] as String)).toList();
+  }
+
+  Future<void> createPayment(PaymentModel payment) async {
+    await _post('billing/payments', payment.toMap());
   }
 
   // Rooms & Beds

@@ -101,6 +101,10 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                 child: Text('أخصائيو الأشعة'),
               ),
               const PopupMenuItem(
+                value: UserRole.nurse,
+                child: Text('الممرضون/الممرضات'),
+              ),
+              const PopupMenuItem(
                 value: UserRole.admin,
                 child: Text('المدراء'),
               ),
@@ -187,6 +191,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       UserRole.pharmacist: Colors.purple,
       UserRole.labTechnician: Colors.orange,
       UserRole.radiologist: Colors.teal,
+      UserRole.nurse: Colors.pink,
       UserRole.admin: Colors.red,
     }[user.role]!;
 
@@ -196,6 +201,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       UserRole.pharmacist: 'صيدلي',
       UserRole.labTechnician: 'فني مختبر',
       UserRole.radiologist: 'أخصائي أشعة',
+      UserRole.nurse: 'ممرض/ممرضة',
       UserRole.admin: 'مدير',
     }[user.role]!;
 
@@ -287,6 +293,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       case UserRole.labTechnician:
         return Icons.science;
       case UserRole.radiologist:
+        return Icons.medical_services;
+      case UserRole.nurse:
         return Icons.medical_services;
       case UserRole.admin:
         return Icons.admin_panel_settings;
@@ -698,6 +706,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
         return 'فني مختبر';
       case UserRole.radiologist:
         return 'أخصائي أشعة';
+      case UserRole.nurse:
+        return 'ممرض/ممرضة';
       case UserRole.admin:
         return 'مدير';
     }

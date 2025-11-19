@@ -261,10 +261,15 @@ class DataService {
 
   // Billing
   Future<List> getInvoices({String? patientId, status}) => _service.getInvoices(patientId: patientId, status: status);
+  Future getInvoice(String id) => _service.getInvoice(id);
   Future<void> createInvoice(invoice) => _service.createInvoice(invoice);
   Future<void> updateInvoice(String id, {items, subtotal, discount, tax, total, currency, insuranceProvider, insurancePolicy}) => 
       _service.updateInvoice(id, items: items, subtotal: subtotal, discount: discount, tax: tax, total: total, currency: currency, insuranceProvider: insuranceProvider, insurancePolicy: insurancePolicy);
   Future<void> updateInvoiceStatus(String id, status) => _service.updateInvoiceStatus(id, status);
+  
+  // Payments
+  Future<List> getPayments({String? invoiceId}) => _service.getPayments(invoiceId: invoiceId);
+  Future<void> createPayment(payment) => _service.createPayment(payment);
 
   // Rooms & Beds
   Future<List> getRooms() => _service.getRooms();

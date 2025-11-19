@@ -136,6 +136,15 @@ class Rbac {
       Permission.readStorage,
       Permission.writeStorage,
     },
+    'nurse': {
+      Permission.readStorage,
+      Permission.writeStorage,
+      Permission.readMedicalRecords, // قراءة السجلات الطبية للمرضى
+      Permission.updateMedicalRecords, // تحديث سجلات التمريض
+      Permission.readUsers, // قراءة بيانات المرضى
+      Permission.readRooms, // قراءة معلومات الغرف والأسرة
+      Permission.readAppointments, // قراءة المواعيد
+    },
   };
 
   static bool has(String role, Permission permission) {

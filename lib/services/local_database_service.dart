@@ -9,7 +9,7 @@ import 'dart:io' show Platform;
 class LocalDatabaseService {
   static Database? _database;
   static const String _databaseName = 'shs_app.db';
-  static const int _databaseVersion = 11;
+  static const int _databaseVersion = 12;
   static bool _initialized = false;
 
   Future<Database> get database async {
@@ -235,6 +235,51 @@ class LocalDatabaseService {
     await db.execute('CREATE INDEX IF NOT EXISTS idx_beds_room ON beds(room_id)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_beds_status ON beds(status)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_bed_transfers_patient ON bed_transfers(patient_id)');
+
+    // جداول التمريض
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS nursing_tasks (
+        id TEXT PRIMARY KEY,
+        nurse_id TEXT NOT NULL,
+        patient_id TEXT,
+        patient_name TEXT,
+        bed_id TEXT,
+        room_id TEXT,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        status TEXT NOT NULL,
+        scheduled_at INTEGER NOT NULL,
+        completed_at INTEGER,
+        completed_by TEXT,
+        result_data TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS nursing_notes (
+        id TEXT PRIMARY KEY,
+        nurse_id TEXT NOT NULL,
+        nurse_name TEXT,
+        patient_id TEXT NOT NULL,
+        patient_name TEXT,
+        bed_id TEXT,
+        room_id TEXT,
+        note TEXT NOT NULL,
+        vital_signs TEXT,
+        observations TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER
+      )
+    ''');
+
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_nursing_tasks_nurse ON nursing_tasks(nurse_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_nursing_tasks_patient ON nursing_tasks(patient_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_nursing_tasks_status ON nursing_tasks(status)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_nursing_notes_nurse ON nursing_notes(nurse_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_nursing_notes_patient ON nursing_notes(patient_id)');
 
     // قسم الطوارئ
     await db.execute('''
@@ -621,6 +666,53 @@ class LocalDatabaseService {
       ''');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_attendance_user ON attendance_records(user_id)');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_shifts_user ON shifts(user_id)');
+    }
+    
+    if (oldVersion < 12) {
+      // إضافة جداول التمريض
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS nursing_tasks (
+          id TEXT PRIMARY KEY,
+          nurse_id TEXT NOT NULL,
+          patient_id TEXT,
+          patient_name TEXT,
+          bed_id TEXT,
+          room_id TEXT,
+          type TEXT NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT,
+          status TEXT NOT NULL,
+          scheduled_at INTEGER NOT NULL,
+          completed_at INTEGER,
+          completed_by TEXT,
+          result_data TEXT,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS nursing_notes (
+          id TEXT PRIMARY KEY,
+          nurse_id TEXT NOT NULL,
+          nurse_name TEXT,
+          patient_id TEXT NOT NULL,
+          patient_name TEXT,
+          bed_id TEXT,
+          room_id TEXT,
+          note TEXT NOT NULL,
+          vital_signs TEXT,
+          observations TEXT,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER
+        )
+      ''');
+
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_nursing_tasks_nurse ON nursing_tasks(nurse_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_nursing_tasks_patient ON nursing_tasks(patient_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_nursing_tasks_status ON nursing_tasks(status)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_nursing_notes_nurse ON nursing_notes(nurse_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_nursing_notes_patient ON nursing_notes(patient_id)');
     }
   }
 

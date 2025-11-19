@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../utils/auth_helper.dart';
-import 'manage_users_screen.dart';
-import 'manage_entities_screen.dart';
-import 'system_monitoring_screen.dart';
-import 'shifts_management_screen.dart';
-import 'billing_management_screen.dart';
+import 'nurse_tasks_screen.dart';
+import 'nurse_patients_screen.dart';
+import 'nursing_notes_screen.dart';
+import 'nurse_settings_screen.dart';
 import '../auth/login_screen.dart';
 
-class AdminFeature {
-  AdminFeature({
+class NurseFeature {
+  const NurseFeature({
     required this.title,
     required this.description,
     required this.icon,
@@ -27,28 +26,28 @@ class AdminFeature {
   bool get hasNavigation => builder != null;
 }
 
-class AdminHomeScreen extends StatefulWidget {
-  const AdminHomeScreen({super.key});
+class NurseHomeScreen extends StatefulWidget {
+  const NurseHomeScreen({super.key});
 
   @override
-  State<AdminHomeScreen> createState() => _AdminHomeScreenState();
+  State<NurseHomeScreen> createState() => _NurseHomeScreenState();
 }
 
-class _AdminHomeScreenState extends State<AdminHomeScreen> {
+class _NurseHomeScreenState extends State<NurseHomeScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
-    const AdminDashboard(),
-    const ManageUsersScreen(),
-    const ManageEntitiesScreen(),
-    const SystemMonitoringScreen(),
+    const NurseDashboard(),
+    const NurseTasksScreen(),
+    const NursePatientsScreen(),
+    const NursingNotesScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('لوحة التحكم الإدارية'),
+        title: const Text('لوحة الممرض/الممرضة'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -68,16 +67,16 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             label: 'الرئيسية',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.task),
+            label: 'المهام',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.people),
-            label: 'المستخدمين',
+            label: 'المرضى',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.business),
-            label: 'الكيانات',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assessment),
-            label: 'المراقبة',
+            icon: Icon(Icons.note),
+            label: 'السجلات',
           ),
         ],
       ),
@@ -119,11 +118,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       await AuthHelper.signOut(context);
       if (!mounted) return;
       
-      // إعادة التوجيه إلى شاشة تسجيل الدخول وإزالة جميع الشاشات السابقة
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false, // إزالة جميع الشاشات السابقة
+        (route) => false,
       );
       
       if (!mounted) return;
@@ -146,71 +144,59 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 }
 
-class AdminDashboard extends StatelessWidget {
-  const AdminDashboard({super.key});
+class NurseDashboard extends StatelessWidget {
+  const NurseDashboard({super.key});
 
-  static final List<AdminFeature> _features = [
-    AdminFeature(
-      title: 'إدارة المستخدمين والحسابات',
-      description: 'الصلاحيات الكاملة لإدارة حسابات النظام.',
-      icon: Icons.people_outlined,
+  static final List<NurseFeature> _features = [
+    NurseFeature(
+      title: 'إدارة مهام التمريض',
+      description: 'إدارة وتنفيذ مهام التمريض اليومية بكفاءة عالية.',
+      icon: Icons.task_outlined,
       color: Colors.blue,
       details: [
-        'تسجيل الدخول الآمن: المصادقة باستخدام البصمة.',
-        'إنشاء حسابات جديدة للأطباء والصيادلة.',
-        'تعديل بيانات الحسابات الموجودة.',
-        'تعطيل أو حذف حسابات المستخدمين.',
-        'إعادة تعيين كلمات المرور أو إعدادات المصادقة البيومترية.',
+        'عرض جميع المهام المطلوبة (إعطاء أدوية، قياس علامات حيوية، فحص مرضى).',
+        'تحديث حالة المهام (قيد الانتظار، قيد التنفيذ، مكتملة).',
+        'تنبيهات فورية للمهام المستحقة.',
+        'تسجيل نتائج المهام (مثل العلامات الحيوية).',
       ],
-      builder: (_) => const ManageUsersScreen(),
+      builder: (_) => const NurseTasksScreen(),
     ),
-    AdminFeature(
-      title: 'إدارة الكيانات المتعاقدة',
-      description: 'تحديث بيانات الشركاء المتعاقدين مع النظام.',
-      icon: Icons.business_outlined,
+    NurseFeature(
+      title: 'إدارة المرضى في الأجنحة',
+      description: 'تتبع وإدارة حالة المرضى المقيمين في الأجنحة.',
+      icon: Icons.people_outlined,
       color: Colors.green,
       details: [
-        'إدارة الصيدليات والمستشفيات: إضافة، إزالة، وتحديث البيانات.',
-        'معلومات الاتصال والموقع الجغرافي للكيانات.',
+        'عرض قائمة المرضى في الأجنحة المخصصة لك.',
+        'عرض معلومات المريض والحالة الصحية.',
+        'تتبع موقع المريض (الغرفة والسرير).',
+        'عرض الوصفات الطبية والعلاجات المطلوبة.',
       ],
-      builder: (_) => const ManageEntitiesScreen(),
+      builder: (_) => const NursePatientsScreen(),
     ),
-    AdminFeature(
-      title: 'مراقبة النظام والأمان',
-      description: 'الحفاظ على أمان وكفاءة النظام.',
-      icon: Icons.security_outlined,
+    NurseFeature(
+      title: 'سجل التمريض',
+      description: 'توثيق ملاحظات التمريض والعلامات الحيوية.',
+      icon: Icons.note_outlined,
+      color: Colors.purple,
+      details: [
+        'إضافة سجلات تمريض جديدة للمرضى.',
+        'تسجيل العلامات الحيوية (ضغط، نبض، حرارة، تنفس).',
+        'توثيق الملاحظات والملاحظات السريرية.',
+        'عرض تاريخ السجلات السابقة.',
+      ],
+      builder: (_) => const NursingNotesScreen(),
+    ),
+    NurseFeature(
+      title: 'التقارير والإعدادات',
+      description: 'عرض التقارير الإحصائية وتحديث بيانات الممرض.',
+      icon: Icons.insights_outlined,
       color: Colors.orange,
       details: [
-        'مراقبة النظام: الاطلاع على سجلات التدقيق (Audit Logs) لتتبع جميع الأنشطة.',
-        'عرض التقارير والإحصائيات: استعراض تقارير شاملة حول أداء النظام.',
-        'إدارة الإعدادات العامة: التحكم في الإعدادات العامة للنظام.',
+        'عرض تقارير حول أداء التمريض: عدد المهام المكتملة، عدد المرضى المتابعين.',
+        'تحديث الملف الشخصي للممرض وبيانات الاتصال.',
       ],
-      builder: (_) => const SystemMonitoringScreen(),
-    ),
-    AdminFeature(
-      title: 'إدارة المناوبات',
-      description: 'إنشاء وتعديل وحذف المناوبات للأطباء والتمريض.',
-      icon: Icons.schedule,
-      color: Colors.deepPurple,
-      details: [
-        'إنشاء مناوبات فردية أو متكررة',
-        'عرض قوائم المناوبات حسب المستخدم أو القسم',
-        'حذف أو تعديل مناوبة'
-      ],
-      builder: (_) => const ShiftsManagementScreen(),
-    ),
-    AdminFeature(
-      title: 'إدارة الفواتير والمدفوعات',
-      description: 'إدارة الفواتير والمدفوعات والتقارير المالية.',
-      icon: Icons.receipt_long,
-      color: Colors.teal,
-      details: [
-        'إنشاء وإدارة الفواتير للمرضى',
-        'تسجيل المدفوعات (نقد، بطاقة، تحويل، تأمين)',
-        'عرض التقارير المالية والإحصائيات',
-        'ربط الفواتير بالتأمين الصحي',
-      ],
-      builder: (_) => const BillingManagementScreen(),
+      builder: (_) => const NurseSettingsScreen(),
     ),
   ];
 
@@ -230,8 +216,7 @@ class AdminDashboard extends StatelessWidget {
                 children: [
                   const CircleAvatar(
                     radius: 40,
-                    backgroundColor: Colors.red,
-                    child: Icon(Icons.admin_panel_settings, size: 40, color: Colors.white),
+                    child: Icon(Icons.medical_services, size: 40),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -239,14 +224,16 @@ class AdminDashboard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'مدير النظام',
+                          user?.name ?? 'الممرض/الممرضة',
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Text(user?.name ?? "المدير"),
-                        Text(user?.email ?? ""),
+                        if (user?.email != null)
+                          Text('البريد: ${user!.email}'),
+                        if (user?.phone != null)
+                          Text('الهاتف: ${user!.phone}'),
                       ],
                     ),
                   ),
@@ -256,7 +243,7 @@ class AdminDashboard extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           const Text(
-            'وظائف مدير النظام',
+            'وظائف التمريض',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -269,7 +256,7 @@ class AdminDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildFeatureCard(BuildContext context, AdminFeature feature) {
+  Widget _buildFeatureCard(BuildContext context, NurseFeature feature) {
     return Card(
       elevation: 3,
       margin: const EdgeInsets.only(bottom: 16),
@@ -301,7 +288,7 @@ class AdminDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildFeatureDetail(AdminFeature feature, String detail) {
+  Widget _buildFeatureDetail(NurseFeature feature, String detail) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -324,11 +311,49 @@ class AdminDashboard extends StatelessWidget {
     );
   }
 
-  void _openFeature(BuildContext context, AdminFeature feature) {
+  void _openFeature(BuildContext context, NurseFeature feature) {
     final builder = feature.builder;
     if (builder != null) {
       Navigator.push(context, MaterialPageRoute(builder: builder));
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FeatureDetailsScreen(feature: feature),
+        ),
+      );
     }
+  }
+}
+
+class FeatureDetailsScreen extends StatelessWidget {
+  const FeatureDetailsScreen({super.key, required this.feature});
+
+  final NurseFeature feature;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(feature.title),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            feature.description,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 16),
+          ...feature.details.map(
+            (detail) => ListTile(
+              leading: Icon(Icons.check_circle_outline, color: feature.color),
+              title: Text(detail),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

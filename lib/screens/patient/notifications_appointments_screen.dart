@@ -5,6 +5,7 @@ import '../../models/doctor_appointment_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider_local.dart';
 import '../../services/data_service.dart';
+import '../../services/invoice_auto_service.dart';
 import '../../utils/auth_helper.dart';
 import 'package:intl/intl.dart';
 
@@ -591,6 +592,19 @@ class _NotificationsAppointmentsScreenState
           );
 
           await _dataService.createAppointmentWithReminders(appointment);
+          
+          // إنشاء فاتورة تلقائية للموعد
+          try {
+            final invoiceService = InvoiceAutoService();
+            await invoiceService.createAppointmentInvoice(
+              appointment: appointment,
+              patient: patient,
+              appointmentFee: 100.0, // يمكن جعلها قابلة للتخصيص
+            );
+          } catch (e) {
+            // لا نوقف العملية إذا فشل إنشاء الفاتورة
+            debugPrint('خطأ في إنشاء فاتورة الموعد: $e');
+          }
           
           // إغلاق مؤشر التحميل
           if (mounted) {

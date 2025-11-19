@@ -11,6 +11,7 @@ import 'screens/pharmacist/pharmacist_home_screen.dart';
 import 'screens/admin/admin_home_screen.dart';
 import 'screens/lab_technician/lab_technician_home_screen.dart';
 import 'screens/radiologist/radiologist_home_screen.dart';
+import 'screens/nurse/nurse_home_screen.dart';
 import 'screens/common/splash_screen.dart';
 
 // Local imports (للوضع المحلي)
@@ -128,6 +129,8 @@ class AuthWrapper extends StatelessWidget {
           return const LabTechnicianHomeScreen();
         case UserRole.radiologist:
           return const RadiologistHomeScreen();
+        case UserRole.nurse:
+          return const NurseHomeScreen();
         default:
           return const LoginScreen();
       }
