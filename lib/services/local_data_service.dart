@@ -3536,5 +3536,80 @@ class LocalDataService {
       'updated_at': cert.updatedAt?.millisecondsSinceEpoch,
     });
   }
+
+  // Location Tracking
+  Future<List<LocationTrackingModel>> getLocationTracking() async {
+    final db = await _db.database;
+    final rows = await db.query(
+      'location_tracking',
+      orderBy: 'timestamp DESC',
+      limit: 100, // آخر 100 موقع
+    );
+
+    return rows.map((r) => LocationTrackingModel.fromMap({
+      'id': r['id'],
+      'ambulanceId': r['ambulance_id'],
+      'ambulanceNumber': r['ambulance_number'],
+      'latitude': r['latitude'],
+      'longitude': r['longitude'],
+      'address': r['address'],
+      'speed': r['speed'],
+      'heading': r['heading'],
+      'timestamp': r['timestamp'],
+      'metadata': r['metadata'],
+    }, r['id'] as String)).toList();
+  }
+
+  // External Integrations
+  Future<List<ExternalIntegrationModel>> getExternalIntegrations() async {
+    final db = await _db.database;
+    final rows = await db.query('external_integrations', orderBy: 'name ASC');
+    return rows.map((r) => ExternalIntegrationModel.fromMap({
+      'id': r['id'],
+      'name': r['name'],
+      'type': r['type'],
+      'status': r['status'],
+      'apiUrl': r['api_url'],
+      'apiKey': r['api_key'],
+      'apiSecret': r['api_secret'],
+      'config': r['config'],
+      'description': r['description'],
+      'lastSync': r['last_sync'],
+      'lastSyncError': r['last_sync_error'],
+      'metadata': r['metadata'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    }, r['id'] as String)).toList();
+  }
+
+  Future<void> createExternalIntegration(ExternalIntegrationModel integration) async {
+    final db = await _db.database;
+    await db.insert('external_integrations', {
+      'id': integration.id,
+      'name': integration.name,
+      'type': integration.type.toString().split('.').last,
+      'status': integration.status.toString().split('.').last,
+      'api_url': integration.apiUrl,
+      'api_key': integration.apiKey,
+      'api_secret': integration.apiSecret,
+      'config': integration.config != null ? jsonEncode(integration.config) : null,
+      'description': integration.description,
+      'last_sync': integration.lastSync?.millisecondsSinceEpoch,
+      'last_sync_error': integration.lastSyncError,
+      'metadata': integration.metadata != null ? jsonEncode(integration.metadata) : null,
+      'created_at': integration.createdAt.millisecondsSinceEpoch,
+      'updated_at': integration.updatedAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  Future<void> updateExternalIntegration(String id, Map<String, dynamic> updates) async {
+    final db = await _db.database;
+    await db.update('external_integrations', updates, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> deleteExternalIntegration(String id) async {
+    final db = await _db.database;
+    await db.delete('external_integrations', where: 'id = ?', whereArgs: [id]);
+  }
 }
 

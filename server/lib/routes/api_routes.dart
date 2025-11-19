@@ -27,7 +27,6 @@ import '../handlers/hospital_pharmacy_handler.dart';
 import '../handlers/documents_handler.dart';
 import '../handlers/quality_handler.dart';
 import '../handlers/hr_handler.dart';
-import '../handlers/maintenance_handler.dart';
 import '../handlers/transportation_handler.dart';
 import '../handlers/integrations_handler.dart';
 
