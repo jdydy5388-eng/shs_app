@@ -468,5 +468,22 @@ class DataService {
   Future<void> deleteDocument(String id) => _service.deleteDocument(id);
   Future<void> createDocumentSignature(signature) => _service.createDocumentSignature(signature);
   Future getDocumentSignature(String documentId) => _service.getDocumentSignature(documentId);
+
+  // Quality Management - KPIs
+  Future<List> getKPIs({category}) => _service.getKPIs(category: category);
+  Future getKPI(String id) => _service.getKPI(id);
+  Future<void> createKPI(kpi) => _service.createKPI(kpi);
+  Future<void> updateKPI(String id, {currentValue, lastUpdated, updatedBy}) =>
+      _service.updateKPI(id, currentValue: currentValue, lastUpdated: lastUpdated, updatedBy: updatedBy);
+
+  // Medical Incidents
+  Future<List> getMedicalIncidents() => _service.getMedicalIncidents();
+  Future<void> createMedicalIncident(incident) => _service.createMedicalIncident(incident);
+
+  // Complaints
+  Future<List> getComplaints() => _service.getComplaints();
+
+  // Accreditation Requirements
+  Future<List> getAccreditationRequirements() => _service.getAccreditationRequirements();
 }
 

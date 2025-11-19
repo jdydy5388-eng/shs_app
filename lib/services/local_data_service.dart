@@ -26,6 +26,7 @@ import '../models/medical_inventory_model.dart';
 import '../models/hospital_pharmacy_model.dart';
 import '../models/lab_test_type_model.dart';
 import '../models/document_model.dart';
+import '../models/quality_models.dart';
 import 'local_database_service.dart';
 
 class DoctorStats {
@@ -3022,15 +3023,232 @@ class LocalDataService {
     if (rows.isEmpty) return null;
 
     final r = rows.first;
-    return DocumentSignature.fromMap({
+      return DocumentSignature.fromMap({
+        'id': r['id'],
+        'documentId': r['document_id'],
+        'signedBy': r['signed_by'],
+        'signedByName': r['signed_by_name'],
+        'signatureData': r['signature_data'],
+        'signedAt': r['signed_at'],
+        'notes': r['notes'],
+      }, r['id'] as String);
+    }
+
+  // Quality Management - KPIs
+  Future<List<KPIModel>> getKPIs({KPICategory? category}) async {
+    final db = await _db.database;
+    final where = category != null ? 'category = ?' : null;
+    final whereArgs = category != null ? [category.toString().split('.').last] : null;
+
+    final rows = await db.query(
+      'quality_kpis',
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: 'created_at DESC',
+    );
+
+    return rows.map((r) => KPIModel.fromMap({
       'id': r['id'],
-      'documentId': r['document_id'],
-      'signedBy': r['signed_by'],
-      'signedByName': r['signed_by_name'],
-      'signatureData': r['signature_data'],
-      'signedAt': r['signed_at'],
-      'notes': r['notes'],
+      'name': r['name'],
+      'arabicName': r['arabic_name'],
+      'description': r['description'],
+      'category': r['category'],
+      'type': r['type'],
+      'targetValue': r['target_value'],
+      'currentValue': r['current_value'],
+      'unit': r['unit'],
+      'lastUpdated': r['last_updated'],
+      'updatedBy': r['updated_by'],
+      'metadata': r['metadata'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    }, r['id'] as String)).toList();
+  }
+
+  Future<KPIModel?> getKPI(String id) async {
+    final db = await _db.database;
+    final rows = await db.query(
+      'quality_kpis',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+
+    if (rows.isEmpty) return null;
+
+    final r = rows.first;
+    return KPIModel.fromMap({
+      'id': r['id'],
+      'name': r['name'],
+      'arabicName': r['arabic_name'],
+      'description': r['description'],
+      'category': r['category'],
+      'type': r['type'],
+      'targetValue': r['target_value'],
+      'currentValue': r['current_value'],
+      'unit': r['unit'],
+      'lastUpdated': r['last_updated'],
+      'updatedBy': r['updated_by'],
+      'metadata': r['metadata'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
     }, r['id'] as String);
+  }
+
+  Future<void> createKPI(KPIModel kpi) async {
+    final db = await _db.database;
+    await db.insert('quality_kpis', {
+      'id': kpi.id,
+      'name': kpi.name,
+      'arabic_name': kpi.arabicName,
+      'description': kpi.description,
+      'category': kpi.category.toString().split('.').last,
+      'type': kpi.type.toString().split('.').last,
+      'target_value': kpi.targetValue,
+      'current_value': kpi.currentValue,
+      'unit': kpi.unit,
+      'last_updated': kpi.lastUpdated?.millisecondsSinceEpoch,
+      'updated_by': kpi.updatedBy,
+      'metadata': kpi.metadata != null ? jsonEncode(kpi.metadata) : null,
+      'created_at': kpi.createdAt.millisecondsSinceEpoch,
+      'updated_at': kpi.updatedAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  Future<void> updateKPI(String id, {
+    double? currentValue,
+    DateTime? lastUpdated,
+    String? updatedBy,
+  }) async {
+    final db = await _db.database;
+    final updates = <String, Object?>{
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    };
+
+    if (currentValue != null) updates['current_value'] = currentValue;
+    if (lastUpdated != null) updates['last_updated'] = lastUpdated.millisecondsSinceEpoch;
+    if (updatedBy != null) updates['updated_by'] = updatedBy;
+
+    await db.update('quality_kpis', updates, where: 'id = ?', whereArgs: [id]);
+  }
+
+  // Medical Incidents
+  Future<List<MedicalIncidentModel>> getMedicalIncidents() async {
+    final db = await _db.database;
+    final rows = await db.query(
+      'medical_incidents',
+      orderBy: 'incident_date DESC',
+    );
+
+    return rows.map((r) => MedicalIncidentModel.fromMap({
+      'id': r['id'],
+      'patientId': r['patient_id'],
+      'patientName': r['patient_name'],
+      'type': r['type'],
+      'severity': r['severity'],
+      'status': r['status'],
+      'description': r['description'],
+      'location': r['location'],
+      'incidentDate': r['incident_date'],
+      'reportedDate': r['reported_date'],
+      'reportedBy': r['reported_by'],
+      'reportedByName': r['reported_by_name'],
+      'investigationNotes': r['investigation_notes'],
+      'resolutionNotes': r['resolution_notes'],
+      'resolvedBy': r['resolved_by'],
+      'resolvedAt': r['resolved_at'],
+      'affectedPersons': r['affected_persons'],
+      'additionalData': r['additional_data'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    }, r['id'] as String)).toList();
+  }
+
+  Future<void> createMedicalIncident(MedicalIncidentModel incident) async {
+    final db = await _db.database;
+    await db.insert('medical_incidents', {
+      'id': incident.id,
+      'patient_id': incident.patientId,
+      'patient_name': incident.patientName,
+      'type': incident.type.toString().split('.').last,
+      'severity': incident.severity.toString().split('.').last,
+      'status': incident.status.toString().split('.').last,
+      'description': incident.description,
+      'location': incident.location,
+      'incident_date': incident.incidentDate.millisecondsSinceEpoch,
+      'reported_date': incident.reportedDate?.millisecondsSinceEpoch,
+      'reported_by': incident.reportedBy,
+      'reported_by_name': incident.reportedByName,
+      'investigation_notes': incident.investigationNotes,
+      'resolution_notes': incident.resolutionNotes,
+      'resolved_by': incident.resolvedBy,
+      'resolved_at': incident.resolvedAt?.millisecondsSinceEpoch,
+      'affected_persons': incident.affectedPersons != null ? jsonEncode(incident.affectedPersons) : null,
+      'additional_data': incident.additionalData != null ? jsonEncode(incident.additionalData) : null,
+      'created_at': incident.createdAt.millisecondsSinceEpoch,
+      'updated_at': incident.updatedAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  // Complaints
+  Future<List<ComplaintModel>> getComplaints() async {
+    final db = await _db.database;
+    final rows = await db.query(
+      'complaints',
+      orderBy: 'complaint_date DESC',
+    );
+
+    return rows.map((r) => ComplaintModel.fromMap({
+      'id': r['id'],
+      'patientId': r['patient_id'],
+      'patientName': r['patient_name'],
+      'complainantName': r['complainant_name'],
+      'complainantPhone': r['complainant_phone'],
+      'complainantEmail': r['complainant_email'],
+      'category': r['category'],
+      'status': r['status'],
+      'subject': r['subject'],
+      'description': r['description'],
+      'department': r['department'],
+      'assignedTo': r['assigned_to'],
+      'assignedToName': r['assigned_to_name'],
+      'response': r['response'],
+      'respondedBy': r['responded_by'],
+      'respondedAt': r['responded_at'],
+      'complaintDate': r['complaint_date'],
+      'resolvedAt': r['resolved_at'],
+      'additionalData': r['additional_data'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    }, r['id'] as String)).toList();
+  }
+
+  // Accreditation Requirements
+  Future<List<AccreditationRequirementModel>> getAccreditationRequirements() async {
+    final db = await _db.database;
+    final rows = await db.query(
+      'accreditation_requirements',
+      orderBy: 'created_at DESC',
+    );
+
+    return rows.map((r) => AccreditationRequirementModel.fromMap({
+      'id': r['id'],
+      'standard': r['standard'],
+      'requirementCode': r['requirement_code'],
+      'title': r['title'],
+      'description': r['description'],
+      'status': r['status'],
+      'evidence': r['evidence'],
+      'notes': r['notes'],
+      'complianceDate': r['compliance_date'],
+      'certificationDate': r['certification_date'],
+      'assignedTo': r['assigned_to'],
+      'assignedToName': r['assigned_to_name'],
+      'dueDate': r['due_date'],
+      'metadata': r['metadata'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    }, r['id'] as String)).toList();
   }
 }
 

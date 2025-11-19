@@ -777,6 +777,108 @@ class DatabaseService {
     await conn.execute('CREATE INDEX IF NOT EXISTS idx_documents_created_by ON documents(created_by)');
     await conn.execute('CREATE INDEX IF NOT EXISTS idx_signatures_document ON document_signatures(document_id)');
 
+    // جداول نظام الجودة
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS quality_kpis (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        arabic_name TEXT,
+        description TEXT NOT NULL,
+        category TEXT NOT NULL,
+        type TEXT NOT NULL,
+        target_value REAL,
+        current_value REAL,
+        unit TEXT,
+        last_updated BIGINT,
+        updated_by TEXT,
+        metadata JSONB,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS medical_incidents (
+        id TEXT PRIMARY KEY,
+        patient_id TEXT,
+        patient_name TEXT,
+        type TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        status TEXT NOT NULL,
+        description TEXT NOT NULL,
+        location TEXT,
+        incident_date BIGINT NOT NULL,
+        reported_date BIGINT,
+        reported_by TEXT,
+        reported_by_name TEXT,
+        investigation_notes TEXT,
+        resolution_notes TEXT,
+        resolved_by TEXT,
+        resolved_at BIGINT,
+        affected_persons JSONB,
+        additional_data JSONB,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS complaints (
+        id TEXT PRIMARY KEY,
+        patient_id TEXT,
+        patient_name TEXT,
+        complainant_name TEXT,
+        complainant_phone TEXT,
+        complainant_email TEXT,
+        category TEXT NOT NULL,
+        status TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        description TEXT NOT NULL,
+        department TEXT,
+        assigned_to TEXT,
+        assigned_to_name TEXT,
+        response TEXT,
+        responded_by TEXT,
+        responded_at BIGINT,
+        complaint_date BIGINT NOT NULL,
+        resolved_at BIGINT,
+        additional_data JSONB,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS accreditation_requirements (
+        id TEXT PRIMARY KEY,
+        standard TEXT NOT NULL,
+        requirement_code TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        status TEXT NOT NULL,
+        evidence TEXT,
+        notes TEXT,
+        compliance_date BIGINT,
+        certification_date BIGINT,
+        assigned_to TEXT,
+        assigned_to_name TEXT,
+        due_date BIGINT,
+        metadata JSONB,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    // إنشاء فهارس نظام الجودة
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_kpis_category ON quality_kpis(category)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_incidents_type ON medical_incidents(type)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_incidents_severity ON medical_incidents(severity)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_incidents_status ON medical_incidents(status)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_complaints_category ON complaints(category)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_complaints_status ON complaints(status)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_accreditation_standard ON accreditation_requirements(standard)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_accreditation_status ON accreditation_requirements(status)');
+
     AppLogger.info('Database tables created/verified');
     print('✅ Database tables ready');
   }

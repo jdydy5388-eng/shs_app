@@ -26,6 +26,7 @@ import '../models/medical_inventory_model.dart';
 import '../models/hospital_pharmacy_model.dart';
 import '../models/lab_test_type_model.dart';
 import '../models/document_model.dart';
+import '../models/quality_models.dart';
 import 'network_auth_context.dart';
 
 /// خدمة البيانات الشبكية - الاتصال بالخادم المركزي عبر REST API
@@ -1566,6 +1567,63 @@ class NetworkDataService {
     } catch (e) {
       return null;
     }
+  }
+
+  // Quality Management - KPIs
+  Future<List<KPIModel>> getKPIs({KPICategory? category}) async {
+    final query = <String, String>{};
+    if (category != null) query['category'] = category.toString().split('.').last;
+
+    final data = await _getList('quality/kpis', queryParams: query);
+    return data.map((m) => KPIModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<KPIModel?> getKPI(String id) async {
+    try {
+      final data = await _get('quality/kpis/$id');
+      return KPIModel.fromMap(data, data['id'] as String);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<void> createKPI(KPIModel kpi) async {
+    await _post('quality/kpis', kpi.toMap());
+  }
+
+  Future<void> updateKPI(String id, {
+    double? currentValue,
+    DateTime? lastUpdated,
+    String? updatedBy,
+  }) async {
+    final body = <String, dynamic>{};
+    if (currentValue != null) body['currentValue'] = currentValue;
+    if (lastUpdated != null) body['lastUpdated'] = lastUpdated.millisecondsSinceEpoch;
+    if (updatedBy != null) body['updatedBy'] = updatedBy;
+
+    await _put('quality/kpis/$id', body);
+  }
+
+  // Medical Incidents
+  Future<List<MedicalIncidentModel>> getMedicalIncidents() async {
+    final data = await _getList('quality/incidents');
+    return data.map((m) => MedicalIncidentModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createMedicalIncident(MedicalIncidentModel incident) async {
+    await _post('quality/incidents', incident.toMap());
+  }
+
+  // Complaints
+  Future<List<ComplaintModel>> getComplaints() async {
+    final data = await _getList('quality/complaints');
+    return data.map((m) => ComplaintModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  // Accreditation Requirements
+  Future<List<AccreditationRequirementModel>> getAccreditationRequirements() async {
+    final data = await _getList('quality/accreditation-requirements');
+    return data.map((m) => AccreditationRequirementModel.fromMap(m, m['id'] as String)).toList();
   }
 }
 

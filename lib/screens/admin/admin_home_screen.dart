@@ -14,6 +14,7 @@ import 'advanced_dashboard_screen.dart';
 import 'advanced_reports_screen.dart';
 import 'notifications_management_screen.dart';
 import 'documents_management_screen.dart';
+import 'quality_management_screen.dart';
 import '../emergency/emergency_dashboard_screen.dart';
 import '../auth/login_screen.dart';
 
@@ -367,6 +368,20 @@ class AdminDashboard extends StatelessWidget {
           'أرشفة الوثائق',
         ],
         builder: (_) => const DocumentsManagementScreen(),
+      ),
+      AdminFeature(
+        title: 'نظام الجودة والاعتماد',
+        description: 'إدارة مؤشرات الجودة والحوادث الطبية والشكاوى ومتطلبات الاعتماد.',
+        icon: Icons.verified_user,
+        color: Colors.teal,
+        details: [
+          'مؤشرات الجودة (KPIs) - تتبع ومتابعة مؤشرات الأداء',
+          'تتبع الحوادث الطبية - تسجيل وإدارة الحوادث الطبية',
+          'إدارة الشكاوى - معالجة ومتابعة شكاوى المرضى',
+          'تقارير الجودة - تقارير شاملة عن جودة الخدمات',
+          'متطلبات الاعتماد - إدارة متطلبات الاعتماد (JCI, CBAHI, ISO)',
+        ],
+        builder: (_) => const QualityManagementScreen(),
       ),
     ];
 

@@ -9,7 +9,7 @@ import 'dart:io' show Platform;
 class LocalDatabaseService {
   static Database? _database;
   static const String _databaseName = 'shs_app.db';
-  static const int _databaseVersion = 17;
+  static const int _databaseVersion = 18;
   static bool _initialized = false;
 
   Future<Database> get database async {
@@ -1270,6 +1270,210 @@ class LocalDatabaseService {
         await db.execute('CREATE INDEX IF NOT EXISTS idx_documents_doctor ON documents(doctor_id)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_documents_created_by ON documents(created_by)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_signatures_document ON document_signatures(document_id)');
+
+        // جداول نظام الجودة
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS quality_kpis (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            arabic_name TEXT,
+            description TEXT NOT NULL,
+            category TEXT NOT NULL,
+            type TEXT NOT NULL,
+            target_value REAL,
+            current_value REAL,
+            unit TEXT,
+            last_updated INTEGER,
+            updated_by TEXT,
+            metadata TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS medical_incidents (
+            id TEXT PRIMARY KEY,
+            patient_id TEXT,
+            patient_name TEXT,
+            type TEXT NOT NULL,
+            severity TEXT NOT NULL,
+            status TEXT NOT NULL,
+            description TEXT NOT NULL,
+            location TEXT,
+            incident_date INTEGER NOT NULL,
+            reported_date INTEGER,
+            reported_by TEXT,
+            reported_by_name TEXT,
+            investigation_notes TEXT,
+            resolution_notes TEXT,
+            resolved_by TEXT,
+            resolved_at INTEGER,
+            affected_persons TEXT,
+            additional_data TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS complaints (
+            id TEXT PRIMARY KEY,
+            patient_id TEXT,
+            patient_name TEXT,
+            complainant_name TEXT,
+            complainant_phone TEXT,
+            complainant_email TEXT,
+            category TEXT NOT NULL,
+            status TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            description TEXT NOT NULL,
+            department TEXT,
+            assigned_to TEXT,
+            assigned_to_name TEXT,
+            response TEXT,
+            responded_by TEXT,
+            responded_at INTEGER,
+            complaint_date INTEGER NOT NULL,
+            resolved_at INTEGER,
+            additional_data TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS accreditation_requirements (
+            id TEXT PRIMARY KEY,
+            standard TEXT NOT NULL,
+            requirement_code TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            status TEXT NOT NULL,
+            evidence TEXT,
+            notes TEXT,
+            compliance_date INTEGER,
+            certification_date INTEGER,
+            assigned_to TEXT,
+            assigned_to_name TEXT,
+            due_date INTEGER,
+            metadata TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_kpis_category ON quality_kpis(category)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_incidents_type ON medical_incidents(type)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_incidents_severity ON medical_incidents(severity)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_incidents_status ON medical_incidents(status)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_complaints_category ON complaints(category)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_complaints_status ON complaints(status)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_accreditation_standard ON accreditation_requirements(standard)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_accreditation_status ON accreditation_requirements(status)');
+      }
+
+      if (oldVersion < 18) {
+        // إضافة جداول نظام الجودة
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS quality_kpis (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            arabic_name TEXT,
+            description TEXT NOT NULL,
+            category TEXT NOT NULL,
+            type TEXT NOT NULL,
+            target_value REAL,
+            current_value REAL,
+            unit TEXT,
+            last_updated INTEGER,
+            updated_by TEXT,
+            metadata TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS medical_incidents (
+            id TEXT PRIMARY KEY,
+            patient_id TEXT,
+            patient_name TEXT,
+            type TEXT NOT NULL,
+            severity TEXT NOT NULL,
+            status TEXT NOT NULL,
+            description TEXT NOT NULL,
+            location TEXT,
+            incident_date INTEGER NOT NULL,
+            reported_date INTEGER,
+            reported_by TEXT,
+            reported_by_name TEXT,
+            investigation_notes TEXT,
+            resolution_notes TEXT,
+            resolved_by TEXT,
+            resolved_at INTEGER,
+            affected_persons TEXT,
+            additional_data TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS complaints (
+            id TEXT PRIMARY KEY,
+            patient_id TEXT,
+            patient_name TEXT,
+            complainant_name TEXT,
+            complainant_phone TEXT,
+            complainant_email TEXT,
+            category TEXT NOT NULL,
+            status TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            description TEXT NOT NULL,
+            department TEXT,
+            assigned_to TEXT,
+            assigned_to_name TEXT,
+            response TEXT,
+            responded_by TEXT,
+            responded_at INTEGER,
+            complaint_date INTEGER NOT NULL,
+            resolved_at INTEGER,
+            additional_data TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS accreditation_requirements (
+            id TEXT PRIMARY KEY,
+            standard TEXT NOT NULL,
+            requirement_code TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            status TEXT NOT NULL,
+            evidence TEXT,
+            notes TEXT,
+            compliance_date INTEGER,
+            certification_date INTEGER,
+            assigned_to TEXT,
+            assigned_to_name TEXT,
+            due_date INTEGER,
+            metadata TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_kpis_category ON quality_kpis(category)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_incidents_type ON medical_incidents(type)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_incidents_severity ON medical_incidents(severity)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_incidents_status ON medical_incidents(status)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_complaints_category ON complaints(category)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_complaints_status ON complaints(status)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_accreditation_standard ON accreditation_requirements(standard)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_accreditation_status ON accreditation_requirements(status)');
       }
     }
 
