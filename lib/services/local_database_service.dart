@@ -1374,119 +1374,7 @@ class LocalDatabaseService {
       }
 
       if (oldVersion < 18) {
-        // إضافة جداول نظام الجودة (تم إضافتها في _onCreate)
-      }
-
-      if (oldVersion < 19) {
-        // إضافة جداول نظام الموارد البشرية
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS employees (
-            id TEXT PRIMARY KEY,
-            user_id TEXT NOT NULL,
-            employee_number TEXT NOT NULL UNIQUE,
-            department TEXT NOT NULL,
-            position TEXT NOT NULL,
-            employment_type TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'active',
-            hire_date INTEGER NOT NULL,
-            termination_date INTEGER,
-            salary REAL,
-            manager_id TEXT,
-            manager_name TEXT,
-            additional_info TEXT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER
-          )
-        ''');
-
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS leave_requests (
-            id TEXT PRIMARY KEY,
-            employee_id TEXT NOT NULL,
-            employee_name TEXT,
-            type TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'pending',
-            start_date INTEGER NOT NULL,
-            end_date INTEGER NOT NULL,
-            days INTEGER NOT NULL,
-            reason TEXT,
-            notes TEXT,
-            approved_by TEXT,
-            approved_by_name TEXT,
-            approved_at INTEGER,
-            rejection_reason TEXT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER
-          )
-        ''');
-
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS payrolls (
-            id TEXT PRIMARY KEY,
-            employee_id TEXT NOT NULL,
-            employee_name TEXT,
-            pay_period_start INTEGER NOT NULL,
-            pay_period_end INTEGER NOT NULL,
-            base_salary REAL NOT NULL,
-            allowances REAL,
-            deductions REAL,
-            bonuses REAL,
-            overtime REAL,
-            net_salary REAL NOT NULL,
-            status TEXT NOT NULL DEFAULT 'draft',
-            paid_date INTEGER,
-            notes TEXT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER
-          )
-        ''');
-
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS trainings (
-            id TEXT PRIMARY KEY,
-            title TEXT NOT NULL,
-            description TEXT,
-            trainer TEXT,
-            location TEXT,
-            start_date INTEGER NOT NULL,
-            end_date INTEGER NOT NULL,
-            max_participants INTEGER,
-            participant_ids TEXT,
-            status TEXT NOT NULL DEFAULT 'scheduled',
-            notes TEXT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER
-          )
-        ''');
-
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS certifications (
-            id TEXT PRIMARY KEY,
-            employee_id TEXT NOT NULL,
-            employee_name TEXT,
-            certificate_name TEXT NOT NULL,
-            issuing_organization TEXT NOT NULL,
-            issue_date INTEGER NOT NULL,
-            expiry_date INTEGER NOT NULL,
-            certificate_number TEXT,
-            certificate_url TEXT,
-            status TEXT NOT NULL DEFAULT 'active',
-            notes TEXT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER
-          )
-        ''');
-
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_employees_status ON employees(status)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_employees_department ON employees(department)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_leave_requests_employee ON leave_requests(employee_id)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_leave_requests_status ON leave_requests(status)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_payrolls_employee ON payrolls(employee_id)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_payrolls_status ON payrolls(status)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_certifications_employee ON certifications(employee_id)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_certifications_status ON certifications(status)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_certifications_expiry ON certifications(expiry_date)');
-      }
+        // إضافة جداول نظام الجودة
         await db.execute('''
           CREATE TABLE IF NOT EXISTS quality_kpis (
             id TEXT PRIMARY KEY,
@@ -1586,8 +1474,10 @@ class LocalDatabaseService {
         await db.execute('CREATE INDEX IF NOT EXISTS idx_complaints_status ON complaints(status)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_accreditation_standard ON accreditation_requirements(standard)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_accreditation_status ON accreditation_requirements(status)');
+      }
 
-        // جداول نظام الموارد البشرية
+      if (oldVersion < 19) {
+        // إضافة جداول نظام الموارد البشرية
         await db.execute('''
           CREATE TABLE IF NOT EXISTS employees (
             id TEXT PRIMARY KEY,
@@ -2069,7 +1959,7 @@ class LocalDatabaseService {
   }
 
   Future<void> clearAllData() async {
-    final db = await this.database;
+    final db = await database;
     await db.delete('users');
     await db.delete('prescriptions');
     await db.delete('prescription_medications');
