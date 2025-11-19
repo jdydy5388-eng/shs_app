@@ -17,6 +17,9 @@ import 'screens/common/splash_screen.dart';
 // Local imports (للوضع المحلي)
 import 'providers/auth_provider_local.dart';
 import 'providers/notification_provider.dart';
+import 'providers/theme_provider.dart';
+import 'providers/locale_provider.dart';
+import 'utils/app_themes.dart';
 import 'services/local_database_service.dart';
 import 'services/notification_service.dart';
 import 'services/advanced_notification_service.dart';
@@ -54,6 +57,8 @@ class MyApp extends StatelessWidget {
       providers: [
         // استخدام Provider المناسب حسب الوضع
         ChangeNotifierProvider(create: (_) => AuthProviderLocal()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) {
           final provider = NotificationProvider();
           // تهيئة خدمة الإشعارات
@@ -64,43 +69,35 @@ class MyApp extends StatelessWidget {
           return provider;
         }),
       ],
-      child: MaterialApp(
-        title: 'النظام الصحي الذكي',
-        debugShowCheckedModeBanner: false,
-        locale: const Locale('ar', 'SA'),
-        supportedLocales: const [
-          Locale('ar', 'SA'),
-          Locale('en', 'US'),
-        ],
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.blue,
-            primary: Colors.blue,
-            secondary: Colors.green,
-          ),
-          useMaterial3: true,
-          appBarTheme: const AppBarTheme(
-            centerTitle: true,
-            elevation: 2,
-          ),
-          cardTheme: CardThemeData(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
-        home: kIsWeb ? const AuthWrapper() : const SplashScreen(),
+      child: Consumer2<ThemeProvider, LocaleProvider>(
+        builder: (context, themeProvider, localeProvider, _) {
+          return MaterialApp(
+            title: 'النظام الصحي الذكي',
+            debugShowCheckedModeBanner: false,
+            locale: localeProvider.locale,
+            supportedLocales: const [
+              Locale('ar', 'SA'),
+              Locale('en', 'US'),
+            ],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            theme: AppThemes.lightTheme,
+            darkTheme: AppThemes.darkTheme,
+            themeMode: themeProvider.themeMode,
+            builder: (context, child) {
+              return Directionality(
+                textDirection: localeProvider.locale.languageCode == 'ar'
+                    ? TextDirection.rtl
+                    : TextDirection.ltr,
+                child: child!,
+              );
+            },
+            home: kIsWeb ? const AuthWrapper() : const SplashScreen(),
+          );
+        },
       ),
     );
   }
