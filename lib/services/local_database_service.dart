@@ -1697,7 +1697,7 @@ class LocalDatabaseService {
         await db.execute('CREATE INDEX IF NOT EXISTS idx_certifications_expiry ON certifications(expiry_date)');
       }
 
-      if (oldVersion < 20) {
+    if (oldVersion < 20) {
         // جداول نظام الصيانة
         await db.execute('''
           CREATE TABLE IF NOT EXISTS maintenance_requests (
@@ -1794,9 +1794,9 @@ class LocalDatabaseService {
         await db.execute('CREATE INDEX IF NOT EXISTS idx_equipment_statuses_condition ON equipment_statuses(condition)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_vendors_type ON maintenance_vendors(type)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_vendors_active ON maintenance_vendors(is_active)');
-      }
+    }
 
-      if (oldVersion < 21) {
+    if (oldVersion < 21) {
         // إضافة جداول نظام المواصلات
         await db.execute('''
           CREATE TABLE IF NOT EXISTS ambulances (
@@ -1910,7 +1910,7 @@ class LocalDatabaseService {
         await db.execute('CREATE INDEX IF NOT EXISTS idx_external_integrations_status ON external_integrations(status)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_integration_sync_logs_integration ON integration_sync_logs(integration_id)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_integration_sync_logs_timestamp ON integration_sync_logs(timestamp)');
-      }
+    }
   }
 
   Future<void> _createDoctorTables(Database db) async {
@@ -2069,7 +2069,7 @@ class LocalDatabaseService {
   }
 
   Future<void> clearAllData() async {
-    final db = await this.database;
+    final db = await database;
     await db.delete('users');
     await db.delete('prescriptions');
     await db.delete('prescription_medications');
