@@ -3,6 +3,7 @@ import '../../utils/auth_helper.dart';
 import 'orders_screen.dart';
 import 'inventory_screen.dart';
 import 'pharmacist_settings_reports_screen.dart';
+import 'hospital_pharmacy_screen.dart';
 import '../auth/login_screen.dart';
 
 class PharmacistFeature {
@@ -143,6 +144,20 @@ class PharmacistDashboard extends StatelessWidget {
   const PharmacistDashboard({super.key});
 
   static final List<PharmacistFeature> _features = [
+    PharmacistFeature(
+      title: 'صيدلية المستشفى الداخلية',
+      description: 'إدارة صرف الأدوية للمرضى المقيمين في المستشفى.',
+      icon: Icons.local_hospital,
+      color: Colors.red,
+      details: [
+        'صرف الأدوية للمرضى المقيمين',
+        'تتبع الأدوية المعطاة للمرضى',
+        'تنبيهات مواعيد الأدوية',
+        'سجل الأدوية المعطاة',
+        'جدولة الأدوية حسب الوصفات الطبية',
+      ],
+      builder: (_) => const HospitalPharmacyScreen(),
+    ),
     PharmacistFeature(
       title: 'إدارة طلبات الأدوية',
       description: 'استقبال وإدارة طلبات الأدوية من المرضى بكفاءة عالية.',

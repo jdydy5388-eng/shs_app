@@ -320,6 +320,16 @@ class DataService {
   Future<List> getMaintenanceRecords({equipmentId}) => _service.getMaintenanceRecords(equipmentId: equipmentId);
   Future<void> createMaintenanceRecord(record) => _service.createMaintenanceRecord(record);
 
+  // Hospital Pharmacy
+  Future<List> getHospitalPharmacyDispenses({patientId, status, from, to}) =>
+      _service.getHospitalPharmacyDispenses(patientId: patientId, status: status, from: from, to: to);
+  Future<void> createHospitalPharmacyDispense(dispense) => _service.createHospitalPharmacyDispense(dispense);
+  Future<void> updateDispenseStatus(String id, status, {dispensedBy}) =>
+      _service.updateDispenseStatus(id, status, dispensedBy: dispensedBy);
+  Future<List> getMedicationSchedules({patientId, isActive}) =>
+      _service.getMedicationSchedules(patientId: patientId, isActive: isActive);
+  Future<void> createMedicationSchedule(schedule) => _service.createMedicationSchedule(schedule);
+
   // Notifications (SMS/Email)
   Future<List> getNotifications({status, String? relatedType, String? relatedId}) => 
       _service.getNotifications(status: status, relatedType: relatedType, relatedId: relatedId);

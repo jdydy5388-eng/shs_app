@@ -23,6 +23,7 @@ import '../models/radiology_model.dart';
 import '../models/attendance_model.dart';
 import '../models/surgery_model.dart';
 import '../models/medical_inventory_model.dart';
+import '../models/hospital_pharmacy_model.dart';
 import 'network_auth_context.dart';
 
 /// خدمة البيانات الشبكية - الاتصال بالخادم المركزي عبر REST API
@@ -1352,6 +1353,51 @@ class NetworkDataService {
 
   Future<void> createMaintenanceRecord(MaintenanceRecordModel record) async {
     await _post('maintenance-records', record.toMap());
+  }
+
+  // Hospital Pharmacy
+  Future<List<HospitalPharmacyDispenseModel>> getHospitalPharmacyDispenses({
+    String? patientId,
+    MedicationDispenseStatus? status,
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    final query = <String, String>{};
+    if (patientId != null) query['patientId'] = patientId;
+    if (status != null) query['status'] = status.toString().split('.').last;
+    if (from != null) query['from'] = from.millisecondsSinceEpoch.toString();
+    if (to != null) query['to'] = to.millisecondsSinceEpoch.toString();
+    
+    final data = await _getList('hospital-pharmacy-dispenses', queryParams: query);
+    return data.map((m) => HospitalPharmacyDispenseModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createHospitalPharmacyDispense(HospitalPharmacyDispenseModel dispense) async {
+    await _post('hospital-pharmacy-dispenses', dispense.toMap());
+  }
+
+  Future<void> updateDispenseStatus(String id, MedicationDispenseStatus status, {String? dispensedBy}) async {
+    final body = <String, dynamic>{
+      'status': status.toString().split('.').last,
+    };
+    if (dispensedBy != null) body['dispensedBy'] = dispensedBy;
+    await _put('hospital-pharmacy-dispenses/$id', body);
+  }
+
+  Future<List<MedicationScheduleModel>> getMedicationSchedules({
+    String? patientId,
+    bool? isActive,
+  }) async {
+    final query = <String, String>{};
+    if (patientId != null) query['patientId'] = patientId;
+    if (isActive != null) query['isActive'] = isActive.toString();
+    
+    final data = await _getList('medication-schedules', queryParams: query);
+    return data.map((m) => MedicationScheduleModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createMedicationSchedule(MedicationScheduleModel schedule) async {
+    await _post('medication-schedules', schedule.toMap());
   }
 }
 

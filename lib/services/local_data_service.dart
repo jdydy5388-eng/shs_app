@@ -23,6 +23,7 @@ import '../models/notification_model.dart';
 import '../models/attendance_model.dart';
 import '../models/surgery_model.dart';
 import '../models/medical_inventory_model.dart';
+import '../models/hospital_pharmacy_model.dart';
 import 'local_database_service.dart';
 
 class DoctorStats {
@@ -2371,6 +2372,189 @@ class LocalDataService {
       'cost': record.cost,
       'next_maintenance_date': record.nextMaintenanceDate?.millisecondsSinceEpoch,
       'created_at': record.createdAt.millisecondsSinceEpoch,
+    });
+  }
+
+  // Hospital Pharmacy
+  Future<List<HospitalPharmacyDispenseModel>> getHospitalPharmacyDispenses({
+    String? patientId,
+    MedicationDispenseStatus? status,
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    final db = await _db.database;
+    final where = <String>[];
+    final args = <Object>[];
+
+    if (patientId != null) {
+      where.add('patient_id = ?');
+      args.add(patientId);
+    }
+    if (status != null) {
+      where.add('status = ?');
+      args.add(status.toString().split('.').last);
+    }
+    if (from != null) {
+      where.add('scheduled_time >= ?');
+      args.add(from.millisecondsSinceEpoch);
+    }
+    if (to != null) {
+      where.add('scheduled_time <= ?');
+      args.add(to.millisecondsSinceEpoch);
+    }
+
+    final rows = await db.query(
+      'hospital_pharmacy_dispenses',
+      where: where.isEmpty ? null : where.join(' AND '),
+      whereArgs: where.isEmpty ? null : args,
+      orderBy: 'scheduled_time ASC',
+    );
+
+    return rows.map((r) => HospitalPharmacyDispenseModel.fromMap({
+      'id': r['id'],
+      'patientId': r['patient_id'],
+      'patientName': r['patient_name'],
+      'bedId': r['bed_id'],
+      'roomId': r['room_id'],
+      'prescriptionId': r['prescription_id'],
+      'medicationId': r['medication_id'],
+      'medicationName': r['medication_name'],
+      'dosage': r['dosage'],
+      'frequency': r['frequency'],
+      'quantity': r['quantity'],
+      'status': r['status'],
+      'scheduleType': r['schedule_type'],
+      'scheduledTime': r['scheduled_time'],
+      'dispensedAt': r['dispensed_at'],
+      'dispensedBy': r['dispensed_by'],
+      'notes': r['notes'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    }, r['id'] as String)).toList();
+  }
+
+  Future<void> createHospitalPharmacyDispense(HospitalPharmacyDispenseModel dispense) async {
+    final db = await _db.database;
+    await db.insert('hospital_pharmacy_dispenses', {
+      'id': dispense.id,
+      'patient_id': dispense.patientId,
+      'patient_name': dispense.patientName,
+      'bed_id': dispense.bedId,
+      'room_id': dispense.roomId,
+      'prescription_id': dispense.prescriptionId,
+      'medication_id': dispense.medicationId,
+      'medication_name': dispense.medicationName,
+      'dosage': dispense.dosage,
+      'frequency': dispense.frequency,
+      'quantity': dispense.quantity,
+      'status': dispense.status.toString().split('.').last,
+      'schedule_type': dispense.scheduleType.toString().split('.').last,
+      'scheduled_time': dispense.scheduledTime.millisecondsSinceEpoch,
+      'dispensed_at': dispense.dispensedAt?.millisecondsSinceEpoch,
+      'dispensed_by': dispense.dispensedBy,
+      'notes': dispense.notes,
+      'created_at': dispense.createdAt.millisecondsSinceEpoch,
+      'updated_at': dispense.updatedAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  Future<void> updateDispenseStatus(String id, MedicationDispenseStatus status, {String? dispensedBy}) async {
+    final db = await _db.database;
+    final updates = <String, Object?>{
+      'status': status.toString().split('.').last,
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    };
+
+    if (status == MedicationDispenseStatus.dispensed) {
+      updates['dispensed_at'] = DateTime.now().millisecondsSinceEpoch;
+      if (dispensedBy != null) updates['dispensed_by'] = dispensedBy;
+    }
+
+    await db.update('hospital_pharmacy_dispenses', updates, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<MedicationScheduleModel>> getMedicationSchedules({
+    String? patientId,
+    bool? isActive,
+  }) async {
+    final db = await _db.database;
+    final where = <String>[];
+    final args = <Object>[];
+
+    if (patientId != null) {
+      where.add('patient_id = ?');
+      args.add(patientId);
+    }
+    if (isActive != null) {
+      where.add('is_active = ?');
+      args.add(isActive ? 1 : 0);
+    }
+
+    final rows = await db.query(
+      'medication_schedules',
+      where: where.isEmpty ? null : where.join(' AND '),
+      whereArgs: where.isEmpty ? null : args,
+      orderBy: 'start_date DESC',
+    );
+
+    return rows.map((r) {
+      List<DateTime> scheduledTimes = [];
+      if (r['scheduled_times'] != null) {
+        try {
+          final decoded = jsonDecode(r['scheduled_times'] as String) as List;
+          scheduledTimes = decoded.map((t) {
+            if (t is int) return DateTime.fromMillisecondsSinceEpoch(t);
+            return DateTime.now();
+          }).toList();
+        } catch (_) {}
+      }
+
+      return MedicationScheduleModel.fromMap({
+        'id': r['id'],
+        'patientId': r['patient_id'],
+        'patientName': r['patient_name'],
+        'bedId': r['bed_id'],
+        'roomId': r['room_id'],
+        'prescriptionId': r['prescription_id'],
+        'medicationId': r['medication_id'],
+        'medicationName': r['medication_name'],
+        'dosage': r['dosage'],
+        'frequency': r['frequency'],
+        'quantity': r['quantity'],
+        'scheduleType': r['schedule_type'],
+        'startDate': r['start_date'],
+        'endDate': r['end_date'],
+        'scheduledTimes': scheduledTimes,
+        'isActive': (r['is_active'] as int?) == 1,
+        'notes': r['notes'],
+        'createdAt': r['created_at'],
+        'updatedAt': r['updated_at'],
+      }, r['id'] as String);
+    }).toList();
+  }
+
+  Future<void> createMedicationSchedule(MedicationScheduleModel schedule) async {
+    final db = await _db.database;
+    await db.insert('medication_schedules', {
+      'id': schedule.id,
+      'patient_id': schedule.patientId,
+      'patient_name': schedule.patientName,
+      'bed_id': schedule.bedId,
+      'room_id': schedule.roomId,
+      'prescription_id': schedule.prescriptionId,
+      'medication_id': schedule.medicationId,
+      'medication_name': schedule.medicationName,
+      'dosage': schedule.dosage,
+      'frequency': schedule.frequency,
+      'quantity': schedule.quantity,
+      'schedule_type': schedule.scheduleType.toString().split('.').last,
+      'start_date': schedule.startDate.millisecondsSinceEpoch,
+      'end_date': schedule.endDate?.millisecondsSinceEpoch,
+      'scheduled_times': jsonEncode(schedule.scheduledTimes.map((t) => t.millisecondsSinceEpoch).toList()),
+      'is_active': schedule.isActive ? 1 : 0,
+      'notes': schedule.notes,
+      'created_at': schedule.createdAt.millisecondsSinceEpoch,
+      'updated_at': schedule.updatedAt?.millisecondsSinceEpoch,
     });
   }
 }

@@ -9,7 +9,7 @@ import 'dart:io' show Platform;
 class LocalDatabaseService {
   static Database? _database;
   static const String _databaseName = 'shs_app.db';
-  static const int _databaseVersion = 14;
+  static const int _databaseVersion = 15;
   static bool _initialized = false;
 
   Future<Database> get database async {
@@ -550,6 +550,62 @@ class LocalDatabaseService {
     await db.execute('CREATE INDEX IF NOT EXISTS idx_medical_inventory_status ON medical_inventory(status)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_purchase_orders_status ON purchase_orders(status)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_records_equipment ON maintenance_records(equipment_id)');
+
+    // جدول الصيدلية الداخلية - جدول الأدوية
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS hospital_pharmacy_dispenses (
+        id TEXT PRIMARY KEY,
+        patient_id TEXT NOT NULL,
+        patient_name TEXT NOT NULL,
+        bed_id TEXT,
+        room_id TEXT,
+        prescription_id TEXT NOT NULL,
+        medication_id TEXT NOT NULL,
+        medication_name TEXT NOT NULL,
+        dosage TEXT NOT NULL,
+        frequency TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        schedule_type TEXT NOT NULL,
+        scheduled_time INTEGER NOT NULL,
+        dispensed_at INTEGER,
+        dispensed_by TEXT,
+        notes TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER
+      )
+    ''');
+
+    // جدول جدولة الأدوية
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS medication_schedules (
+        id TEXT PRIMARY KEY,
+        patient_id TEXT NOT NULL,
+        patient_name TEXT NOT NULL,
+        bed_id TEXT,
+        room_id TEXT,
+        prescription_id TEXT NOT NULL,
+        medication_id TEXT NOT NULL,
+        medication_name TEXT NOT NULL,
+        dosage TEXT NOT NULL,
+        frequency TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        schedule_type TEXT NOT NULL,
+        start_date INTEGER NOT NULL,
+        end_date INTEGER,
+        scheduled_times TEXT NOT NULL,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        notes TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER
+      )
+    ''');
+
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_dispenses_patient ON hospital_pharmacy_dispenses(patient_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_dispenses_status ON hospital_pharmacy_dispenses(status)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_dispenses_scheduled_time ON hospital_pharmacy_dispenses(scheduled_time)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_schedules_patient ON medication_schedules(patient_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_schedules_active ON medication_schedules(is_active)');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -962,6 +1018,62 @@ class LocalDatabaseService {
         await db.execute('CREATE INDEX IF NOT EXISTS idx_medical_inventory_status ON medical_inventory(status)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_purchase_orders_status ON purchase_orders(status)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_records_equipment ON maintenance_records(equipment_id)');
+      }
+      if (oldVersion < 15) {
+        // إضافة جداول الصيدلية الداخلية
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS hospital_pharmacy_dispenses (
+            id TEXT PRIMARY KEY,
+            patient_id TEXT NOT NULL,
+            patient_name TEXT NOT NULL,
+            bed_id TEXT,
+            room_id TEXT,
+            prescription_id TEXT NOT NULL,
+            medication_id TEXT NOT NULL,
+            medication_name TEXT NOT NULL,
+            dosage TEXT NOT NULL,
+            frequency TEXT NOT NULL,
+            quantity INTEGER NOT NULL,
+            status TEXT NOT NULL,
+            schedule_type TEXT NOT NULL,
+            scheduled_time INTEGER NOT NULL,
+            dispensed_at INTEGER,
+            dispensed_by TEXT,
+            notes TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS medication_schedules (
+            id TEXT PRIMARY KEY,
+            patient_id TEXT NOT NULL,
+            patient_name TEXT NOT NULL,
+            bed_id TEXT,
+            room_id TEXT,
+            prescription_id TEXT NOT NULL,
+            medication_id TEXT NOT NULL,
+            medication_name TEXT NOT NULL,
+            dosage TEXT NOT NULL,
+            frequency TEXT NOT NULL,
+            quantity INTEGER NOT NULL,
+            schedule_type TEXT NOT NULL,
+            start_date INTEGER NOT NULL,
+            end_date INTEGER,
+            scheduled_times TEXT NOT NULL,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            notes TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_dispenses_patient ON hospital_pharmacy_dispenses(patient_id)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_dispenses_status ON hospital_pharmacy_dispenses(status)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_dispenses_scheduled_time ON hospital_pharmacy_dispenses(scheduled_time)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_schedules_patient ON medication_schedules(patient_id)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_schedules_active ON medication_schedules(is_active)');
       }
     }
 

@@ -564,6 +564,56 @@ class DatabaseService {
       )
     ''');
 
+    // جدول الصيدلية الداخلية - جدول الأدوية
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS hospital_pharmacy_dispenses (
+        id TEXT PRIMARY KEY,
+        patient_id TEXT NOT NULL,
+        patient_name TEXT NOT NULL,
+        bed_id TEXT,
+        room_id TEXT,
+        prescription_id TEXT NOT NULL,
+        medication_id TEXT NOT NULL,
+        medication_name TEXT NOT NULL,
+        dosage TEXT NOT NULL,
+        frequency TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        status TEXT NOT NULL,              -- scheduled / dispensed / missed / cancelled
+        schedule_type TEXT NOT NULL,       -- scheduled / prn / stat
+        scheduled_time BIGINT NOT NULL,
+        dispensed_at BIGINT,
+        dispensed_by TEXT,
+        notes TEXT,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    // جدول جدولة الأدوية
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS medication_schedules (
+        id TEXT PRIMARY KEY,
+        patient_id TEXT NOT NULL,
+        patient_name TEXT NOT NULL,
+        bed_id TEXT,
+        room_id TEXT,
+        prescription_id TEXT NOT NULL,
+        medication_id TEXT NOT NULL,
+        medication_name TEXT NOT NULL,
+        dosage TEXT NOT NULL,
+        frequency TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        schedule_type TEXT NOT NULL,       -- scheduled / prn / stat
+        start_date BIGINT NOT NULL,
+        end_date BIGINT,
+        scheduled_times JSONB NOT NULL,   -- قائمة الأوقات المجدولة
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        notes TEXT,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
     // جداول التمريض
     await conn.execute('''
       CREATE TABLE IF NOT EXISTS nursing_tasks (
