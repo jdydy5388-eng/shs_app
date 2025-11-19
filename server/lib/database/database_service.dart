@@ -879,6 +879,116 @@ class DatabaseService {
     await conn.execute('CREATE INDEX IF NOT EXISTS idx_accreditation_standard ON accreditation_requirements(standard)');
     await conn.execute('CREATE INDEX IF NOT EXISTS idx_accreditation_status ON accreditation_requirements(status)');
 
+    // جداول نظام الموارد البشرية
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS employees (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        employee_number TEXT UNIQUE NOT NULL,
+        department TEXT NOT NULL,
+        position TEXT NOT NULL,
+        employment_type TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        hire_date BIGINT NOT NULL,
+        termination_date BIGINT,
+        salary REAL,
+        manager_id TEXT,
+        manager_name TEXT,
+        additional_info JSONB,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS leave_requests (
+        id TEXT PRIMARY KEY,
+        employee_id TEXT NOT NULL,
+        employee_name TEXT,
+        type TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        start_date BIGINT NOT NULL,
+        end_date BIGINT NOT NULL,
+        days INTEGER NOT NULL,
+        reason TEXT,
+        notes TEXT,
+        approved_by TEXT,
+        approved_by_name TEXT,
+        approved_at BIGINT,
+        rejection_reason TEXT,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS payrolls (
+        id TEXT PRIMARY KEY,
+        employee_id TEXT NOT NULL,
+        employee_name TEXT,
+        pay_period_start BIGINT NOT NULL,
+        pay_period_end BIGINT NOT NULL,
+        base_salary REAL NOT NULL,
+        allowances REAL,
+        deductions REAL,
+        bonuses REAL,
+        overtime REAL,
+        net_salary REAL NOT NULL,
+        status TEXT NOT NULL DEFAULT 'draft',
+        paid_date BIGINT,
+        notes TEXT,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS trainings (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT,
+        trainer TEXT,
+        location TEXT,
+        start_date BIGINT NOT NULL,
+        end_date BIGINT NOT NULL,
+        max_participants INTEGER,
+        participant_ids JSONB,
+        status TEXT NOT NULL DEFAULT 'scheduled',
+        notes TEXT,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS certifications (
+        id TEXT PRIMARY KEY,
+        employee_id TEXT NOT NULL,
+        employee_name TEXT,
+        certificate_name TEXT NOT NULL,
+        issuing_organization TEXT NOT NULL,
+        issue_date BIGINT NOT NULL,
+        expiry_date BIGINT NOT NULL,
+        certificate_number TEXT,
+        certificate_url TEXT,
+        status TEXT NOT NULL DEFAULT 'active',
+        notes TEXT,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
+    // إنشاء فهارس نظام الموارد البشرية
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_employees_status ON employees(status)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_employees_department ON employees(department)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_leave_requests_employee ON leave_requests(employee_id)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_leave_requests_status ON leave_requests(status)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_payrolls_employee ON payrolls(employee_id)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_payrolls_status ON payrolls(status)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_certifications_employee ON certifications(employee_id)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_certifications_status ON certifications(status)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_certifications_expiry ON certifications(expiry_date)');
+
     AppLogger.info('Database tables created/verified');
     print('✅ Database tables ready');
   }

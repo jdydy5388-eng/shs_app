@@ -27,6 +27,7 @@ import '../models/hospital_pharmacy_model.dart';
 import '../models/lab_test_type_model.dart';
 import '../models/document_model.dart';
 import '../models/quality_models.dart';
+import '../models/hr_models.dart';
 import 'network_auth_context.dart';
 
 /// خدمة البيانات الشبكية - الاتصال بالخادم المركزي عبر REST API
@@ -1624,6 +1625,74 @@ class NetworkDataService {
   Future<List<AccreditationRequirementModel>> getAccreditationRequirements() async {
     final data = await _getList('quality/accreditation-requirements');
     return data.map((m) => AccreditationRequirementModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  // HR Management - Employees
+  Future<List<EmployeeModel>> getEmployees({EmploymentStatus? status}) async {
+    final query = <String, String>{};
+    if (status != null) query['status'] = status.toString().split('.').last;
+
+    final data = await _getList('hr/employees', queryParams: query);
+    return data.map((m) => EmployeeModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<EmployeeModel?> getEmployee(String id) async {
+    try {
+      final data = await _get('hr/employees/$id');
+      return EmployeeModel.fromMap(data, data['id'] as String);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<void> createEmployee(EmployeeModel employee) async {
+    await _post('hr/employees', employee.toMap());
+  }
+
+  // Leave Requests
+  Future<List<LeaveRequestModel>> getLeaveRequests({LeaveStatus? status}) async {
+    final query = <String, String>{};
+    if (status != null) query['status'] = status.toString().split('.').last;
+
+    final data = await _getList('hr/leave-requests', queryParams: query);
+    return data.map((m) => LeaveRequestModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createLeaveRequest(LeaveRequestModel leave) async {
+    await _post('hr/leave-requests', leave.toMap());
+  }
+
+  // Payroll
+  Future<List<PayrollModel>> getPayrolls({PayrollStatus? status}) async {
+    final query = <String, String>{};
+    if (status != null) query['status'] = status.toString().split('.').last;
+
+    final data = await _getList('hr/payrolls', queryParams: query);
+    return data.map((m) => PayrollModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createPayroll(PayrollModel payroll) async {
+    await _post('hr/payrolls', payroll.toMap());
+  }
+
+  // Training
+  Future<List<TrainingModel>> getTrainings() async {
+    final data = await _getList('hr/trainings');
+    return data.map((m) => TrainingModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createTraining(TrainingModel training) async {
+    await _post('hr/trainings', training.toMap());
+  }
+
+  // Certifications
+  Future<List<CertificationModel>> getCertifications() async {
+    final data = await _getList('hr/certifications');
+    return data.map((m) => CertificationModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createCertification(CertificationModel cert) async {
+    await _post('hr/certifications', cert.toMap());
   }
 }
 

@@ -27,6 +27,7 @@ import '../models/hospital_pharmacy_model.dart';
 import '../models/lab_test_type_model.dart';
 import '../models/document_model.dart';
 import '../models/quality_models.dart';
+import '../models/hr_models.dart';
 import 'local_database_service.dart';
 
 class DoctorStats {
@@ -3231,7 +3232,7 @@ class LocalDataService {
       orderBy: 'created_at DESC',
     );
 
-    return rows.map((r) => AccreditationRequirementModel.fromMap({
+      return rows.map((r) => AccreditationRequirementModel.fromMap({
       'id': r['id'],
       'standard': r['standard'],
       'requirementCode': r['requirement_code'],
@@ -3249,6 +3250,288 @@ class LocalDataService {
       'createdAt': r['created_at'],
       'updatedAt': r['updated_at'],
     }, r['id'] as String)).toList();
+  }
+
+  // HR Management - Employees
+  Future<List<EmployeeModel>> getEmployees({EmploymentStatus? status}) async {
+    final db = await _db.database;
+    final where = status != null ? 'status = ?' : null;
+    final whereArgs = status != null ? [status.toString().split('.').last] : null;
+
+    final rows = await db.query(
+      'employees',
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: 'hire_date DESC',
+    );
+
+    return rows.map((r) => EmployeeModel.fromMap({
+      'id': r['id'],
+      'userId': r['user_id'],
+      'employeeNumber': r['employee_number'],
+      'department': r['department'],
+      'position': r['position'],
+      'employmentType': r['employment_type'],
+      'status': r['status'],
+      'hireDate': r['hire_date'],
+      'terminationDate': r['termination_date'],
+      'salary': r['salary'],
+      'managerId': r['manager_id'],
+      'managerName': r['manager_name'],
+      'additionalInfo': r['additional_info'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    }, r['id'] as String)).toList();
+  }
+
+  Future<EmployeeModel?> getEmployee(String id) async {
+    final db = await _db.database;
+    final rows = await db.query(
+      'employees',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+
+    if (rows.isEmpty) return null;
+
+    final r = rows.first;
+    return EmployeeModel.fromMap({
+      'id': r['id'],
+      'userId': r['user_id'],
+      'employeeNumber': r['employee_number'],
+      'department': r['department'],
+      'position': r['position'],
+      'employmentType': r['employment_type'],
+      'status': r['status'],
+      'hireDate': r['hire_date'],
+      'terminationDate': r['termination_date'],
+      'salary': r['salary'],
+      'managerId': r['manager_id'],
+      'managerName': r['manager_name'],
+      'additionalInfo': r['additional_info'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    }, r['id'] as String);
+  }
+
+  Future<void> createEmployee(EmployeeModel employee) async {
+    final db = await _db.database;
+    await db.insert('employees', {
+      'id': employee.id,
+      'user_id': employee.userId,
+      'employee_number': employee.employeeNumber,
+      'department': employee.department,
+      'position': employee.position,
+      'employment_type': employee.employmentType.toString().split('.').last,
+      'status': employee.status.toString().split('.').last,
+      'hire_date': employee.hireDate.millisecondsSinceEpoch,
+      'termination_date': employee.terminationDate?.millisecondsSinceEpoch,
+      'salary': employee.salary,
+      'manager_id': employee.managerId,
+      'manager_name': employee.managerName,
+      'additional_info': employee.additionalInfo != null ? jsonEncode(employee.additionalInfo) : null,
+      'created_at': employee.createdAt.millisecondsSinceEpoch,
+      'updated_at': employee.updatedAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  // Leave Requests
+  Future<List<LeaveRequestModel>> getLeaveRequests({LeaveStatus? status}) async {
+    final db = await _db.database;
+    final where = status != null ? 'status = ?' : null;
+    final whereArgs = status != null ? [status.toString().split('.').last] : null;
+
+    final rows = await db.query(
+      'leave_requests',
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: 'start_date DESC',
+    );
+
+    return rows.map((r) => LeaveRequestModel.fromMap({
+      'id': r['id'],
+      'employeeId': r['employee_id'],
+      'employeeName': r['employee_name'],
+      'type': r['type'],
+      'status': r['status'],
+      'startDate': r['start_date'],
+      'endDate': r['end_date'],
+      'days': r['days'],
+      'reason': r['reason'],
+      'notes': r['notes'],
+      'approvedBy': r['approved_by'],
+      'approvedByName': r['approved_by_name'],
+      'approvedAt': r['approved_at'],
+      'rejectionReason': r['rejection_reason'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    }, r['id'] as String)).toList();
+  }
+
+  Future<void> createLeaveRequest(LeaveRequestModel leave) async {
+    final db = await _db.database;
+    await db.insert('leave_requests', {
+      'id': leave.id,
+      'employee_id': leave.employeeId,
+      'employee_name': leave.employeeName,
+      'type': leave.type.toString().split('.').last,
+      'status': leave.status.toString().split('.').last,
+      'start_date': leave.startDate.millisecondsSinceEpoch,
+      'end_date': leave.endDate.millisecondsSinceEpoch,
+      'days': leave.days,
+      'reason': leave.reason,
+      'notes': leave.notes,
+      'approved_by': leave.approvedBy,
+      'approved_by_name': leave.approvedByName,
+      'approved_at': leave.approvedAt?.millisecondsSinceEpoch,
+      'rejection_reason': leave.rejectionReason,
+      'created_at': leave.createdAt.millisecondsSinceEpoch,
+      'updated_at': leave.updatedAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  // Payroll
+  Future<List<PayrollModel>> getPayrolls({PayrollStatus? status}) async {
+    final db = await _db.database;
+    final where = status != null ? 'status = ?' : null;
+    final whereArgs = status != null ? [status.toString().split('.').last] : null;
+
+    final rows = await db.query(
+      'payrolls',
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: 'pay_period_start DESC',
+    );
+
+    return rows.map((r) => PayrollModel.fromMap({
+      'id': r['id'],
+      'employeeId': r['employee_id'],
+      'employeeName': r['employee_name'],
+      'payPeriodStart': r['pay_period_start'],
+      'payPeriodEnd': r['pay_period_end'],
+      'baseSalary': r['base_salary'],
+      'allowances': r['allowances'],
+      'deductions': r['deductions'],
+      'bonuses': r['bonuses'],
+      'overtime': r['overtime'],
+      'netSalary': r['net_salary'],
+      'status': r['status'],
+      'paidDate': r['paid_date'],
+      'notes': r['notes'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    }, r['id'] as String)).toList();
+  }
+
+  Future<void> createPayroll(PayrollModel payroll) async {
+    final db = await _db.database;
+    await db.insert('payrolls', {
+      'id': payroll.id,
+      'employee_id': payroll.employeeId,
+      'employee_name': payroll.employeeName,
+      'pay_period_start': payroll.payPeriodStart.millisecondsSinceEpoch,
+      'pay_period_end': payroll.payPeriodEnd.millisecondsSinceEpoch,
+      'base_salary': payroll.baseSalary,
+      'allowances': payroll.allowances,
+      'deductions': payroll.deductions,
+      'bonuses': payroll.bonuses,
+      'overtime': payroll.overtime,
+      'net_salary': payroll.netSalary,
+      'status': payroll.status.toString().split('.').last,
+      'paid_date': payroll.paidDate?.millisecondsSinceEpoch,
+      'notes': payroll.notes,
+      'created_at': payroll.createdAt.millisecondsSinceEpoch,
+      'updated_at': payroll.updatedAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  // Training
+  Future<List<TrainingModel>> getTrainings() async {
+    final db = await _db.database;
+    final rows = await db.query(
+      'trainings',
+      orderBy: 'start_date DESC',
+    );
+
+    return rows.map((r) => TrainingModel.fromMap({
+      'id': r['id'],
+      'title': r['title'],
+      'description': r['description'],
+      'trainer': r['trainer'],
+      'location': r['location'],
+      'startDate': r['start_date'],
+      'endDate': r['end_date'],
+      'maxParticipants': r['max_participants'],
+      'participantIds': r['participant_ids'],
+      'status': r['status'],
+      'notes': r['notes'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    }, r['id'] as String)).toList();
+  }
+
+  Future<void> createTraining(TrainingModel training) async {
+    final db = await _db.database;
+    await db.insert('trainings', {
+      'id': training.id,
+      'title': training.title,
+      'description': training.description,
+      'trainer': training.trainer,
+      'location': training.location,
+      'start_date': training.startDate.millisecondsSinceEpoch,
+      'end_date': training.endDate.millisecondsSinceEpoch,
+      'max_participants': training.maxParticipants,
+      'participant_ids': training.participantIds != null ? jsonEncode(training.participantIds) : null,
+      'status': training.status.toString().split('.').last,
+      'notes': training.notes,
+      'created_at': training.createdAt.millisecondsSinceEpoch,
+      'updated_at': training.updatedAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  // Certifications
+  Future<List<CertificationModel>> getCertifications() async {
+    final db = await _db.database;
+    final rows = await db.query(
+      'certifications',
+      orderBy: 'expiry_date ASC',
+    );
+
+    return rows.map((r) => CertificationModel.fromMap({
+      'id': r['id'],
+      'employeeId': r['employee_id'],
+      'employeeName': r['employee_name'],
+      'certificateName': r['certificate_name'],
+      'issuingOrganization': r['issuing_organization'],
+      'issueDate': r['issue_date'],
+      'expiryDate': r['expiry_date'],
+      'certificateNumber': r['certificate_number'],
+      'certificateUrl': r['certificate_url'],
+      'status': r['status'],
+      'notes': r['notes'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+    }, r['id'] as String)).toList();
+  }
+
+  Future<void> createCertification(CertificationModel cert) async {
+    final db = await _db.database;
+    await db.insert('certifications', {
+      'id': cert.id,
+      'employee_id': cert.employeeId,
+      'employee_name': cert.employeeName,
+      'certificate_name': cert.certificateName,
+      'issuing_organization': cert.issuingOrganization,
+      'issue_date': cert.issueDate.millisecondsSinceEpoch,
+      'expiry_date': cert.expiryDate.millisecondsSinceEpoch,
+      'certificate_number': cert.certificateNumber,
+      'certificate_url': cert.certificateUrl,
+      'status': cert.status.toString().split('.').last,
+      'notes': cert.notes,
+      'created_at': cert.createdAt.millisecondsSinceEpoch,
+      'updated_at': cert.updatedAt?.millisecondsSinceEpoch,
+    });
   }
 }
 

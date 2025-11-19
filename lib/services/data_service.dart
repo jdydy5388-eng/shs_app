@@ -485,5 +485,26 @@ class DataService {
 
   // Accreditation Requirements
   Future<List> getAccreditationRequirements() => _service.getAccreditationRequirements();
+
+  // HR Management - Employees
+  Future<List> getEmployees({status}) => _service.getEmployees(status: status);
+  Future getEmployee(String id) => _service.getEmployee(id);
+  Future<void> createEmployee(employee) => _service.createEmployee(employee);
+
+  // Leave Requests
+  Future<List> getLeaveRequests({status}) => _service.getLeaveRequests(status: status);
+  Future<void> createLeaveRequest(leave) => _service.createLeaveRequest(leave);
+
+  // Payroll
+  Future<List> getPayrolls({status}) => _service.getPayrolls(status: status);
+  Future<void> createPayroll(payroll) => _service.createPayroll(payroll);
+
+  // Training
+  Future<List> getTrainings() => _service.getTrainings();
+  Future<void> createTraining(training) => _service.createTraining(training);
+
+  // Certifications
+  Future<List> getCertifications() => _service.getCertifications();
+  Future<void> createCertification(cert) => _service.createCertification(cert);
 }
 

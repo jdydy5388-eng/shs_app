@@ -15,6 +15,7 @@ import 'advanced_reports_screen.dart';
 import 'notifications_management_screen.dart';
 import 'documents_management_screen.dart';
 import 'quality_management_screen.dart';
+import 'hr_management_screen.dart';
 import '../emergency/emergency_dashboard_screen.dart';
 import '../auth/login_screen.dart';
 
@@ -382,6 +383,20 @@ class AdminDashboard extends StatelessWidget {
           'متطلبات الاعتماد - إدارة متطلبات الاعتماد (JCI, CBAHI, ISO)',
         ],
         builder: (_) => const QualityManagementScreen(),
+      ),
+      AdminFeature(
+        title: 'نظام الموارد البشرية',
+        description: 'إدارة الموظفين والإجازات والرواتب والتدريب والشهادات.',
+        icon: Icons.people,
+        color: Colors.purple,
+        details: [
+          'إدارة الموظفين - تعيين وإدارة بيانات الموظفين',
+          'إدارة الإجازات - طلبات الإجازات والموافقات',
+          'إدارة الرواتب - حساب ومعالجة الرواتب',
+          'إدارة التدريب - برامج التدريب والمشاركين',
+          'إدارة الشهادات والتراخيص - تتبع الشهادات وتواريخ انتهائها',
+        ],
+        builder: (_) => const HRManagementScreen(),
       ),
     ];
 
