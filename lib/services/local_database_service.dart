@@ -1794,105 +1794,6 @@ class LocalDatabaseService {
         await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_vendors_active ON maintenance_vendors(is_active)');
       }
 
-      if (oldVersion < 20) {
-        // إضافة جداول نظام الصيانة
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS maintenance_requests (
-            id TEXT PRIMARY KEY,
-            equipment_id TEXT,
-            equipment_name TEXT,
-            location TEXT,
-            type TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'pending',
-            priority TEXT NOT NULL DEFAULT 'medium',
-            description TEXT NOT NULL,
-            reported_by TEXT,
-            reported_by_name TEXT,
-            reported_date INTEGER NOT NULL,
-            assigned_to TEXT,
-            assigned_to_name TEXT,
-            assigned_date INTEGER,
-            scheduled_date INTEGER,
-            completed_date INTEGER,
-            completed_by TEXT,
-            completed_by_name TEXT,
-            work_performed TEXT,
-            notes TEXT,
-            cost REAL,
-            attachments TEXT,
-            additional_data TEXT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER
-          )
-        ''');
-
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS scheduled_maintenances (
-            id TEXT PRIMARY KEY,
-            equipment_id TEXT NOT NULL,
-            equipment_name TEXT,
-            maintenance_type TEXT NOT NULL,
-            description TEXT NOT NULL,
-            frequency TEXT NOT NULL,
-            interval_days INTEGER,
-            next_due_date INTEGER NOT NULL,
-            last_performed_date INTEGER,
-            last_performed_by TEXT,
-            status TEXT NOT NULL DEFAULT 'scheduled',
-            assigned_to TEXT,
-            assigned_to_name TEXT,
-            notes TEXT,
-            metadata TEXT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER
-          )
-        ''');
-
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS equipment_statuses (
-            id TEXT PRIMARY KEY,
-            equipment_id TEXT NOT NULL,
-            equipment_name TEXT,
-            condition TEXT NOT NULL,
-            location TEXT,
-            last_maintenance_date INTEGER NOT NULL,
-            next_maintenance_date INTEGER,
-            total_maintenance_count INTEGER,
-            total_maintenance_cost REAL,
-            current_issues TEXT,
-            notes TEXT,
-            status_data TEXT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER
-          )
-        ''');
-
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS maintenance_vendors (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            type TEXT NOT NULL,
-            contact_person TEXT,
-            email TEXT,
-            phone TEXT,
-            address TEXT,
-            specialization TEXT,
-            notes TEXT,
-            is_active INTEGER NOT NULL DEFAULT 1,
-            additional_info TEXT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER
-          )
-        ''');
-
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_requests_status ON maintenance_requests(status)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_requests_priority ON maintenance_requests(priority)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_scheduled_maintenances_due_date ON scheduled_maintenances(next_due_date)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_equipment_statuses_condition ON equipment_statuses(condition)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_vendors_type ON maintenance_vendors(type)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_vendors_active ON maintenance_vendors(is_active)');
-      }
-
       if (oldVersion < 21) {
         // إضافة جداول نظام المواصلات
         await db.execute('''
@@ -2008,7 +1909,7 @@ class LocalDatabaseService {
         await db.execute('CREATE INDEX IF NOT EXISTS idx_integration_sync_logs_integration ON integration_sync_logs(integration_id)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_integration_sync_logs_timestamp ON integration_sync_logs(timestamp)');
       }
-    }
+  }
 
   Future<void> _createDoctorTables(Database db) async {
     // جدول مواعيد الطبيب
@@ -2159,9 +2060,9 @@ class LocalDatabaseService {
   }
 
   Future<void> close() async {
-    if (_database != null) {
-      await _database!.close();
-      _database = null;
+    if (LocalDatabaseService._database != null) {
+      await LocalDatabaseService._database!.close();
+      LocalDatabaseService._database = null;
     }
   }
 

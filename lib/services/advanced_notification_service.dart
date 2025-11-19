@@ -218,7 +218,7 @@ class AdvancedNotificationService {
       if (reminder2h.isAfter(DateTime.now())) {
         await sendPushNotification(
           title: 'تذكير موعد قريب',
-          body: 'لديك موعد خلال ساعتين في ${appointment.dateTime.toString().substring(0, 16)}',
+          body: 'لديك موعد خلال ساعتين في ${appointment.date.toString().substring(0, 16)}',
           priority: NotificationPriority.high,
         );
 

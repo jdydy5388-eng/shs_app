@@ -34,11 +34,10 @@ class _AdvancedDashboardScreenState extends State<AdvancedDashboardScreen> {
       final patients = await _dataService.getPatients();
       final doctors = await _dataService.getUsers(role: 'doctor');
       // الحصول على جميع المواعيد
-      final doctors = await _dataService.getUsers(role: 'doctor');
-      final List<DoctorAppointment> allAppointments = [];
+      final List<dynamic> allAppointments = [];
       for (var doctor in doctors) {
         final doctorAppointments = await _dataService.getDoctorAppointments(doctor.id);
-        allAppointments.addAll(doctorAppointments.cast<DoctorAppointment>());
+        allAppointments.addAll(doctorAppointments);
       }
       final appointments = allAppointments;
       final prescriptions = await _dataService.getPrescriptions();

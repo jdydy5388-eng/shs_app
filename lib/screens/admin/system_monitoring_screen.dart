@@ -789,6 +789,8 @@ class _SystemMonitoringScreenState extends State<SystemMonitoringScreen>
         return Colors.purple;
       case AuditAction.systemSettingsUpdate:
         return Colors.red;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -814,6 +816,8 @@ class _SystemMonitoringScreenState extends State<SystemMonitoringScreen>
         return Icons.business;
       case AuditAction.systemSettingsUpdate:
         return Icons.settings;
+      default:
+        return Icons.info;
     }
   }
 
@@ -845,6 +849,8 @@ class _SystemMonitoringScreenState extends State<SystemMonitoringScreen>
         return 'حذف كيان';
       case AuditAction.systemSettingsUpdate:
         return 'تحديث إعدادات النظام';
+      default:
+        return action.toString().split('.').last;
     }
   }
 

@@ -131,6 +131,8 @@ class AuditLogModel {
         return 'إنشاء طلب مختبر';
       case AuditAction.updateLabRequest:
         return 'تحديث طلب مختبر';
+      case AuditAction.updateLabResult:
+        return 'تحديث نتيجة مختبر';
       case AuditAction.createRadiologyRequest:
         return 'إنشاء طلب أشعة';
       case AuditAction.updateRadiologyRequest:
@@ -143,6 +145,8 @@ class AuditLogModel {
         return 'حذف فاتورة';
       case AuditAction.createPayment:
         return 'إنشاء دفعة';
+      case AuditAction.generateReport:
+        return 'إنشاء تقرير';
       case AuditAction.viewFinancialReports:
         return 'عرض التقارير المالية';
       case AuditAction.createEmployee:
@@ -171,6 +175,10 @@ class AuditLogModel {
         return 'إنشاء طلب نقل';
       case AuditAction.updateTransportationRequest:
         return 'تحديث طلب نقل';
+      case AuditAction.createIntegration:
+        return 'إنشاء تكامل';
+      case AuditAction.syncIntegration:
+        return 'مزامنة تكامل';
     }
   }
 
