@@ -50,6 +50,76 @@ enum Permission {
   // System
   viewAuditLogs,
   manageSystemSettings,
+  
+  // Quality Management
+  readQualityKPIs,
+  manageQualityKPIs,
+  readIncidents,
+  manageIncidents,
+  readComplaints,
+  manageComplaints,
+  readAccreditation,
+  manageAccreditation,
+  
+  // HR Management
+  readEmployees,
+  manageEmployees,
+  readLeaves,
+  manageLeaves,
+  readPayroll,
+  managePayroll,
+  readTraining,
+  manageTraining,
+  readCertifications,
+  manageCertifications,
+  
+  // Maintenance
+  readMaintenance,
+  manageMaintenance,
+  readScheduledMaintenance,
+  manageScheduledMaintenance,
+  readEquipmentStatus,
+  manageEquipmentStatus,
+  readMaintenanceVendors,
+  manageMaintenanceVendors,
+  
+  // Transportation
+  readAmbulances,
+  manageAmbulances,
+  readTransportationRequests,
+  manageTransportationRequests,
+  readLocationTracking,
+  
+  // Surgery
+  readSurgeries,
+  manageSurgeries,
+  
+  // Inventory
+  readInventory,
+  manageInventory,
+  readSuppliers,
+  manageSuppliers,
+  readPurchaseOrders,
+  managePurchaseOrders,
+  
+  // Hospital Pharmacy
+  readHospitalPharmacy,
+  manageHospitalPharmacy,
+  
+  // Lab Management
+  readLabTestTypes,
+  manageLabTestTypes,
+  readLabSamples,
+  manageLabSamples,
+  readLabResults,
+  manageLabResults,
+  
+  // Billing
+  readInvoices,
+  manageInvoices,
+  readPayments,
+  managePayments,
+  viewFinancialReports,
 }
 
 class Rbac {

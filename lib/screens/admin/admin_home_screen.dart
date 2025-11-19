@@ -18,6 +18,7 @@ import 'quality_management_screen.dart';
 import 'hr_management_screen.dart';
 import 'maintenance_management_screen.dart';
 import 'transportation_management_screen.dart';
+import 'security_settings_screen.dart';
 import '../emergency/emergency_dashboard_screen.dart';
 import '../auth/login_screen.dart';
 
@@ -424,6 +425,19 @@ class AdminDashboard extends StatelessWidget {
           'تتبع المواقع - تتبع مواقع سيارات الإسعاف في الوقت الفعلي',
         ],
         builder: (_) => const TransportationManagementScreen(),
+      ),
+      AdminFeature(
+        title: 'الأمان والخصوصية',
+        description: 'إدارة التشفير والنسخ الاحتياطي وتسجيل العمليات الحساسة.',
+        icon: Icons.security,
+        color: Colors.red,
+        details: [
+          'تشفير البيانات الحساسة - تشفير أقوى للبيانات الحساسة',
+          'النسخ الاحتياطي التلقائي - إنشاء واستعادة النسخ الاحتياطية',
+          'تسجيل العمليات الحساسة - تسجيل جميع العمليات الحساسة',
+          'نظام صلاحيات محسن - صلاحيات أكثر تفصيلاً',
+        ],
+        builder: (_) => const SecuritySettingsScreen(),
       ),
     ];
 

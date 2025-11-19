@@ -65,6 +65,74 @@ class AuditLogModel {
         return 'حذف كيان';
       case AuditAction.systemSettingsUpdate:
         return 'تحديث إعدادات النظام';
+      case AuditAction.viewSensitiveData:
+        return 'عرض بيانات حساسة';
+      case AuditAction.exportData:
+        return 'تصدير بيانات';
+      case AuditAction.deleteSensitiveData:
+        return 'حذف بيانات حساسة';
+      case AuditAction.accessAdminPanel:
+        return 'الوصول إلى لوحة الإدارة';
+      case AuditAction.modifyPermissions:
+        return 'تعديل الصلاحيات';
+      case AuditAction.viewAuditLogs:
+        return 'عرض سجلات التدقيق';
+      case AuditAction.createBackup:
+        return 'إنشاء نسخة احتياطية';
+      case AuditAction.restoreBackup:
+        return 'استعادة نسخة احتياطية';
+      case AuditAction.createEmergencyCase:
+        return 'إنشاء حالة طوارئ';
+      case AuditAction.updateEmergencyCase:
+        return 'تحديث حالة طوارئ';
+      case AuditAction.createSurgery:
+        return 'إنشاء عملية جراحية';
+      case AuditAction.updateSurgery:
+        return 'تحديث عملية جراحية';
+      case AuditAction.createLabRequest:
+        return 'إنشاء طلب مختبر';
+      case AuditAction.updateLabRequest:
+        return 'تحديث طلب مختبر';
+      case AuditAction.createRadiologyRequest:
+        return 'إنشاء طلب أشعة';
+      case AuditAction.updateRadiologyRequest:
+        return 'تحديث طلب أشعة';
+      case AuditAction.createInvoice:
+        return 'إنشاء فاتورة';
+      case AuditAction.updateInvoice:
+        return 'تحديث فاتورة';
+      case AuditAction.deleteInvoice:
+        return 'حذف فاتورة';
+      case AuditAction.createPayment:
+        return 'إنشاء دفعة';
+      case AuditAction.viewFinancialReports:
+        return 'عرض التقارير المالية';
+      case AuditAction.createEmployee:
+        return 'إنشاء موظف';
+      case AuditAction.updateEmployee:
+        return 'تحديث موظف';
+      case AuditAction.deleteEmployee:
+        return 'حذف موظف';
+      case AuditAction.createPayroll:
+        return 'إنشاء راتب';
+      case AuditAction.updatePayroll:
+        return 'تحديث راتب';
+      case AuditAction.createIncident:
+        return 'إنشاء حادث طبي';
+      case AuditAction.updateIncident:
+        return 'تحديث حادث طبي';
+      case AuditAction.createComplaint:
+        return 'إنشاء شكوى';
+      case AuditAction.updateComplaint:
+        return 'تحديث شكوى';
+      case AuditAction.createMaintenanceRequest:
+        return 'إنشاء طلب صيانة';
+      case AuditAction.updateMaintenanceRequest:
+        return 'تحديث طلب صيانة';
+      case AuditAction.createTransportationRequest:
+        return 'إنشاء طلب نقل';
+      case AuditAction.updateTransportationRequest:
+        return 'تحديث طلب نقل';
     }
   }
 

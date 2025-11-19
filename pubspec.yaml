@@ -29,6 +29,10 @@ dependencies:
   local_auth: ^2.3.0
   flutter_secure_storage: ^9.2.4
   
+  # Encryption
+  encrypt: ^5.0.3
+  crypto: ^3.0.5
+  
   # AI Integration
   google_generative_ai: ^0.4.2
   
