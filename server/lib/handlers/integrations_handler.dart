@@ -4,11 +4,14 @@ import 'package:shelf_router/shelf_router.dart';
 import '../database/database_service.dart';
 import '../utils/response_helper.dart';
 import '../utils/rbac.dart';
-import '../middleware/auth_middleware.dart';
 import '../logger/app_logger.dart';
 
 class IntegrationsHandler {
   final DatabaseService _db = DatabaseService();
+
+  Map<String, dynamic>? _getUser(Request request) {
+    return request.context['user'] as Map<String, dynamic>?;
+  }
 
   Router get router {
     final router = Router();
@@ -36,9 +39,13 @@ class IntegrationsHandler {
 
   Future<Response> _getExternalIntegrations(Request request) async {
     try {
-      final user = AuthMiddleware.getUser(request);
-      if (user == null || !Rbac.has(user.role, Permission.manageSystemSettings)) {
+      final user = _getUser(request);
+      if (user == null) {
         return ResponseHelper.unauthorized();
+      }
+      final userRole = user['role'] as String;
+      if (!Rbac.has(userRole, Permission.manageSystemSettings)) {
+        return ResponseHelper.forbidden();
       }
 
       final conn = await _db.connection;
@@ -66,15 +73,19 @@ class IntegrationsHandler {
       return ResponseHelper.list(data: integrations);
     } catch (e, stackTrace) {
       AppLogger.error('Get external integrations error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب التكاملات الخارجية: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب التكاملات الخارجية: $e', error: stackTrace);
     }
   }
 
   Future<Response> _getExternalIntegration(Request request, String id) async {
     try {
-      final user = AuthMiddleware.getUser(request);
-      if (user == null || !Rbac.has(user.role, Permission.manageSystemSettings)) {
+      final user = _getUser(request);
+      if (user == null) {
         return ResponseHelper.unauthorized();
+      }
+      final userRole = user['role'] as String;
+      if (!Rbac.has(userRole, Permission.manageSystemSettings)) {
+        return ResponseHelper.forbidden();
       }
 
       final conn = await _db.connection;
@@ -106,15 +117,19 @@ class IntegrationsHandler {
       });
     } catch (e, stackTrace) {
       AppLogger.error('Get external integration error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب التكامل: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب التكامل: $e', error: stackTrace);
     }
   }
 
   Future<Response> _createExternalIntegration(Request request) async {
     try {
-      final user = AuthMiddleware.getUser(request);
-      if (user == null || !Rbac.has(user.role, Permission.manageSystemSettings)) {
+      final user = _getUser(request);
+      if (user == null) {
         return ResponseHelper.unauthorized();
+      }
+      final userRole = user['role'] as String;
+      if (!Rbac.has(userRole, Permission.manageSystemSettings)) {
+        return ResponseHelper.forbidden();
       }
 
       final body = await request.readAsString();
@@ -148,18 +163,22 @@ class IntegrationsHandler {
         'updatedAt': data['updatedAt'],
       });
 
-      return ResponseHelper.success({'message': 'تم إنشاء التكامل بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم إنشاء التكامل بنجاح'});
     } catch (e, stackTrace) {
       AppLogger.error('Create external integration error', e, stackTrace);
-      return ResponseHelper.error('خطأ في إنشاء التكامل: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في إنشاء التكامل: $e', error: stackTrace);
     }
   }
 
   Future<Response> _updateExternalIntegration(Request request, String id) async {
     try {
-      final user = AuthMiddleware.getUser(request);
-      if (user == null || !Rbac.has(user.role, Permission.manageSystemSettings)) {
+      final user = _getUser(request);
+      if (user == null) {
         return ResponseHelper.unauthorized();
+      }
+      final userRole = user['role'] as String;
+      if (!Rbac.has(userRole, Permission.manageSystemSettings)) {
+        return ResponseHelper.forbidden();
       }
 
       final body = await request.readAsString();
@@ -197,18 +216,22 @@ class IntegrationsHandler {
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
 
-      return ResponseHelper.success({'message': 'تم تحديث التكامل بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم تحديث التكامل بنجاح'});
     } catch (e, stackTrace) {
       AppLogger.error('Update external integration error', e, stackTrace);
-      return ResponseHelper.error('خطأ في تحديث التكامل: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في تحديث التكامل: $e', error: stackTrace);
     }
   }
 
   Future<Response> _deleteExternalIntegration(Request request, String id) async {
     try {
-      final user = AuthMiddleware.getUser(request);
-      if (user == null || !Rbac.has(user.role, Permission.manageSystemSettings)) {
+      final user = _getUser(request);
+      if (user == null) {
         return ResponseHelper.unauthorized();
+      }
+      final userRole = user['role'] as String;
+      if (!Rbac.has(userRole, Permission.manageSystemSettings)) {
+        return ResponseHelper.forbidden();
       }
 
       final conn = await _db.connection;
@@ -217,35 +240,43 @@ class IntegrationsHandler {
         substitutionValues: {'id': id},
       );
 
-      return ResponseHelper.success({'message': 'تم حذف التكامل بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم حذف التكامل بنجاح'});
     } catch (e, stackTrace) {
       AppLogger.error('Delete external integration error', e, stackTrace);
-      return ResponseHelper.error('خطأ في حذف التكامل: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في حذف التكامل: $e', error: stackTrace);
     }
   }
 
   Future<Response> _syncExternalIntegration(Request request, String id) async {
     try {
-      final user = AuthMiddleware.getUser(request);
-      if (user == null || !Rbac.has(user.role, Permission.manageSystemSettings)) {
+      final user = _getUser(request);
+      if (user == null) {
         return ResponseHelper.unauthorized();
+      }
+      final userRole = user['role'] as String;
+      if (!Rbac.has(userRole, Permission.manageSystemSettings)) {
+        return ResponseHelper.forbidden();
       }
 
       // TODO: تنفيذ منطق المزامنة
       // يمكن استدعاء ExternalIntegrationService هنا
 
-      return ResponseHelper.success({'message': 'تمت المزامنة بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تمت المزامنة بنجاح'});
     } catch (e, stackTrace) {
       AppLogger.error('Sync external integration error', e, stackTrace);
-      return ResponseHelper.error('خطأ في المزامنة: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في المزامنة: $e', error: stackTrace);
     }
   }
 
   Future<Response> _getSyncLogs(Request request) async {
     try {
-      final user = AuthMiddleware.getUser(request);
-      if (user == null || !Rbac.has(user.role, Permission.viewAuditLogs)) {
+      final user = _getUser(request);
+      if (user == null) {
         return ResponseHelper.unauthorized();
+      }
+      final userRole = user['role'] as String;
+      if (!Rbac.has(userRole, Permission.viewAuditLogs)) {
+        return ResponseHelper.forbidden();
       }
 
       final conn = await _db.connection;
@@ -270,15 +301,19 @@ class IntegrationsHandler {
       return ResponseHelper.list(data: logs);
     } catch (e, stackTrace) {
       AppLogger.error('Get sync logs error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب سجلات المزامنة: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب سجلات المزامنة: $e', error: stackTrace);
     }
   }
 
   Future<Response> _getSyncLogsByIntegration(Request request, String integrationId) async {
     try {
-      final user = AuthMiddleware.getUser(request);
-      if (user == null || !Rbac.has(user.role, Permission.viewAuditLogs)) {
+      final user = _getUser(request);
+      if (user == null) {
         return ResponseHelper.unauthorized();
+      }
+      final userRole = user['role'] as String;
+      if (!Rbac.has(userRole, Permission.viewAuditLogs)) {
+        return ResponseHelper.forbidden();
       }
 
       final conn = await _db.connection;
@@ -304,7 +339,7 @@ class IntegrationsHandler {
       return ResponseHelper.list(data: logs);
     } catch (e, stackTrace) {
       AppLogger.error('Get sync logs by integration error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب سجلات المزامنة: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب سجلات المزامنة: $e', error: stackTrace);
     }
   }
 
@@ -314,7 +349,7 @@ class IntegrationsHandler {
       return ResponseHelper.success(data: {'message': 'HL7 Patient endpoint'});
     } catch (e, stackTrace) {
       AppLogger.error('Get HL7 patient error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب بيانات المريض HL7: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب بيانات المريض HL7: $e', error: stackTrace);
     }
   }
 
@@ -323,10 +358,10 @@ class IntegrationsHandler {
       final body = await request.readAsString();
       final data = jsonDecode(body) as Map<String, dynamic>;
       // TODO: معالجة بيانات المريض من تنسيق HL7/FHIR
-      return ResponseHelper.success({'message': 'تم إنشاء المريض بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم إنشاء المريض بنجاح'});
     } catch (e, stackTrace) {
       AppLogger.error('Create HL7 patient error', e, stackTrace);
-      return ResponseHelper.error('خطأ في إنشاء المريض HL7: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في إنشاء المريض HL7: $e', error: stackTrace);
     }
   }
 
@@ -336,7 +371,7 @@ class IntegrationsHandler {
       return ResponseHelper.success(data: {'message': 'HL7 Lab Result endpoint'});
     } catch (e, stackTrace) {
       AppLogger.error('Get HL7 lab result error', e, stackTrace);
-      return ResponseHelper.error('خطأ في جلب نتائج الفحص HL7: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في جلب نتائج الفحص HL7: $e', error: stackTrace);
     }
   }
 
@@ -345,10 +380,10 @@ class IntegrationsHandler {
       final body = await request.readAsString();
       final data = jsonDecode(body) as Map<String, dynamic>;
       // TODO: معالجة نتائج الفحص من تنسيق HL7/FHIR
-      return ResponseHelper.success({'message': 'تم إنشاء نتيجة الفحص بنجاح'});
+      return ResponseHelper.success(data: {'message': 'تم إنشاء نتيجة الفحص بنجاح'});
     } catch (e, stackTrace) {
       AppLogger.error('Create HL7 lab result error', e, stackTrace);
-      return ResponseHelper.error('خطأ في إنشاء نتيجة الفحص HL7: $e', stackTrace);
+      return ResponseHelper.error(message: 'خطأ في إنشاء نتيجة الفحص HL7: $e', error: stackTrace);
     }
   }
 }

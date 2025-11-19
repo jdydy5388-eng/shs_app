@@ -46,5 +46,38 @@ class ResponseHelper {
       headers: {'Content-Type': 'application/json'},
     );
   }
+
+  static Response unauthorized([String message = 'غير مصرح']) {
+    return Response(
+      401,
+      body: jsonEncode({
+        'success': false,
+        'error': message,
+      }),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  static Response forbidden([String message = 'غير مسموح']) {
+    return Response(
+      403,
+      body: jsonEncode({
+        'success': false,
+        'error': message,
+      }),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  static Response notFound([String message = 'غير موجود']) {
+    return Response(
+      404,
+      body: jsonEncode({
+        'success': false,
+        'error': message,
+      }),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
 }
 
