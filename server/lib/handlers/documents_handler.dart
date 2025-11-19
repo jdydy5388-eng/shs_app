@@ -129,7 +129,7 @@ class DocumentsHandler {
 
       return ResponseHelper.list(data: documents);
     } catch (e, stackTrace) {
-      AppLogger.error('Get documents error', e, error: stackTrace);
+      AppLogger.error('Get documents error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في جلب الوثائق: $e', error: stackTrace);
     }
   }
@@ -187,7 +187,7 @@ class DocumentsHandler {
 
       return ResponseHelper.success(data: document);
     } catch (e, stackTrace) {
-      AppLogger.error('Get document error', e, error: stackTrace);
+      AppLogger.error('Get document error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في جلب الوثيقة: $e', error: stackTrace);
     }
   }
@@ -252,7 +252,7 @@ class DocumentsHandler {
 
       return ResponseHelper.success(data: {'message': 'تم إنشاء الوثيقة بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Create document error', e, error: stackTrace);
+      AppLogger.error('Create document error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في إنشاء الوثيقة: $e', error: stackTrace);
     }
   }
@@ -335,7 +335,7 @@ class DocumentsHandler {
 
       return ResponseHelper.success(data: {'message': 'تم تحديث الوثيقة بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Update document error', e, error: stackTrace);
+      AppLogger.error('Update document error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في تحديث الوثيقة: $e', error: stackTrace);
     }
   }
@@ -363,7 +363,7 @@ class DocumentsHandler {
 
       return ResponseHelper.success(data: {'message': 'تم حذف الوثيقة بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Delete document error', e, error: stackTrace);
+      AppLogger.error('Delete document error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في حذف الوثيقة: $e', error: stackTrace);
     }
   }
@@ -401,7 +401,7 @@ class DocumentsHandler {
 
       return ResponseHelper.success(data: {'message': 'تم إنشاء التوقيع بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Create document signature error', e, error: stackTrace);
+      AppLogger.error('Create document signature error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في إنشاء التوقيع: $e', error: stackTrace);
     }
   }
@@ -440,7 +440,7 @@ class DocumentsHandler {
 
       return ResponseHelper.success(data: signature);
     } catch (e, stackTrace) {
-      AppLogger.error('Get document signature error', e, error: stackTrace);
+      AppLogger.error('Get document signature error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في جلب التوقيع: $e', error: stackTrace);
     }
   }
@@ -485,7 +485,7 @@ class DocumentsHandler {
 
       return ResponseHelper.list(data: signatures);
     } catch (e, stackTrace) {
-      AppLogger.error('Get document signatures error', e, error: stackTrace);
+      AppLogger.error('Get document signatures error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في جلب التوقيعات: $e', error: stackTrace);
     }
   }

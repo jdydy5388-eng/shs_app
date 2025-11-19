@@ -65,7 +65,7 @@ class TransportationHandler {
 
       return ResponseHelper.list(data: ambulances);
     } catch (e, stackTrace) {
-      AppLogger.error('Get ambulances error', e, error: stackTrace);
+      AppLogger.error('Get ambulances error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في جلب سيارات الإسعاف: $e', error: stackTrace);
     }
   }
@@ -109,7 +109,7 @@ class TransportationHandler {
 
       return ResponseHelper.success(data: {'message': 'تم إنشاء سيارة الإسعاف بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Create ambulance error', e, error: stackTrace);
+      AppLogger.error('Create ambulance error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في إنشاء سيارة الإسعاف: $e', error: stackTrace);
     }
   }
@@ -164,7 +164,7 @@ class TransportationHandler {
 
       return ResponseHelper.list(data: requests);
     } catch (e, stackTrace) {
-      AppLogger.error('Get transportation requests error', e, error: stackTrace);
+      AppLogger.error('Get transportation requests error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في جلب طلبات النقل: $e', error: stackTrace);
     }
   }
@@ -224,7 +224,7 @@ class TransportationHandler {
 
       return ResponseHelper.success(data: {'message': 'تم إنشاء طلب النقل بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Create transportation request error', e, error: stackTrace);
+      AppLogger.error('Create transportation request error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في إنشاء طلب النقل: $e', error: stackTrace);
     }
   }
@@ -263,7 +263,7 @@ class TransportationHandler {
 
       return ResponseHelper.list(data: locations);
     } catch (e, stackTrace) {
-      AppLogger.error('Get location tracking error', e, error: stackTrace);
+      AppLogger.error('Get location tracking error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في جلب تتبع المواقع: $e', error: stackTrace);
     }
   }

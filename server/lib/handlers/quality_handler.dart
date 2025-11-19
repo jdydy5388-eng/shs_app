@@ -68,7 +68,7 @@ class QualityHandler {
 
       return ResponseHelper.list(data: kpis);
     } catch (e, stackTrace) {
-      AppLogger.error('Get KPIs error', e, error: stackTrace);
+      AppLogger.error('Get KPIs error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في جلب مؤشرات الجودة: $e', error: stackTrace);
     }
   }
@@ -105,7 +105,7 @@ class QualityHandler {
 
       return ResponseHelper.success(data: kpi);
     } catch (e, stackTrace) {
-      AppLogger.error('Get KPI error', e, error: stackTrace);
+      AppLogger.error('Get KPI error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في جلب المؤشر: $e', error: stackTrace);
     }
   }
@@ -145,7 +145,7 @@ class QualityHandler {
 
       return ResponseHelper.success(data: {'message': 'تم إنشاء مؤشر الجودة بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Create KPI error', e, error: stackTrace);
+      AppLogger.error('Create KPI error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في إنشاء مؤشر الجودة: $e', error: stackTrace);
     }
   }
@@ -183,7 +183,7 @@ class QualityHandler {
 
       return ResponseHelper.success(data: {'message': 'تم تحديث مؤشر الجودة بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Update KPI error', e, error: stackTrace);
+      AppLogger.error('Update KPI error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في تحديث مؤشر الجودة: $e', error: stackTrace);
     }
   }
@@ -222,7 +222,7 @@ class QualityHandler {
 
       return ResponseHelper.list(data: incidents);
     } catch (e, stackTrace) {
-      AppLogger.error('Get incidents error', e, error: stackTrace);
+      AppLogger.error('Get incidents error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في جلب الحوادث: $e', error: stackTrace);
     }
   }
@@ -272,7 +272,7 @@ class QualityHandler {
 
       return ResponseHelper.success(data: {'message': 'تم إنشاء الحادث بنجاح'});
     } catch (e, stackTrace) {
-      AppLogger.error('Create incident error', e, error: stackTrace);
+      AppLogger.error('Create incident error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في إنشاء الحادث: $e', error: stackTrace);
     }
   }
@@ -312,7 +312,7 @@ class QualityHandler {
 
       return ResponseHelper.list(data: complaints);
     } catch (e, stackTrace) {
-      AppLogger.error('Get complaints error', e, error: stackTrace);
+      AppLogger.error('Get complaints error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في جلب الشكاوى: $e', error: stackTrace);
     }
   }
@@ -347,7 +347,7 @@ class QualityHandler {
 
       return ResponseHelper.list(data: requirements);
     } catch (e, stackTrace) {
-      AppLogger.error('Get accreditation requirements error', e, error: stackTrace);
+      AppLogger.error('Get accreditation requirements error', e, stackTrace);
       return ResponseHelper.error(message: 'خطأ في جلب متطلبات الاعتماد: $e', error: stackTrace);
     }
   }
