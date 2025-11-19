@@ -1698,8 +1698,8 @@ class LocalDatabaseService {
       }
 
     if (oldVersion < 20) {
-        // جداول نظام الصيانة
-        await db.execute('''
+      // جداول نظام الصيانة
+      await db.execute('''
           CREATE TABLE IF NOT EXISTS maintenance_requests (
             id TEXT PRIMARY KEY,
             equipment_id TEXT,
@@ -1727,10 +1727,10 @@ class LocalDatabaseService {
             created_at INTEGER NOT NULL,
             updated_at INTEGER
           )
-        ''');
+      ''');
 
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS scheduled_maintenances (
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS scheduled_maintenances (
             id TEXT PRIMARY KEY,
             equipment_id TEXT NOT NULL,
             equipment_name TEXT,
@@ -1749,10 +1749,10 @@ class LocalDatabaseService {
             created_at INTEGER NOT NULL,
             updated_at INTEGER
           )
-        ''');
+      ''');
 
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS equipment_statuses (
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS equipment_statuses (
             id TEXT PRIMARY KEY,
             equipment_id TEXT NOT NULL,
             equipment_name TEXT,
@@ -1768,10 +1768,10 @@ class LocalDatabaseService {
             created_at INTEGER NOT NULL,
             updated_at INTEGER
           )
-        ''');
+      ''');
 
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS maintenance_vendors (
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS maintenance_vendors (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             type TEXT NOT NULL,
@@ -1786,19 +1786,19 @@ class LocalDatabaseService {
             created_at INTEGER NOT NULL,
             updated_at INTEGER
           )
-        ''');
+      ''');
 
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_requests_status ON maintenance_requests(status)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_requests_priority ON maintenance_requests(priority)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_scheduled_maintenances_due_date ON scheduled_maintenances(next_due_date)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_equipment_statuses_condition ON equipment_statuses(condition)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_vendors_type ON maintenance_vendors(type)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_vendors_active ON maintenance_vendors(is_active)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_requests_status ON maintenance_requests(status)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_requests_priority ON maintenance_requests(priority)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_scheduled_maintenances_due_date ON scheduled_maintenances(next_due_date)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_equipment_statuses_condition ON equipment_statuses(condition)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_vendors_type ON maintenance_vendors(type)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_vendors_active ON maintenance_vendors(is_active)');
     }
 
     if (oldVersion < 21) {
-        // إضافة جداول نظام المواصلات
-        await db.execute('''
+      // إضافة جداول نظام المواصلات
+      await db.execute('''
           CREATE TABLE IF NOT EXISTS ambulances (
             id TEXT PRIMARY KEY,
             vehicle_number TEXT NOT NULL UNIQUE,
@@ -1817,10 +1817,10 @@ class LocalDatabaseService {
             created_at INTEGER NOT NULL,
             updated_at INTEGER
           )
-        ''');
+      ''');
 
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS transportation_requests (
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS transportation_requests (
             id TEXT PRIMARY KEY,
             patient_id TEXT,
             patient_name TEXT,
@@ -1848,10 +1848,10 @@ class LocalDatabaseService {
             created_at INTEGER NOT NULL,
             updated_at INTEGER
           )
-        ''');
+      ''');
 
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS location_tracking (
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS location_tracking (
             id TEXT PRIMARY KEY,
             ambulance_id TEXT NOT NULL,
             ambulance_number TEXT,
@@ -1863,17 +1863,17 @@ class LocalDatabaseService {
             timestamp INTEGER NOT NULL,
             metadata TEXT
           )
-        ''');
+      ''');
 
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_ambulances_status ON ambulances(status)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_ambulances_type ON ambulances(type)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_transportation_requests_status ON transportation_requests(status)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_transportation_requests_patient ON transportation_requests(patient_id)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_location_tracking_ambulance ON location_tracking(ambulance_id)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_location_tracking_timestamp ON location_tracking(timestamp)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_ambulances_status ON ambulances(status)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_ambulances_type ON ambulances(type)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_transportation_requests_status ON transportation_requests(status)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_transportation_requests_patient ON transportation_requests(patient_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_location_tracking_ambulance ON location_tracking(ambulance_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_location_tracking_timestamp ON location_tracking(timestamp)');
 
-        // جداول التكاملات الخارجية
-        await db.execute('''
+      // جداول التكاملات الخارجية
+      await db.execute('''
           CREATE TABLE IF NOT EXISTS external_integrations (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -1890,10 +1890,10 @@ class LocalDatabaseService {
             created_at INTEGER NOT NULL,
             updated_at INTEGER
           )
-        ''');
+      ''');
 
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS integration_sync_logs (
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS integration_sync_logs (
             id TEXT PRIMARY KEY,
             integration_id TEXT NOT NULL,
             integration_name TEXT NOT NULL,
@@ -1904,12 +1904,12 @@ class LocalDatabaseService {
             details TEXT,
             timestamp INTEGER NOT NULL
           )
-        ''');
+      ''');
 
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_external_integrations_type ON external_integrations(type)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_external_integrations_status ON external_integrations(status)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_integration_sync_logs_integration ON integration_sync_logs(integration_id)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_integration_sync_logs_timestamp ON integration_sync_logs(timestamp)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_external_integrations_type ON external_integrations(type)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_external_integrations_status ON external_integrations(status)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_integration_sync_logs_integration ON integration_sync_logs(integration_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_integration_sync_logs_timestamp ON integration_sync_logs(timestamp)');
     }
   }
 
@@ -2069,7 +2069,7 @@ class LocalDatabaseService {
   }
 
   Future<void> clearAllData() async {
-    final db = await database;
+    final db = await this.database;
     await db.delete('users');
     await db.delete('prescriptions');
     await db.delete('prescription_medications');
