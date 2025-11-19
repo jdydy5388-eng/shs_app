@@ -342,7 +342,7 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
     setState(() {
       _orderItems.add(PurchaseOrderItem(
         itemId: selectedItem!.id,
-        itemName: selectedItem.name,
+        itemName: selectedItem?.name ?? '',
         quantity: quantity,
         unitPrice: unitPrice,
         total: total,

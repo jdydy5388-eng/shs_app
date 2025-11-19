@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/emergency_case_model.dart';
-import '../../models/emergency_event_model.dart';
 import '../../models/lab_request_model.dart';
 import '../../models/radiology_model.dart';
 import '../../models/user_model.dart';

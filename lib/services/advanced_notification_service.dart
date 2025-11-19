@@ -6,7 +6,7 @@ import '../models/notification_model.dart';
 import '../models/doctor_appointment_model.dart';
 import '../models/hospital_pharmacy_model.dart';
 import '../models/emergency_case_model.dart';
-import '../models/lab_result_model.dart';
+import '../models/lab_test_type_model.dart';
 import '../models/user_model.dart';
 import '../services/data_service.dart';
 import 'notification_service.dart';
@@ -182,22 +182,23 @@ class AdvancedNotificationService {
   // إشعارات المواعيد
   Future<void> scheduleAppointmentNotifications(DoctorAppointment appointment) async {
     try {
-      final patient = await _dataService.getUser(appointment.patientId);
+      if (appointment.patientId == null) return;
+      final patient = await _dataService.getUser(appointment.patientId!);
       if (patient == null || patient is! UserModel) return;
 
       // إشعار قبل الموعد بـ 24 ساعة
-      final reminder24h = appointment.dateTime.subtract(const Duration(hours: 24));
+      final reminder24h = appointment.date.subtract(const Duration(hours: 24));
       if (reminder24h.isAfter(DateTime.now())) {
         await sendPushNotification(
           title: 'تذكير موعد',
-          body: 'لديك موعد غداً في ${appointment.dateTime.toString().substring(0, 16)}',
+          body: 'لديك موعد غداً في ${appointment.date.toString().substring(0, 16)}',
           priority: NotificationPriority.normal,
         );
 
         if (patient.phone != null && patient.phone!.isNotEmpty) {
           await sendSMSNotification(
             recipient: patient.phone!,
-            message: 'تذكير: لديك موعد غداً في ${appointment.dateTime.toString().substring(0, 16)}',
+            message: 'تذكير: لديك موعد غداً في ${appointment.date.toString().substring(0, 16)}',
             scheduledAt: reminder24h,
           );
         }
@@ -206,14 +207,14 @@ class AdvancedNotificationService {
           await sendEmailNotification(
             recipient: patient.email!,
             subject: 'تذكير موعد',
-            message: 'لديك موعد غداً في ${appointment.dateTime.toString().substring(0, 16)}',
+            message: 'لديك موعد غداً في ${appointment.date.toString().substring(0, 16)}',
             scheduledAt: reminder24h,
           );
         }
       }
 
       // إشعار قبل الموعد بساعتين
-      final reminder2h = appointment.dateTime.subtract(const Duration(hours: 2));
+      final reminder2h = appointment.date.subtract(const Duration(hours: 2));
       if (reminder2h.isAfter(DateTime.now())) {
         await sendPushNotification(
           title: 'تذكير موعد قريب',
@@ -350,19 +351,26 @@ class AdvancedNotificationService {
   Future<void> _checkAppointmentReminders() async {
     try {
       final now = DateTime.now();
-      final appointments = await _dataService.getAppointments();
+      // الحصول على جميع المواعيد من جميع الأطباء
+      final doctors = await _dataService.getUsers(role: 'doctor');
+      final List<DoctorAppointment> allAppointments = [];
+      for (var doctor in doctors) {
+        final doctorAppointments = await _dataService.getDoctorAppointments(doctor.id);
+        allAppointments.addAll(doctorAppointments.cast<DoctorAppointment>());
+      }
+      final appointments = allAppointments;
 
       for (final appointment in appointments) {
         if (appointment is DoctorAppointment) {
           // إشعار قبل 24 ساعة
-          final reminder24h = appointment.dateTime.subtract(const Duration(hours: 24));
+          final reminder24h = appointment.date.subtract(const Duration(hours: 24));
           if (reminder24h.isAtSameMomentAs(now) || 
               (reminder24h.isBefore(now) && reminder24h.isAfter(now.subtract(const Duration(minutes: 1))))) {
             await scheduleAppointmentNotifications(appointment);
           }
 
           // إشعار قبل ساعتين
-          final reminder2h = appointment.dateTime.subtract(const Duration(hours: 2));
+          final reminder2h = appointment.date.subtract(const Duration(hours: 2));
           if (reminder2h.isAtSameMomentAs(now) ||
               (reminder2h.isBefore(now) && reminder2h.isAfter(now.subtract(const Duration(minutes: 1))))) {
             await scheduleAppointmentNotifications(appointment);

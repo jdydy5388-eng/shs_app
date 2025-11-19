@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 
 class QualityReportsScreen extends StatelessWidget {
-  const QualityReportsScreen({super.key});
+  final DateTime? fromDate;
+  final DateTime? toDate;
+
+  const QualityReportsScreen({
+    super.key,
+    this.fromDate,
+    this.toDate,
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -33,7 +33,14 @@ class _AdvancedDashboardScreenState extends State<AdvancedDashboardScreen> {
       // جلب البيانات من مختلف المصادر
       final patients = await _dataService.getPatients();
       final doctors = await _dataService.getUsers(role: 'doctor');
-      final appointments = await _dataService.getAppointments();
+      // الحصول على جميع المواعيد
+      final doctors = await _dataService.getUsers(role: 'doctor');
+      final List<DoctorAppointment> allAppointments = [];
+      for (var doctor in doctors) {
+        final doctorAppointments = await _dataService.getDoctorAppointments(doctor.id);
+        allAppointments.addAll(doctorAppointments.cast<DoctorAppointment>());
+      }
+      final appointments = allAppointments;
       final prescriptions = await _dataService.getPrescriptions();
       final invoices = await _dataService.getInvoices();
       final beds = await _dataService.getBeds();
@@ -52,7 +59,7 @@ class _AdvancedDashboardScreenState extends State<AdvancedDashboardScreen> {
       double totalRevenue = 0.0;
       for (final invoice in invoices) {
         if (invoice is InvoiceModel) {
-          totalRevenue += invoice.totalAmount;
+          totalRevenue += invoice.total;
         }
       }
 

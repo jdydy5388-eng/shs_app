@@ -60,7 +60,7 @@ class _ComplaintsManagementScreenState extends State<ComplaintsManagementScreen>
 
   String _getStatusText(ComplaintStatus status) {
     return {
-      ComplaintStatus.new: 'جديدة',
+      ComplaintStatus.newComplaint: 'جديدة',
       ComplaintStatus.inProgress: 'قيد المعالجة',
       ComplaintStatus.resolved: 'تم الحل',
       ComplaintStatus.closed: 'مغلق',

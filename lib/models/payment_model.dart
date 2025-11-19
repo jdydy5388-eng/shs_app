@@ -26,7 +26,7 @@ class PaymentModel {
       orElse: () => PaymentMethod.cash,
     );
 
-    DateTime? parseDateTime(dynamic value) {
+    DateTime parseDateTime(dynamic value) {
       if (value == null) return DateTime.now();
       if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
       if (value is DateTime) return value;

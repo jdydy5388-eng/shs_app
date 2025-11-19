@@ -38,7 +38,7 @@ class _PerformanceReportsScreenState extends State<PerformanceReportsScreen> {
 
       for (final doctor in doctors) {
         if (doctor is UserModel) {
-          final appointments = await _dataService.getAppointments(doctorId: doctor.id);
+          final appointments = await _dataService.getDoctorAppointments(doctor.id);
           final prescriptions = await _dataService.getPrescriptions(doctorId: doctor.id);
           final labRequests = await _dataService.getLabRequests(doctorId: doctor.id);
 

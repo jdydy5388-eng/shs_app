@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/emergency_case_model.dart';
-import '../../models/emergency_event_model.dart';
 import '../../models/user_model.dart';
 import '../../services/data_service.dart';
 import '../../utils/auth_helper.dart';

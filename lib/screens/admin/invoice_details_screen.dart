@@ -378,7 +378,7 @@ class _InvoiceDetailsScreenState extends State<InvoiceDetailsScreen> {
       // عرض PDF وطباعته
       if (mounted) {
         await Printing.layoutPdf(
-          onLayout: (PdfPageFormat format) async => pdf.save(),
+          onLayout: (format) async => pdf.save(),
         );
       }
     } catch (e) {

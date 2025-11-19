@@ -298,7 +298,7 @@ class MedicalIncidentModel {
 
 // الشكاوى
 enum ComplaintStatus {
-  new, // جديدة
+  newComplaint, // جديدة
   inProgress, // قيد المعالجة
   resolved, // تم الحل
   closed, // مغلق
@@ -345,7 +345,7 @@ class ComplaintModel {
     this.complainantPhone,
     this.complainantEmail,
     required this.category,
-    this.status = ComplaintStatus.new,
+    this.status = ComplaintStatus.newComplaint,
     required this.subject,
     required this.description,
     this.department,
@@ -371,7 +371,7 @@ class ComplaintModel {
     );
     final status = ComplaintStatus.values.firstWhere(
       (e) => e.toString().split('.').last == statusStr,
-      orElse: () => ComplaintStatus.new,
+      orElse: () => ComplaintStatus.newComplaint,
     );
 
     Map<String, dynamic>? parseJson(dynamic v) {

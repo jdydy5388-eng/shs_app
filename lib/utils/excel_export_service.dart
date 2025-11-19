@@ -14,13 +14,20 @@ class ExcelExportService {
 
     // إضافة العناوين
     for (int i = 0; i < headers.length; i++) {
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0)).value = headers[i];
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0)).value = TextCellValue(headers[i]);
     }
 
     // إضافة البيانات
     for (int row = 0; row < data.length; row++) {
       for (int col = 0; col < data[row].length; col++) {
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row + 1)).value = data[row][col];
+        final value = data[row][col];
+        if (value is String) {
+          sheet.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row + 1)).value = TextCellValue(value);
+        } else if (value is num) {
+          sheet.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row + 1)).value = IntCellValue(value.toInt());
+        } else {
+          sheet.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row + 1)).value = TextCellValue(value.toString());
+        }
       }
     }
 

@@ -413,7 +413,7 @@ class _MedicalInventoryManagementScreenState extends State<MedicalInventoryManag
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: color.shade900,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
