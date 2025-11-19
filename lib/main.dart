@@ -19,6 +19,7 @@ import 'providers/auth_provider_local.dart';
 import 'providers/notification_provider.dart';
 import 'services/local_database_service.dart';
 import 'services/notification_service.dart';
+import 'services/advanced_notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,6 +58,9 @@ class MyApp extends StatelessWidget {
           final provider = NotificationProvider();
           // تهيئة خدمة الإشعارات
           provider.notificationService.initialize();
+          // تهيئة خدمة الإشعارات المتقدمة
+          final advancedService = AdvancedNotificationService();
+          advancedService.initialize();
           return provider;
         }),
       ],

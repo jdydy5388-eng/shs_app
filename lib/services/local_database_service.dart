@@ -9,7 +9,7 @@ import 'dart:io' show Platform;
 class LocalDatabaseService {
   static Database? _database;
   static const String _databaseName = 'shs_app.db';
-  static const int _databaseVersion = 16;
+  static const int _databaseVersion = 17;
   static bool _initialized = false;
 
   Future<Database> get database async {
@@ -1218,6 +1218,58 @@ class LocalDatabaseService {
         await db.execute('CREATE INDEX IF NOT EXISTS idx_lab_samples_request ON lab_samples(lab_request_id)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_lab_results_request ON lab_results(lab_request_id)');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_lab_schedules_date ON lab_schedules(scheduled_date)');
+      }
+      if (oldVersion < 17) {
+        // إضافة جداول إدارة الوثائق
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS documents (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            description TEXT,
+            category TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            access_level TEXT NOT NULL DEFAULT 'private',
+            patient_id TEXT,
+            patient_name TEXT,
+            doctor_id TEXT,
+            doctor_name TEXT,
+            shared_with_user_ids TEXT,
+            tags TEXT,
+            file_url TEXT NOT NULL,
+            file_name TEXT NOT NULL,
+            file_type TEXT,
+            file_size INTEGER,
+            thumbnail_url TEXT,
+            metadata TEXT,
+            signature_id TEXT,
+            signed_at INTEGER,
+            signed_by TEXT,
+            archived_at INTEGER,
+            archived_by TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER,
+            created_by TEXT NOT NULL
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS document_signatures (
+            id TEXT PRIMARY KEY,
+            document_id TEXT NOT NULL,
+            signed_by TEXT NOT NULL,
+            signed_by_name TEXT NOT NULL,
+            signature_data TEXT NOT NULL,
+            signed_at INTEGER NOT NULL,
+            notes TEXT
+          )
+        ''');
+
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_documents_category ON documents(category)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_documents_patient ON documents(patient_id)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_documents_doctor ON documents(doctor_id)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_documents_created_by ON documents(created_by)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_signatures_document ON document_signatures(document_id)');
       }
     }
 

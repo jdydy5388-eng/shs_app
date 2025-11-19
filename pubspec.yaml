@@ -61,6 +61,13 @@ dependencies:
   # Utilities
   uuid: ^4.5.1
   url_launcher: ^6.3.1
+  
+  # Charts & Graphs
+  fl_chart: ^0.69.0
+  
+  # Excel Export
+  excel: ^3.0.0+1
+  open_file: ^3.5.2
 
 dev_dependencies:
   flutter_test:

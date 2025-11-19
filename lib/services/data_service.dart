@@ -457,5 +457,16 @@ class DataService {
   Future<void> updateShift(String id, {DateTime? startTime, DateTime? endTime, String? department, String? recurrence}) => 
       _service.updateShift(id, startTime: startTime, endTime: endTime, department: department, recurrence: recurrence);
   Future<void> deleteShift(String id) => _service.deleteShift(id);
+
+  // Documents
+  Future<List> getDocuments({category, status, accessLevel, patientId, doctorId, searchQuery, userId}) =>
+      _service.getDocuments(category: category, status: status, accessLevel: accessLevel, patientId: patientId, doctorId: doctorId, searchQuery: searchQuery, userId: userId);
+  Future getDocument(String id) => _service.getDocument(id);
+  Future<void> createDocument(document) => _service.createDocument(document);
+  Future<void> updateDocument(String id, {title, description, category, status, accessLevel, sharedWithUserIds, tags, signatureId, signedAt, signedBy, archivedAt, archivedBy}) =>
+      _service.updateDocument(id, title: title, description: description, category: category, status: status, accessLevel: accessLevel, sharedWithUserIds: sharedWithUserIds, tags: tags, signatureId: signatureId, signedAt: signedAt, signedBy: signedBy, archivedAt: archivedAt, archivedBy: archivedBy);
+  Future<void> deleteDocument(String id) => _service.deleteDocument(id);
+  Future<void> createDocumentSignature(signature) => _service.createDocumentSignature(signature);
+  Future getDocumentSignature(String documentId) => _service.getDocumentSignature(documentId);
 }
 

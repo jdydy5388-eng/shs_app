@@ -25,6 +25,7 @@ import '../models/surgery_model.dart';
 import '../models/medical_inventory_model.dart';
 import '../models/hospital_pharmacy_model.dart';
 import '../models/lab_test_type_model.dart';
+import '../models/document_model.dart';
 import 'local_database_service.dart';
 
 class DoctorStats {
@@ -2791,6 +2792,245 @@ class LocalDataService {
       'created_at': schedule['createdAt'],
       'updated_at': schedule['updatedAt'],
     });
+  }
+
+  // Documents
+  Future<List<DocumentModel>> getDocuments({
+    DocumentCategory? category,
+    DocumentStatus? status,
+    DocumentAccessLevel? accessLevel,
+    String? patientId,
+    String? doctorId,
+    String? searchQuery,
+    String? userId,
+  }) async {
+    final db = await _db.database;
+    final where = <String>[];
+    final args = <Object>[];
+
+    if (category != null) {
+      where.add('category = ?');
+      args.add(category.toString().split('.').last);
+    }
+    if (status != null) {
+      where.add('status = ?');
+      args.add(status.toString().split('.').last);
+    }
+    if (accessLevel != null) {
+      where.add('accessLevel = ?');
+      args.add(accessLevel.toString().split('.').last);
+    }
+    if (patientId != null) {
+      where.add('patient_id = ?');
+      args.add(patientId);
+    }
+    if (doctorId != null) {
+      where.add('doctor_id = ?');
+      args.add(doctorId);
+    }
+    if (userId != null) {
+      where.add('(created_by = ? OR shared_with_user_ids LIKE ?)');
+      args.add(userId);
+      args.add('%$userId%');
+    }
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      where.add('(title LIKE ? OR description LIKE ? OR tags LIKE ?)');
+      final query = '%$searchQuery%';
+      args.add(query);
+      args.add(query);
+      args.add(query);
+    }
+
+    final rows = await db.query(
+      'documents',
+      where: where.isEmpty ? null : where.join(' AND '),
+      whereArgs: where.isEmpty ? null : args,
+      orderBy: 'created_at DESC',
+    );
+
+    return rows.map((r) => DocumentModel.fromMap({
+      'id': r['id'],
+      'title': r['title'],
+      'description': r['description'],
+      'category': r['category'],
+      'status': r['status'],
+      'accessLevel': r['accessLevel'],
+      'patientId': r['patient_id'],
+      'patientName': r['patient_name'],
+      'doctorId': r['doctor_id'],
+      'doctorName': r['doctor_name'],
+      'sharedWithUserIds': r['shared_with_user_ids'],
+      'tags': r['tags'],
+      'fileUrl': r['file_url'],
+      'fileName': r['file_name'],
+      'fileType': r['file_type'],
+      'fileSize': r['file_size'],
+      'thumbnailUrl': r['thumbnail_url'],
+      'metadata': r['metadata'],
+      'signatureId': r['signature_id'],
+      'signedAt': r['signed_at'],
+      'signedBy': r['signed_by'],
+      'archivedAt': r['archived_at'],
+      'archivedBy': r['archived_by'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+      'createdBy': r['created_by'],
+    }, r['id'] as String)).toList();
+  }
+
+  Future<DocumentModel?> getDocument(String id) async {
+    final db = await _db.database;
+    final rows = await db.query(
+      'documents',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+
+    if (rows.isEmpty) return null;
+
+    final r = rows.first;
+    return DocumentModel.fromMap({
+      'id': r['id'],
+      'title': r['title'],
+      'description': r['description'],
+      'category': r['category'],
+      'status': r['status'],
+      'accessLevel': r['accessLevel'],
+      'patientId': r['patient_id'],
+      'patientName': r['patient_name'],
+      'doctorId': r['doctor_id'],
+      'doctorName': r['doctor_name'],
+      'sharedWithUserIds': r['shared_with_user_ids'],
+      'tags': r['tags'],
+      'fileUrl': r['file_url'],
+      'fileName': r['file_name'],
+      'fileType': r['file_type'],
+      'fileSize': r['file_size'],
+      'thumbnailUrl': r['thumbnail_url'],
+      'metadata': r['metadata'],
+      'signatureId': r['signature_id'],
+      'signedAt': r['signed_at'],
+      'signedBy': r['signed_by'],
+      'archivedAt': r['archived_at'],
+      'archivedBy': r['archived_by'],
+      'createdAt': r['created_at'],
+      'updatedAt': r['updated_at'],
+      'createdBy': r['created_by'],
+    }, r['id'] as String);
+  }
+
+  Future<void> createDocument(DocumentModel document) async {
+    final db = await _db.database;
+    await db.insert('documents', {
+      'id': document.id,
+      'title': document.title,
+      'description': document.description,
+      'category': document.category.toString().split('.').last,
+      'status': document.status.toString().split('.').last,
+      'accessLevel': document.accessLevel.toString().split('.').last,
+      'patient_id': document.patientId,
+      'patient_name': document.patientName,
+      'doctor_id': document.doctorId,
+      'doctor_name': document.doctorName,
+      'shared_with_user_ids': document.sharedWithUserIds != null ? jsonEncode(document.sharedWithUserIds) : null,
+      'tags': document.tags != null ? jsonEncode(document.tags) : null,
+      'file_url': document.fileUrl,
+      'file_name': document.fileName,
+      'file_type': document.fileType,
+      'file_size': document.fileSize,
+      'thumbnail_url': document.thumbnailUrl,
+      'metadata': document.metadata != null ? jsonEncode(document.metadata) : null,
+      'signature_id': document.signatureId,
+      'signed_at': document.signedAt?.millisecondsSinceEpoch,
+      'signed_by': document.signedBy,
+      'archived_at': document.archivedAt?.millisecondsSinceEpoch,
+      'archived_by': document.archivedBy,
+      'created_at': document.createdAt.millisecondsSinceEpoch,
+      'updated_at': document.updatedAt?.millisecondsSinceEpoch,
+      'created_by': document.createdBy,
+    });
+  }
+
+  Future<void> updateDocument(String id, {
+    String? title,
+    String? description,
+    DocumentCategory? category,
+    DocumentStatus? status,
+    DocumentAccessLevel? accessLevel,
+    List<String>? sharedWithUserIds,
+    List<String>? tags,
+    String? signatureId,
+    DateTime? signedAt,
+    String? signedBy,
+    DateTime? archivedAt,
+    String? archivedBy,
+  }) async {
+    final db = await _db.database;
+    final updates = <String, Object?>{
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    };
+
+    if (title != null) updates['title'] = title;
+    if (description != null) updates['description'] = description;
+    if (category != null) updates['category'] = category.toString().split('.').last;
+    if (status != null) updates['status'] = status.toString().split('.').last;
+    if (accessLevel != null) updates['accessLevel'] = accessLevel.toString().split('.').last;
+    if (sharedWithUserIds != null) updates['shared_with_user_ids'] = jsonEncode(sharedWithUserIds);
+    if (tags != null) updates['tags'] = jsonEncode(tags);
+    if (signatureId != null) updates['signature_id'] = signatureId;
+    if (signedAt != null) updates['signed_at'] = signedAt.millisecondsSinceEpoch;
+    if (signedBy != null) updates['signed_by'] = signedBy;
+    if (archivedAt != null) updates['archived_at'] = archivedAt.millisecondsSinceEpoch;
+    if (archivedBy != null) updates['archived_by'] = archivedBy;
+
+    await db.update('documents', updates, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> deleteDocument(String id) async {
+    final db = await _db.database;
+    await db.update(
+      'documents',
+      {'status': DocumentStatus.deleted.toString().split('.').last},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> createDocumentSignature(DocumentSignature signature) async {
+    final db = await _db.database;
+    await db.insert('document_signatures', {
+      'id': signature.id,
+      'document_id': signature.documentId,
+      'signed_by': signature.signedBy,
+      'signed_by_name': signature.signedByName,
+      'signature_data': signature.signatureData,
+      'signed_at': signature.signedAt.millisecondsSinceEpoch,
+      'notes': signature.notes,
+    });
+  }
+
+  Future<DocumentSignature?> getDocumentSignature(String documentId) async {
+    final db = await _db.database;
+    final rows = await db.query(
+      'document_signatures',
+      where: 'document_id = ?',
+      whereArgs: [documentId],
+      limit: 1,
+    );
+
+    if (rows.isEmpty) return null;
+
+    final r = rows.first;
+    return DocumentSignature.fromMap({
+      'id': r['id'],
+      'documentId': r['document_id'],
+      'signedBy': r['signed_by'],
+      'signedByName': r['signed_by_name'],
+      'signatureData': r['signature_data'],
+      'signedAt': r['signed_at'],
+      'notes': r['notes'],
+    }, r['id'] as String);
   }
 }
 

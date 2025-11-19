@@ -10,6 +10,9 @@ import 'surgery_management_screen.dart';
 import 'medical_inventory_management_screen.dart';
 import 'lab_test_types_management_screen.dart';
 import 'lab_reports_screen.dart';
+import 'advanced_dashboard_screen.dart';
+import 'advanced_reports_screen.dart';
+import 'notifications_management_screen.dart';
 import '../emergency/emergency_dashboard_screen.dart';
 import '../auth/login_screen.dart';
 
@@ -156,6 +159,45 @@ class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
 
   static final List<AdminFeature> _features = [
+    AdminFeature(
+      title: 'لوحة المعلومات الشاملة',
+      description: 'لوحة معلومات شاملة مع إحصائيات ورسوم بيانية.',
+      icon: Icons.dashboard,
+      color: Colors.blue,
+      details: [
+        'إحصائيات شاملة للنظام',
+        'رسوم بيانية للإيرادات والإشغال',
+        'متابعة الأداء في الوقت الفعلي',
+        'تقارير متقدمة',
+      ],
+      builder: (_) => const AdvancedDashboardScreen(),
+    ),
+    AdminFeature(
+      title: 'التقارير المتقدمة',
+      description: 'تقارير إحصائية وأداء وجودة متقدمة.',
+      icon: Icons.assessment,
+      color: Colors.indigo,
+      details: [
+        'تقارير إحصائية متقدمة',
+        'تقارير الأداء للأطباء والموظفين',
+        'تقارير الجودة',
+        'تصدير PDF و Excel',
+      ],
+      builder: (_) => const AdvancedReportsScreen(),
+    ),
+    AdminFeature(
+      title: 'إدارة الإشعارات',
+      description: 'إدارة الإشعارات (SMS, Email, Push).',
+      icon: Icons.notifications_active,
+      color: Colors.orange,
+      details: [
+        'عرض جميع الإشعارات (SMS, Email)',
+        'فلترة حسب النوع والحالة',
+        'متابعة حالة الإشعارات',
+        'إدارة الإشعارات المجدولة',
+      ],
+      builder: (_) => const NotificationsManagementScreen(),
+    ),
     AdminFeature(
       title: 'إدارة المستخدمين والحسابات',
       description: 'الصلاحيات الكاملة لإدارة حسابات النظام.',

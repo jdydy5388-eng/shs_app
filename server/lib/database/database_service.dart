@@ -723,6 +723,60 @@ class DatabaseService {
       )
     ''');
 
+    // جدول الوثائق
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS documents (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT,
+        category TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        access_level TEXT NOT NULL DEFAULT 'private',
+        patient_id TEXT,
+        patient_name TEXT,
+        doctor_id TEXT,
+        doctor_name TEXT,
+        shared_with_user_ids JSONB,
+        tags JSONB,
+        file_url TEXT NOT NULL,
+        file_name TEXT NOT NULL,
+        file_type TEXT,
+        file_size BIGINT,
+        thumbnail_url TEXT,
+        metadata JSONB,
+        signature_id TEXT,
+        signed_at BIGINT,
+        signed_by TEXT,
+        archived_at BIGINT,
+        archived_by TEXT,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT,
+        created_by TEXT NOT NULL
+      )
+    ''');
+
+    // جدول التوقيعات الإلكترونية
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS document_signatures (
+        id TEXT PRIMARY KEY,
+        document_id TEXT NOT NULL,
+        signed_by TEXT NOT NULL,
+        signed_by_name TEXT NOT NULL,
+        signature_data TEXT NOT NULL,
+        signed_at BIGINT NOT NULL,
+        notes TEXT,
+        FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
+      )
+    ''');
+
+    // إنشاء الفهارس
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_documents_category ON documents(category)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_documents_patient ON documents(patient_id)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_documents_doctor ON documents(doctor_id)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_documents_created_by ON documents(created_by)');
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_signatures_document ON document_signatures(document_id)');
+
     AppLogger.info('Database tables created/verified');
     print('✅ Database tables ready');
   }

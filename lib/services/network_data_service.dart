@@ -25,6 +25,7 @@ import '../models/surgery_model.dart';
 import '../models/medical_inventory_model.dart';
 import '../models/hospital_pharmacy_model.dart';
 import '../models/lab_test_type_model.dart';
+import '../models/document_model.dart';
 import 'network_auth_context.dart';
 
 /// خدمة البيانات الشبكية - الاتصال بالخادم المركزي عبر REST API
@@ -1481,6 +1482,90 @@ class NetworkDataService {
 
   Future<void> createLabSchedule(Map<String, dynamic> schedule) async {
     await _post('lab-schedules', schedule);
+  }
+
+  // Documents
+  Future<List<DocumentModel>> getDocuments({
+    DocumentCategory? category,
+    DocumentStatus? status,
+    DocumentAccessLevel? accessLevel,
+    String? patientId,
+    String? doctorId,
+    String? searchQuery,
+    String? userId,
+  }) async {
+    final query = <String, String>{};
+    if (category != null) query['category'] = category.toString().split('.').last;
+    if (status != null) query['status'] = status.toString().split('.').last;
+    if (accessLevel != null) query['accessLevel'] = accessLevel.toString().split('.').last;
+    if (patientId != null) query['patientId'] = patientId;
+    if (doctorId != null) query['doctorId'] = doctorId;
+    if (searchQuery != null && searchQuery.isNotEmpty) query['searchQuery'] = searchQuery;
+    if (userId != null) query['userId'] = userId;
+
+    final data = await _getList('documents', queryParams: query);
+    return data.map((m) => DocumentModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<DocumentModel?> getDocument(String id) async {
+    try {
+      final data = await _get('documents/$id');
+      return DocumentModel.fromMap(data, data['id'] as String);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<void> createDocument(DocumentModel document) async {
+    await _post('documents', document.toMap());
+  }
+
+  Future<void> updateDocument(String id, {
+    String? title,
+    String? description,
+    DocumentCategory? category,
+    DocumentStatus? status,
+    DocumentAccessLevel? accessLevel,
+    List<String>? sharedWithUserIds,
+    List<String>? tags,
+    String? signatureId,
+    DateTime? signedAt,
+    String? signedBy,
+    DateTime? archivedAt,
+    String? archivedBy,
+  }) async {
+    final body = <String, dynamic>{};
+    if (title != null) body['title'] = title;
+    if (description != null) body['description'] = description;
+    if (category != null) body['category'] = category.toString().split('.').last;
+    if (status != null) body['status'] = status.toString().split('.').last;
+    if (accessLevel != null) body['accessLevel'] = accessLevel.toString().split('.').last;
+    if (sharedWithUserIds != null) body['sharedWithUserIds'] = sharedWithUserIds;
+    if (tags != null) body['tags'] = tags;
+    if (signatureId != null) body['signatureId'] = signatureId;
+    if (signedAt != null) body['signedAt'] = signedAt.millisecondsSinceEpoch;
+    if (signedBy != null) body['signedBy'] = signedBy;
+    if (archivedAt != null) body['archivedAt'] = archivedAt.millisecondsSinceEpoch;
+    if (archivedBy != null) body['archivedBy'] = archivedBy;
+
+    await _put('documents/$id', body);
+  }
+
+  Future<void> deleteDocument(String id) async {
+    await _put('documents/$id', {'status': DocumentStatus.deleted.toString().split('.').last});
+  }
+
+  Future<void> createDocumentSignature(DocumentSignature signature) async {
+    await _post('documents/signatures', signature.toMap());
+  }
+
+  Future<DocumentSignature?> getDocumentSignature(String documentId) async {
+    try {
+      final data = await _get('documents/$documentId/signature');
+      return DocumentSignature.fromMap(data, data['id'] as String);
+    } catch (e) {
+      return null;
+    }
   }
 }
 
