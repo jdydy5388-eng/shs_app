@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:printing/printing.dart';
 import '../../models/invoice_model.dart';
 import '../../models/payment_model.dart';
 import '../../services/data_service.dart';
 import '../../utils/pdf_service.dart';
+import '../../utils/print_helper.dart';
 import 'payments_management_screen.dart';
 
 class InvoiceDetailsScreen extends StatefulWidget {
@@ -377,8 +377,9 @@ class _InvoiceDetailsScreenState extends State<InvoiceDetailsScreen> {
 
       // عرض PDF وطباعته
       if (mounted) {
-        await Printing.layoutPdf(
-          onLayout: (format) async => pdf.save(),
+        await PrintHelper.printPdf(
+          generatePdf: () => pdf.save(),
+          fileName: 'invoice_${_invoice.id}',
         );
       }
     } catch (e) {
