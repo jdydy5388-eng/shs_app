@@ -18,6 +18,7 @@ import '../handlers/notifications_handler.dart';
 import '../handlers/radiology_handler.dart';
 import '../handlers/attendance_handler.dart';
 import '../handlers/storage_handler.dart';
+import '../handlers/surgeries_handler.dart';
 
 class ApiRoutes {
   static Router createRouter() {
@@ -47,6 +48,7 @@ class ApiRoutes {
     router.mount('/api/radiology', RadiologyHandler().router);
     router.mount('/api/attendance', AttendanceHandler().router);
     router.mount('/api/storage', StorageHandler().router);
+    router.mount('/api/surgeries', SurgeriesHandler().router);
 
     // 404 handler
     router.all('/<path|.*>', (Request request) {

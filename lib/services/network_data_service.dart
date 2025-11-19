@@ -21,6 +21,7 @@ import '../models/emergency_case_model.dart';
 import '../models/notification_model.dart';
 import '../models/radiology_model.dart';
 import '../models/attendance_model.dart';
+import '../models/surgery_model.dart';
 import 'network_auth_context.dart';
 
 /// خدمة البيانات الشبكية - الاتصال بالخادم المركزي عبر REST API
@@ -1242,6 +1243,47 @@ class NetworkDataService {
       'expiresSeconds': expiresSeconds,
     });
     return data['url'] as String;
+  }
+
+  // Surgeries
+  Future<List<SurgeryModel>> getSurgeries({
+    String? patientId,
+    String? surgeonId,
+    SurgeryStatus? status,
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    final query = <String, String>{};
+    if (patientId != null) query['patientId'] = patientId;
+    if (surgeonId != null) query['surgeonId'] = surgeonId;
+    if (status != null) query['status'] = status.toString().split('.').last;
+    if (from != null) query['from'] = from.millisecondsSinceEpoch.toString();
+    if (to != null) query['to'] = to.millisecondsSinceEpoch.toString();
+    
+    final data = await _getList('surgeries', queryParams: query);
+    return data.map((m) => SurgeryModel.fromMap(m, m['id'] as String)).toList();
+  }
+
+  Future<void> createSurgery(SurgeryModel surgery) async {
+    await _post('surgeries', surgery.toMap());
+  }
+
+  Future<void> updateSurgery(String surgeryId, {
+    SurgeryStatus? status,
+    DateTime? startTime,
+    DateTime? endTime,
+    Map<String, dynamic>? preOperativeNotes,
+    Map<String, dynamic>? operativeNotes,
+    Map<String, dynamic>? postOperativeNotes,
+  }) async {
+    final body = <String, dynamic>{};
+    if (status != null) body['status'] = status.toString().split('.').last;
+    if (startTime != null) body['startTime'] = startTime.millisecondsSinceEpoch;
+    if (endTime != null) body['endTime'] = endTime.millisecondsSinceEpoch;
+    if (preOperativeNotes != null) body['preOperativeNotes'] = preOperativeNotes;
+    if (operativeNotes != null) body['operativeNotes'] = operativeNotes;
+    if (postOperativeNotes != null) body['postOperativeNotes'] = postOperativeNotes;
+    await _put('surgeries/$surgeryId', body);
   }
 }
 

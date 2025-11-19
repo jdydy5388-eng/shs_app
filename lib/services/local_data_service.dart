@@ -21,6 +21,7 @@ import '../models/room_bed_model.dart';
 import '../models/emergency_case_model.dart';
 import '../models/notification_model.dart';
 import '../models/attendance_model.dart';
+import '../models/surgery_model.dart';
 import 'local_database_service.dart';
 
 class DoctorStats {
@@ -1964,6 +1965,171 @@ class LocalDataService {
     final mime = contentType ?? 'application/octet-stream';
     final b64 = base64Encode(bytes);
     return 'data:$mime;base64,$b64';
+  }
+
+  // Surgeries
+  Future<List<SurgeryModel>> getSurgeries({
+    String? patientId,
+    String? surgeonId,
+    SurgeryStatus? status,
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    final db = await _db.database;
+    final where = <String>[];
+    final args = <Object>[];
+
+    if (patientId != null) {
+      where.add('patient_id = ?');
+      args.add(patientId);
+    }
+    if (surgeonId != null) {
+      where.add('surgeon_id = ?');
+      args.add(surgeonId);
+    }
+    if (status != null) {
+      where.add('status = ?');
+      args.add(status.toString().split('.').last);
+    }
+    if (from != null) {
+      where.add('scheduled_date >= ?');
+      args.add(from.millisecondsSinceEpoch);
+    }
+    if (to != null) {
+      where.add('scheduled_date <= ?');
+      args.add(to.millisecondsSinceEpoch);
+    }
+
+    final rows = await db.query(
+      'surgeries',
+      where: where.isEmpty ? null : where.join(' AND '),
+      whereArgs: where.isEmpty ? null : args,
+      orderBy: 'scheduled_date DESC',
+    );
+
+    return rows.map((r) {
+      Map<String, dynamic>? preOp, op, postOp;
+      List<String>? nurseIds, nurseNames, equipment;
+
+      if (r['pre_operative_notes'] != null) {
+        try {
+          preOp = Map<String, dynamic>.from(jsonDecode(r['pre_operative_notes'] as String) as Map);
+        } catch (_) {}
+      }
+      if (r['operative_notes'] != null) {
+        try {
+          op = Map<String, dynamic>.from(jsonDecode(r['operative_notes'] as String) as Map);
+        } catch (_) {}
+      }
+      if (r['post_operative_notes'] != null) {
+        try {
+          postOp = Map<String, dynamic>.from(jsonDecode(r['post_operative_notes'] as String) as Map);
+        } catch (_) {}
+      }
+      if (r['nurse_ids'] != null) {
+        try {
+          nurseIds = List<String>.from(jsonDecode(r['nurse_ids'] as String) as List);
+        } catch (_) {}
+      }
+      if (r['nurse_names'] != null) {
+        try {
+          nurseNames = List<String>.from(jsonDecode(r['nurse_names'] as String) as List);
+        } catch (_) {}
+      }
+      if (r['equipment'] != null) {
+        try {
+          equipment = List<String>.from(jsonDecode(r['equipment'] as String) as List);
+        } catch (_) {}
+      }
+
+      return SurgeryModel.fromMap({
+        'id': r['id'],
+        'patient_id': r['patient_id'],
+        'patient_name': r['patient_name'],
+        'surgery_name': r['surgery_name'],
+        'type': r['type'],
+        'status': r['status'],
+        'scheduled_date': r['scheduled_date'],
+        'start_time': r['start_time'],
+        'end_time': r['end_time'],
+        'operation_room_id': r['operation_room_id'],
+        'operation_room_name': r['operation_room_name'],
+        'surgeon_id': r['surgeon_id'],
+        'surgeon_name': r['surgeon_name'],
+        'assistant_surgeon_id': r['assistant_surgeon_id'],
+        'assistant_surgeon_name': r['assistant_surgeon_name'],
+        'anesthesiologist_id': r['anesthesiologist_id'],
+        'anesthesiologist_name': r['anesthesiologist_name'],
+        'nurse_ids': nurseIds,
+        'nurse_names': nurseNames,
+        'pre_operative_notes': preOp,
+        'operative_notes': op,
+        'post_operative_notes': postOp,
+        'diagnosis': r['diagnosis'],
+        'procedure': r['procedure'],
+        'notes': r['notes'],
+        'equipment': equipment,
+        'created_at': r['created_at'],
+        'updated_at': r['updated_at'],
+      }, r['id'] as String);
+    }).toList();
+  }
+
+  Future<void> createSurgery(SurgeryModel surgery) async {
+    final db = await _db.database;
+    await db.insert('surgeries', {
+      'id': surgery.id,
+      'patient_id': surgery.patientId,
+      'patient_name': surgery.patientName,
+      'surgery_name': surgery.surgeryName,
+      'type': surgery.type.toString().split('.').last,
+      'status': surgery.status.toString().split('.').last,
+      'scheduled_date': surgery.scheduledDate.millisecondsSinceEpoch,
+      'start_time': surgery.startTime?.millisecondsSinceEpoch,
+      'end_time': surgery.endTime?.millisecondsSinceEpoch,
+      'operation_room_id': surgery.operationRoomId,
+      'operation_room_name': surgery.operationRoomName,
+      'surgeon_id': surgery.surgeonId,
+      'surgeon_name': surgery.surgeonName,
+      'assistant_surgeon_id': surgery.assistantSurgeonId,
+      'assistant_surgeon_name': surgery.assistantSurgeonName,
+      'anesthesiologist_id': surgery.anesthesiologistId,
+      'anesthesiologist_name': surgery.anesthesiologistName,
+      'nurse_ids': surgery.nurseIds != null ? jsonEncode(surgery.nurseIds) : null,
+      'nurse_names': surgery.nurseNames != null ? jsonEncode(surgery.nurseNames) : null,
+      'pre_operative_notes': surgery.preOperativeNotes != null ? jsonEncode(surgery.preOperativeNotes) : null,
+      'operative_notes': surgery.operativeNotes != null ? jsonEncode(surgery.operativeNotes) : null,
+      'post_operative_notes': surgery.postOperativeNotes != null ? jsonEncode(surgery.postOperativeNotes) : null,
+      'diagnosis': surgery.diagnosis,
+      'procedure': surgery.procedure,
+      'notes': surgery.notes,
+      'equipment': surgery.equipment != null ? jsonEncode(surgery.equipment) : null,
+      'created_at': surgery.createdAt.millisecondsSinceEpoch,
+      'updated_at': surgery.updatedAt?.millisecondsSinceEpoch,
+    });
+  }
+
+  Future<void> updateSurgery(String surgeryId, {
+    SurgeryStatus? status,
+    DateTime? startTime,
+    DateTime? endTime,
+    Map<String, dynamic>? preOperativeNotes,
+    Map<String, dynamic>? operativeNotes,
+    Map<String, dynamic>? postOperativeNotes,
+  }) async {
+    final db = await _db.database;
+    final updates = <String, Object?>{
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    };
+
+    if (status != null) updates['status'] = status.toString().split('.').last;
+    if (startTime != null) updates['start_time'] = startTime.millisecondsSinceEpoch;
+    if (endTime != null) updates['end_time'] = endTime.millisecondsSinceEpoch;
+    if (preOperativeNotes != null) updates['pre_operative_notes'] = jsonEncode(preOperativeNotes);
+    if (operativeNotes != null) updates['operative_notes'] = jsonEncode(operativeNotes);
+    if (postOperativeNotes != null) updates['post_operative_notes'] = jsonEncode(postOperativeNotes);
+
+    await db.update('surgeries', updates, where: 'id = ?', whereArgs: [surgeryId]);
   }
 }
 

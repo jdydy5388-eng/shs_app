@@ -448,6 +448,40 @@ class DatabaseService {
       )
     ''');
 
+    // جدول العمليات الجراحية
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS surgeries (
+        id TEXT PRIMARY KEY,
+        patient_id TEXT NOT NULL,
+        patient_name TEXT NOT NULL,
+        surgery_name TEXT NOT NULL,
+        type TEXT NOT NULL,               -- elective / emergency / urgent
+        status TEXT NOT NULL,             -- scheduled / inProgress / completed / cancelled / postponed
+        scheduled_date BIGINT NOT NULL,
+        start_time BIGINT,
+        end_time BIGINT,
+        operation_room_id TEXT,
+        operation_room_name TEXT,
+        surgeon_id TEXT NOT NULL,
+        surgeon_name TEXT NOT NULL,
+        assistant_surgeon_id TEXT,
+        assistant_surgeon_name TEXT,
+        anesthesiologist_id TEXT,
+        anesthesiologist_name TEXT,
+        nurse_ids JSONB,
+        nurse_names JSONB,
+        pre_operative_notes JSONB,
+        operative_notes JSONB,
+        post_operative_notes JSONB,
+        diagnosis TEXT,
+        procedure TEXT,
+        notes TEXT,
+        equipment JSONB,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT
+      )
+    ''');
+
     // جداول التمريض
     await conn.execute('''
       CREATE TABLE IF NOT EXISTS nursing_tasks (

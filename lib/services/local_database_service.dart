@@ -9,7 +9,7 @@ import 'dart:io' show Platform;
 class LocalDatabaseService {
   static Database? _database;
   static const String _databaseName = 'shs_app.db';
-  static const int _databaseVersion = 12;
+  static const int _databaseVersion = 13;
   static bool _initialized = false;
 
   Future<Database> get database async {
@@ -425,6 +425,45 @@ class LocalDatabaseService {
     await db.execute('CREATE INDEX IF NOT EXISTS idx_invoices_patient ON invoices(patient_id)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_payments_invoice ON payments(invoice_id)');
+
+    // جدول العمليات الجراحية
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS surgeries (
+        id TEXT PRIMARY KEY,
+        patient_id TEXT NOT NULL,
+        patient_name TEXT NOT NULL,
+        surgery_name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        status TEXT NOT NULL,
+        scheduled_date INTEGER NOT NULL,
+        start_time INTEGER,
+        end_time INTEGER,
+        operation_room_id TEXT,
+        operation_room_name TEXT,
+        surgeon_id TEXT NOT NULL,
+        surgeon_name TEXT NOT NULL,
+        assistant_surgeon_id TEXT,
+        assistant_surgeon_name TEXT,
+        anesthesiologist_id TEXT,
+        anesthesiologist_name TEXT,
+        nurse_ids TEXT,
+        nurse_names TEXT,
+        pre_operative_notes TEXT,
+        operative_notes TEXT,
+        post_operative_notes TEXT,
+        diagnosis TEXT,
+        procedure TEXT,
+        notes TEXT,
+        equipment TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER
+      )
+    ''');
+
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_surgeries_patient ON surgeries(patient_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_surgeries_surgeon ON surgeries(surgeon_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_surgeries_status ON surgeries(status)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_surgeries_date ON surgeries(scheduled_date)');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -711,10 +750,50 @@ class LocalDatabaseService {
       await db.execute('CREATE INDEX IF NOT EXISTS idx_nursing_tasks_nurse ON nursing_tasks(nurse_id)');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_nursing_tasks_patient ON nursing_tasks(patient_id)');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_nursing_tasks_status ON nursing_tasks(status)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_nursing_notes_nurse ON nursing_notes(nurse_id)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_nursing_notes_patient ON nursing_notes(patient_id)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_nursing_notes_nurse ON nursing_notes(nurse_id)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_nursing_notes_patient ON nursing_notes(patient_id)');
+      }
+      if (oldVersion < 13) {
+        // إضافة جدول العمليات الجراحية
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS surgeries (
+            id TEXT PRIMARY KEY,
+            patient_id TEXT NOT NULL,
+            patient_name TEXT NOT NULL,
+            surgery_name TEXT NOT NULL,
+            type TEXT NOT NULL,
+            status TEXT NOT NULL,
+            scheduled_date INTEGER NOT NULL,
+            start_time INTEGER,
+            end_time INTEGER,
+            operation_room_id TEXT,
+            operation_room_name TEXT,
+            surgeon_id TEXT NOT NULL,
+            surgeon_name TEXT NOT NULL,
+            assistant_surgeon_id TEXT,
+            assistant_surgeon_name TEXT,
+            anesthesiologist_id TEXT,
+            anesthesiologist_name TEXT,
+            nurse_ids TEXT,
+            nurse_names TEXT,
+            pre_operative_notes TEXT,
+            operative_notes TEXT,
+            post_operative_notes TEXT,
+            diagnosis TEXT,
+            procedure TEXT,
+            notes TEXT,
+            equipment TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER
+          )
+        ''');
+
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_surgeries_patient ON surgeries(patient_id)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_surgeries_surgeon ON surgeries(surgeon_id)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_surgeries_status ON surgeries(status)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_surgeries_date ON surgeries(scheduled_date)');
+      }
     }
-  }
 
   Future<void> _createDoctorTables(Database db) async {
     // جدول مواعيد الطبيب

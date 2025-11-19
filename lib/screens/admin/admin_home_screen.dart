@@ -5,6 +5,9 @@ import 'manage_entities_screen.dart';
 import 'system_monitoring_screen.dart';
 import 'shifts_management_screen.dart';
 import 'billing_management_screen.dart';
+import 'rooms_beds_management_screen.dart';
+import 'surgery_management_screen.dart';
+import '../emergency/emergency_dashboard_screen.dart';
 import '../auth/login_screen.dart';
 
 class AdminFeature {
@@ -211,6 +214,54 @@ class AdminDashboard extends StatelessWidget {
         'ربط الفواتير بالتأمين الصحي',
       ],
       builder: (_) => const BillingManagementScreen(),
+    ),
+    AdminFeature(
+      title: 'قسم الطوارئ',
+      description: 'إدارة حالات الطوارئ والترياج.',
+      icon: Icons.local_hospital,
+      color: Colors.red,
+      details: [
+        'إدارة حالات الطوارئ (دخول، علاج، تحويل، إفراج)',
+        'نظام الترياج (تصنيف الحالات حسب الأولوية)',
+        'تتبع العلامات الحيوية',
+        'سجل أحداث الطوارئ',
+        'تنبيهات للحالات الحرجة',
+        'إحصائيات الطوارئ وأوقات الانتظار',
+      ],
+      builder: (_) => const EmergencyDashboardScreen(),
+    ),
+    AdminFeature(
+      title: 'إدارة الغرف والأسرة',
+      description: 'إدارة الغرف والأسرة وحجزها للمرضى.',
+      icon: Icons.bed,
+      color: Colors.indigo,
+      details: [
+        'إدارة الغرف (عادية، عناية مركزة، عمليات، عزل)',
+        'إدارة الأسرة وحالتها (متاحة، مشغولة، صيانة)',
+        'حجز الأسرة للمرضى',
+        'نقل المرضى بين الغرف/الأسرة',
+        'تتبع مدة الإقامة',
+        'تنبيهات للصيانة',
+        'إحصائيات معدل الإشغال',
+      ],
+      builder: (_) => const RoomsBedsManagementScreen(),
+    ),
+    AdminFeature(
+      title: 'إدارة العمليات الجراحية',
+      description: 'إدارة العمليات الجراحية وجدولتها.',
+      icon: Icons.medical_services,
+      color: Colors.purple,
+      details: [
+        'جدول العمليات الجراحية',
+        'حجز غرف العمليات',
+        'إدارة فريق العملية (جراح، مساعد، تخدير، تمريض)',
+        'سجل ما قبل العملية (Pre-operative)',
+        'سجل العملية (Operative Notes)',
+        'سجل ما بعد العملية (Post-operative)',
+        'متابعة حالة المريض بعد العملية',
+        'إدارة المعدات الجراحية',
+      ],
+      builder: (_) => const SurgeryManagementScreen(),
     ),
   ];
 

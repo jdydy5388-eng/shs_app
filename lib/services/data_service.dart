@@ -294,6 +294,13 @@ class DataService {
   Future<List> getEmergencyEvents({String? caseId}) => _service.getEmergencyEvents(caseId: caseId);
   Future<void> createEmergencyEvent(e) => _service.createEmergencyEvent(e);
 
+  // Surgeries
+  Future<List> getSurgeries({patientId, surgeonId, status, from, to}) => 
+      _service.getSurgeries(patientId: patientId, surgeonId: surgeonId, status: status, from: from, to: to);
+  Future<void> createSurgery(surgery) => _service.createSurgery(surgery);
+  Future<void> updateSurgery(String id, {status, startTime, endTime, preOperativeNotes, operativeNotes, postOperativeNotes}) =>
+      _service.updateSurgery(id, status: status, startTime: startTime, endTime: endTime, preOperativeNotes: preOperativeNotes, operativeNotes: operativeNotes, postOperativeNotes: postOperativeNotes);
+
   // Notifications (SMS/Email)
   Future<List> getNotifications({status, String? relatedType, String? relatedId}) => 
       _service.getNotifications(status: status, relatedType: relatedType, relatedId: relatedId);
