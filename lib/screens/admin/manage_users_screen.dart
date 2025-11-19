@@ -373,6 +373,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                       additionalInfo = {'specialization': 'عام'};
                     } else if (value == UserRole.pharmacist) {
                       additionalInfo = {'pharmacyName': 'صيدلية جديدة'};
+                    } else if (value == UserRole.nurse) {
+                      additionalInfo = {'department': 'عام'};
                     } else {
                       additionalInfo = null;
                     }

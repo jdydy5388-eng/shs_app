@@ -105,6 +105,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       additionalInfo = {
         'bloodType': 'غير محدد',
       };
+    } else if (_selectedRole == UserRole.nurse) {
+      additionalInfo = {
+        'department': 'عام',
+        'licenseNumber': 'NURSE-${DateTime.now().millisecondsSinceEpoch}',
+      };
     }
 
     final authProvider = Provider.of<AuthProviderLocal>(context, listen: false);
