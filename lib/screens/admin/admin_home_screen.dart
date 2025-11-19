@@ -13,6 +13,7 @@ import 'lab_reports_screen.dart';
 import 'advanced_dashboard_screen.dart';
 import 'advanced_reports_screen.dart';
 import 'notifications_management_screen.dart';
+import 'documents_management_screen.dart';
 import '../emergency/emergency_dashboard_screen.dart';
 import '../auth/login_screen.dart';
 
@@ -351,6 +352,21 @@ class AdminDashboard extends StatelessWidget {
           'تحليل الأداء',
         ],
         builder: (_) => const LabReportsScreen(),
+      ),
+      AdminFeature(
+        title: 'إدارة الملفات والوثائق',
+        description: 'نظام إدارة الوثائق المتقدم مع التصنيف والبحث والتوقيع الإلكتروني.',
+        icon: Icons.folder,
+        color: Colors.blueGrey,
+        details: [
+          'رفع وإدارة الوثائق الطبية',
+          'تصنيف الوثائق (سجلات طبية، نتائج مختبرية، تقارير أشعة، إلخ)',
+          'البحث في الوثائق (عنوان، وصف، علامات)',
+          'مشاركة الوثائق بين الأطباء',
+          'توقيع إلكتروني للوثائق',
+          'أرشفة الوثائق',
+        ],
+        builder: (_) => const DocumentsManagementScreen(),
       ),
     ];
 
