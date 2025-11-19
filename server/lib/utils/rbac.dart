@@ -124,6 +124,18 @@ class Rbac {
       Permission.updateOrders, // تحديث حالة الطلبات
       Permission.readPrescriptions, // قراءة الوصفات للطلبات
     },
+    'labTechnician': {
+      Permission.readStorage,
+      Permission.writeStorage,
+      Permission.readMedicalRecords, // قراءة طلبات الفحوصات
+      Permission.updateMedicalRecords, // تحديث نتائج الفحوصات
+    },
+    'radiologist': {
+      Permission.readRadiology,
+      Permission.writeRadiology,
+      Permission.readStorage,
+      Permission.writeStorage,
+    },
   };
 
   static bool has(String role, Permission permission) {

@@ -8,6 +8,8 @@ import '../patient/patient_home_screen.dart';
 import '../doctor/doctor_home_screen.dart';
 import '../pharmacist/pharmacist_home_screen.dart';
 import '../admin/admin_home_screen.dart';
+import '../lab_technician/lab_technician_home_screen.dart';
+import '../radiologist/radiologist_home_screen.dart';
 import 'register_screen.dart';
 import '../../providers/auth_provider_local.dart';
 
@@ -118,6 +120,18 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
+        );
+        break;
+      case UserRole.labTechnician:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LabTechnicianHomeScreen()),
+        );
+        break;
+      case UserRole.radiologist:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const RadiologistHomeScreen()),
         );
         break;
     }

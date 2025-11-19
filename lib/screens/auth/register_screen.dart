@@ -6,6 +6,8 @@ import '../patient/patient_home_screen.dart';
 import '../doctor/doctor_home_screen.dart';
 import '../pharmacist/pharmacist_home_screen.dart';
 import '../admin/admin_home_screen.dart';
+import '../lab_technician/lab_technician_home_screen.dart';
+import '../radiologist/radiologist_home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -49,6 +51,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
+        );
+        break;
+      case UserRole.labTechnician:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LabTechnicianHomeScreen()),
+        );
+        break;
+      case UserRole.radiologist:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const RadiologistHomeScreen()),
         );
         break;
     }
@@ -204,6 +218,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     DropdownMenuItem(
                       value: UserRole.pharmacist,
                       child: Text('صيدلي'),
+                    ),
+                    DropdownMenuItem(
+                      value: UserRole.labTechnician,
+                      child: Text('فني مختبر'),
+                    ),
+                    DropdownMenuItem(
+                      value: UserRole.radiologist,
+                      child: Text('أخصائي أشعة'),
                     ),
                     DropdownMenuItem(
                       value: UserRole.admin,
