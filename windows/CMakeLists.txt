@@ -41,8 +41,14 @@ function(APPLY_STANDARD_SETTINGS TARGET)
   target_compile_features(${TARGET} PUBLIC cxx_std_20)
   target_compile_options(${TARGET} PRIVATE /W4 /WX /wd"4100" /wd"4996" /FS)
   target_compile_options(${TARGET} PRIVATE /EHsc)
+  # استخدام MultiThreadedDLL للتوافق مع Firebase
   set_property(TARGET ${TARGET} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
   target_compile_definitions(${TARGET} PRIVATE "$<$<CONFIG:Debug>:_DEBUG>")
+  # إضافة إعدادات خاصة لـ Firebase على Windows
+  if(MSVC)
+    target_compile_options(${TARGET} PRIVATE /Zc:__cplusplus)
+    target_compile_options(${TARGET} PRIVATE /permissive-)
+  endif()
 endfunction()
 
 # Flutter library and tool build rules.

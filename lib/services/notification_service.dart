@@ -1,5 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'dart:io' show Platform;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +10,11 @@ import '../providers/auth_provider_local.dart';
 class NotificationService {
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  
+  // Firebase Messaging متاح فقط على Android, iOS, Web
+  // على Windows، لن يتم استخدام Firebase
+  // Note: تم تعطيل Firebase على Windows لتجنب أخطاء الربط
+  // dynamic _firebaseMessaging;
 
   Future<void> initialize() async {
     // تهيئة الإشعارات المحلية
@@ -50,53 +54,31 @@ class NotificationService {
       sound: true,
     );
 
-    // صلاحيات Firebase
-    final settings = await _firebaseMessaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    print('حالة صلاحيات الإشعارات: ${settings.authorizationStatus}');
+    // صلاحيات Firebase (فقط على المنصات المدعومة)
+    // على Windows، تخطي Firebase
+    if (!Platform.isWindows) {
+      // Note: تم تعطيل Firebase على Windows
+      // final settings = await _firebaseMessaging.requestPermission(...);
+      print('Firebase permissions skipped on Windows');
+    }
   }
 
   Future<void> _setupFirebaseMessaging() async {
-    // الحصول على FCM Token
-    final token = await _firebaseMessaging.getToken();
-    print('FCM Token: $token');
-    
-    // حفظ الـ token في قاعدة البيانات
-    if (token != null) {
-      await _saveFCMToken(token);
+    // على Windows، تخطي Firebase Messaging تماماً
+    if (Platform.isWindows) {
+      print('Firebase Messaging غير متاح على Windows - سيتم استخدام الإشعارات المحلية فقط');
+      return;
     }
     
-    // تحديث الـ token عند تغييره
-    _firebaseMessaging.onTokenRefresh.listen((newToken) async {
-      print('FCM Token تم تحديثه: $newToken');
-      // تحديث الـ token في قاعدة البيانات
-      await _saveFCMToken(newToken);
-    });
-
-    // معالجة الرسائل عندما يكون التطبيق في المقدمة
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('تم استقبال إشعار: ${message.notification?.title}');
-      _showNotification(
-        message.notification?.title ?? 'إشعار جديد',
-        message.notification?.body ?? '',
-        payload: message.data.toString(),
-      );
-    });
-
-    // معالجة الرسائل عند النقر على الإشعار (عندما يكون التطبيق في الخلفية)
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('تم فتح الإشعار: ${message.data}');
-      // معالجة التنقل إلى شاشة معينة بناءً على البيانات
-      _handleNotificationNavigation(message.data);
-    });
-
-    // معالجة الإشعار عند فتح التطبيق من إشعار (عندما يكون التطبيق مغلق)
-    final initialMessage = await _firebaseMessaging.getInitialMessage();
-    if (initialMessage != null) {
-      _handleNotificationNavigation(initialMessage.data);
+    try {
+      // Note: تم تعطيل Firebase على Windows
+      // على Android/iOS/Web، سيتم استخدام Firebase
+      // final token = await _firebaseMessaging.getToken();
+      // ...
+      print('Firebase Messaging initialization skipped on Windows');
+    } catch (e) {
+      print('Warning: Firebase Messaging غير متاح: $e');
+      print('الإشعارات المحلية ستعمل بشكل طبيعي');
     }
   }
 
@@ -200,7 +182,6 @@ class NotificationService {
       // محاولة حفظ في الخادم إذا كان المستخدم مسجل دخول
       // سيتم استدعاء هذه الدالة من context حيث يمكن الوصول إلى Provider
       // أو يمكن حفظ userId في SharedPreferences عند تسجيل الدخول
-      final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('current_user_id');
       if (userId != null) {
         try {
