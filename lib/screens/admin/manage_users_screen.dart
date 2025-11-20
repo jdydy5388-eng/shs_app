@@ -105,6 +105,10 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                 child: Text('الممرضون/الممرضات'),
               ),
               const PopupMenuItem(
+                value: UserRole.receptionist,
+                child: Text('موظفو الاستقبال'),
+              ),
+              const PopupMenuItem(
                 value: UserRole.admin,
                 child: Text('المدراء'),
               ),
@@ -192,6 +196,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       UserRole.labTechnician: Colors.orange,
       UserRole.radiologist: Colors.teal,
       UserRole.nurse: Colors.pink,
+      UserRole.receptionist: Colors.cyan,
       UserRole.admin: Colors.red,
     }[user.role]!;
 
@@ -202,6 +207,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       UserRole.labTechnician: 'فني مختبر',
       UserRole.radiologist: 'أخصائي أشعة',
       UserRole.nurse: 'ممرض/ممرضة',
+      UserRole.receptionist: 'موظف استقبال',
       UserRole.admin: 'مدير',
     }[user.role]!;
 

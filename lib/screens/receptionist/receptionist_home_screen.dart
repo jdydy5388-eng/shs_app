@@ -3,7 +3,6 @@ import '../../utils/auth_helper.dart';
 import 'receptionist_patients_screen.dart';
 import 'receptionist_appointments_screen.dart';
 import 'receptionist_invoices_screen.dart';
-import 'receptionist_directions_screen.dart';
 import '../auth/login_screen.dart';
 
 class ReceptionistFeature {
@@ -126,19 +125,6 @@ class ReceptionistHomeContent extends StatelessWidget {
           'متابعة المدفوعات المعلقة',
         ],
         builder: (_) => const ReceptionistInvoicesScreen(),
-      ),
-      ReceptionistFeature(
-        title: 'توجيه المرضى',
-        description: 'مساعدة المرضى في العثور على الأقسام',
-        icon: Icons.directions,
-        color: Colors.purple,
-        details: [
-          'عرض خريطة المستشفى',
-          'توجيه المرضى إلى الأقسام',
-          'معلومات الاتصال بالأطباء',
-          'معلومات الأقسام والخدمات',
-        ],
-        builder: (_) => const ReceptionistDirectionsScreen(),
       ),
     ];
 

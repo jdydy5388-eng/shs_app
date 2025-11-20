@@ -5,7 +5,7 @@ import '../../widgets/loading_widgets.dart';
 import '../../widgets/status_banner.dart';
 import '../../utils/ui_snackbar.dart';
 import '../doctor/patient_details_screen.dart';
-import '../admin/manage_users_screen.dart';
+import 'create_patient_screen.dart';
 
 class ReceptionistPatientsScreen extends StatefulWidget {
   const ReceptionistPatientsScreen({super.key});
@@ -73,9 +73,13 @@ class _ReceptionistPatientsScreenState extends State<ReceptionistPatientsScreen>
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const ManageUsersScreen(),
+                  builder: (_) => const CreatePatientScreen(),
                 ),
-              ).then((_) => _loadPatients());
+              ).then((result) {
+                if (result == true) {
+                  _loadPatients();
+                }
+              });
             },
             tooltip: 'تسجيل مريض جديد',
           ),
