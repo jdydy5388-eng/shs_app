@@ -363,6 +363,10 @@ class NetworkDataService {
     await _delete('users/$userId');
   }
 
+  Future<void> saveFCMToken(String userId, String token) async {
+    await _post('users/$userId/fcm-token', {'token': token});
+  }
+
   // Prescriptions
   Future<List<PrescriptionModel>> getPrescriptions({String? patientId, String? doctorId}) async {
     final queryParams = <String, String>{};

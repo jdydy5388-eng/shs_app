@@ -1099,6 +1099,27 @@ class LocalDataService {
     );
   }
 
+  Future<void> saveFCMToken(String userId, String token) async {
+    final db = await _db.database;
+    final user = await db.query('users', where: 'id = ?', whereArgs: [userId]);
+    if (user.isEmpty) return;
+    
+    final existingInfo = user.first['additional_info'] as String?;
+    Map<String, dynamic> additionalInfo = {};
+    if (existingInfo != null) {
+      additionalInfo = jsonDecode(existingInfo) as Map<String, dynamic>;
+    }
+    
+    additionalInfo['fcmToken'] = token;
+    
+    await db.update(
+      'users',
+      {'additional_info': jsonEncode(additionalInfo)},
+      where: 'id = ?',
+      whereArgs: [userId],
+    );
+  }
+
   Future<DoctorStats> getDoctorStats(String doctorId) async {
     final db = await _db.database;
 

@@ -48,11 +48,53 @@ class AdvancedNotificationService {
     required String body,
     NotificationPriority priority = NotificationPriority.normal,
     Map<String, dynamic>? data,
+    String? targetUserId, // ID المستخدم المستهدف
   }) async {
+    // إرسال إشعار محلي
     await _localNotificationService.sendInstantNotification(title, body);
     
-    // يمكن إضافة Firebase Cloud Messaging هنا عند تفعيله
-    // await _sendFirebaseNotification(title, body, priority, data);
+    // إرسال إشعار عبر Firebase (إذا كان هناك مستخدم مستهدف)
+    if (targetUserId != null) {
+      await _sendFirebaseNotification(
+        title: title,
+        body: body,
+        priority: priority,
+        data: data,
+        targetUserId: targetUserId,
+      );
+    }
+  }
+
+  // إرسال إشعار عبر Firebase Cloud Messaging
+  Future<void> _sendFirebaseNotification({
+    required String title,
+    required String body,
+    required NotificationPriority priority,
+    Map<String, dynamic>? data,
+    required String targetUserId,
+  }) async {
+    try {
+      // الحصول على FCM Token للمستخدم المستهدف من قاعدة البيانات
+      // TODO: إضافة endpoint في الخادم لإرسال الإشعارات
+      // يمكن استخدام Firebase Admin SDK في الخادم لإرسال الإشعارات
+      
+      // مثال على الاستخدام:
+      // final response = await http.post(
+      //   Uri.parse('$baseUrl/api/notifications/send'),
+      //   headers: {'Content-Type': 'application/json'},
+      //   body: jsonEncode({
+      //     'userId': targetUserId,
+      //     'title': title,
+      //     'body': body,
+      //     'priority': priority.toString(),
+      //     'data': data,
+      //   }),
+      // );
+      
+      debugPrint('إرسال إشعار Firebase إلى المستخدم: $targetUserId');
+    } catch (e) {
+      debugPrint('خطأ في إرسال إشعار Firebase: $e');
+    }
   }
 
   // إشعارات SMS

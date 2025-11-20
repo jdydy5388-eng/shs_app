@@ -32,6 +32,7 @@ class DataService {
   Future<void> createUser(user, password) => _service.createUser(user, password);
   Future<void> updateUser(String userId, updates) => _service.updateUser(userId, updates);
   Future<void> deleteUser(String userId) => _service.deleteUser(userId);
+  Future<void> saveFCMToken(String userId, String token) => _service.saveFCMToken(userId, token);
 
   // Prescriptions
   Future<List> getPrescriptions({String? patientId, String? doctorId}) => 

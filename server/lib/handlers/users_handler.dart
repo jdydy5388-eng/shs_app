@@ -17,6 +17,7 @@ class UsersHandler {
     router.get('/<userId>', _getUser);
     router.put('/<userId>', _updateUser);
     router.delete('/<userId>', _deleteUser);
+    router.post('/<userId>/fcm-token', _saveFCMToken);
 
     return router;
   }
@@ -265,6 +266,64 @@ class UsersHandler {
     } catch (e) {
       AppLogger.error('Delete user error', e);
       return ResponseHelper.error(message: 'Failed to delete user: $e');
+    }
+  }
+
+  Future<Response> _saveFCMToken(Request request, String userId) async {
+    try {
+      final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      final fcmToken = body['token'] as String?;
+      
+      if (fcmToken == null || fcmToken.isEmpty) {
+        return ResponseHelper.error(message: 'FCM token is required', statusCode: 400);
+      }
+
+      final conn = await DatabaseService().connection;
+      
+      // التحقق من وجود المستخدم
+      final userCheck = await conn.query(
+        'SELECT id FROM users WHERE id = @userId',
+        substitutionValues: {'userId': userId},
+      );
+      
+      if (userCheck.isEmpty) {
+        return ResponseHelper.error(message: 'User not found', statusCode: 404);
+      }
+
+      // تحديث أو إضافة FCM Token في additional_info
+      final user = await conn.query(
+        'SELECT additional_info FROM users WHERE id = @userId',
+        substitutionValues: {'userId': userId},
+      );
+      
+      Map<String, dynamic> additionalInfo = {};
+      if (user.isNotEmpty && user.first[0] != null) {
+        final existingInfo = user.first[0];
+        if (existingInfo is Map) {
+          additionalInfo = Map<String, dynamic>.from(existingInfo);
+        } else if (existingInfo is String) {
+          additionalInfo = jsonDecode(existingInfo) as Map<String, dynamic>;
+        }
+      }
+      
+      additionalInfo['fcmToken'] = fcmToken;
+      
+      await conn.execute(
+        '''
+        UPDATE users 
+        SET additional_info = @additionalInfo
+        WHERE id = @userId
+        ''',
+        substitutionValues: {
+          'userId': userId,
+          'additionalInfo': jsonEncode(additionalInfo),
+        },
+      );
+
+      return ResponseHelper.success(data: {'message': 'FCM token saved successfully'});
+    } catch (e) {
+      AppLogger.error('Save FCM token error', e);
+      return ResponseHelper.error(message: 'Failed to save FCM token: $e');
     }
   }
 }
