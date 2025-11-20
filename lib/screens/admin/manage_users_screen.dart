@@ -296,6 +296,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
         return Icons.medical_services;
       case UserRole.nurse:
         return Icons.medical_services;
+      case UserRole.receptionist:
+        return Icons.receipt_long;
       case UserRole.admin:
         return Icons.admin_panel_settings;
     }
@@ -375,6 +377,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                       additionalInfo = {'pharmacyName': 'صيدلية جديدة'};
                     } else if (value == UserRole.nurse) {
                       additionalInfo = {'department': 'عام'};
+                    } else if (value == UserRole.receptionist) {
+                      additionalInfo = {'department': 'الاستقبال'};
                     } else {
                       additionalInfo = null;
                     }
@@ -710,6 +714,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
         return 'أخصائي أشعة';
       case UserRole.nurse:
         return 'ممرض/ممرضة';
+      case UserRole.receptionist:
+        return 'موظف استقبال';
       case UserRole.admin:
         return 'مدير';
     }

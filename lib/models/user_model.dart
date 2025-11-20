@@ -1,4 +1,4 @@
-enum UserRole { patient, doctor, pharmacist, admin, labTechnician, radiologist, nurse }
+enum UserRole { patient, doctor, pharmacist, admin, labTechnician, radiologist, nurse, receptionist }
 
 class UserModel {
   final String id;

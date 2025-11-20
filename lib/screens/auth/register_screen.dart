@@ -9,6 +9,7 @@ import '../admin/admin_home_screen.dart';
 import '../lab_technician/lab_technician_home_screen.dart';
 import '../radiologist/radiologist_home_screen.dart';
 import '../nurse/nurse_home_screen.dart';
+import '../receptionist/receptionist_home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -72,6 +73,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           MaterialPageRoute(builder: (_) => const NurseHomeScreen()),
         );
         break;
+      case UserRole.receptionist:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ReceptionistHomeScreen()),
+        );
+        break;
     }
   }
 
@@ -109,6 +116,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       additionalInfo = {
         'department': 'عام',
         'licenseNumber': 'NURSE-${DateTime.now().millisecondsSinceEpoch}',
+      };
+    } else if (_selectedRole == UserRole.receptionist) {
+      additionalInfo = {
+        'department': 'الاستقبال',
       };
     }
 
@@ -242,6 +253,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     DropdownMenuItem(
                       value: UserRole.nurse,
                       child: Text('ممرض/ممرضة'),
+                    ),
+                    DropdownMenuItem(
+                      value: UserRole.receptionist,
+                      child: Text('موظف استقبال'),
                     ),
                     DropdownMenuItem(
                       value: UserRole.admin,
