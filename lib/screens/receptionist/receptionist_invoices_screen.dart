@@ -197,8 +197,6 @@ class _ReceptionistInvoicesScreenState extends State<ReceptionistInvoicesScreen>
         return Colors.blue;
       case InvoiceStatus.paid:
         return Colors.green;
-      case InvoiceStatus.partiallyPaid:
-        return Colors.orange;
       case InvoiceStatus.cancelled:
         return Colors.red;
     }
@@ -212,8 +210,6 @@ class _ReceptionistInvoicesScreenState extends State<ReceptionistInvoicesScreen>
         return 'صادرة';
       case InvoiceStatus.paid:
         return 'مدفوعة';
-      case InvoiceStatus.partiallyPaid:
-        return 'مدفوعة جزئياً';
       case InvoiceStatus.cancelled:
         return 'ملغاة';
     }

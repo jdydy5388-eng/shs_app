@@ -54,7 +54,7 @@ class _ReceptionistAppointmentsScreenState extends State<ReceptionistAppointment
       
       for (final doctor in allDoctors) {
         final doctorAppointments = await _dataService.getDoctorAppointments(doctor.id);
-        appointments.addAll(doctorAppointments);
+        appointments.addAll(doctorAppointments.cast<DoctorAppointment>());
       }
       
       setState(() {
@@ -99,7 +99,7 @@ class _ReceptionistAppointmentsScreenState extends State<ReceptionistAppointment
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
       filtered = filtered.where((a) {
-        return a.patientName.toLowerCase().contains(query) ||
+        return (a.patientName?.toLowerCase().contains(query) ?? false) ||
             a.doctorId.toLowerCase().contains(query);
       }).toList();
     }
@@ -202,7 +202,7 @@ class _ReceptionistAppointmentsScreenState extends State<ReceptionistAppointment
           ),
         ),
         title: Text(
-          appointment.patientName,
+          appointment.patientName ?? 'مريض غير محدد',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
@@ -232,7 +232,7 @@ class _ReceptionistAppointmentsScreenState extends State<ReceptionistAppointment
 
   Color _getStatusColor(AppointmentStatus status) {
     switch (status) {
-      case AppointmentStatus.pending:
+      case AppointmentStatus.scheduled:
         return Colors.orange;
       case AppointmentStatus.confirmed:
         return Colors.green;
@@ -245,8 +245,8 @@ class _ReceptionistAppointmentsScreenState extends State<ReceptionistAppointment
 
   String _getStatusText(AppointmentStatus status) {
     switch (status) {
-      case AppointmentStatus.pending:
-        return 'قيد الانتظار';
+      case AppointmentStatus.scheduled:
+        return 'مجدول';
       case AppointmentStatus.confirmed:
         return 'مؤكد';
       case AppointmentStatus.completed:
@@ -260,7 +260,7 @@ class _ReceptionistAppointmentsScreenState extends State<ReceptionistAppointment
     UserModel? selectedPatient;
     UserModel? selectedDoctor;
     DateTime selectedDate = DateTime.now();
-    AppointmentType selectedType = AppointmentType.consultation;
+    String? selectedType;
 
     final result = await showDialog<bool>(
       context: context,
@@ -339,14 +339,18 @@ class _ReceptionistAppointmentsScreenState extends State<ReceptionistAppointment
 
     if (result == true && selectedPatient != null && selectedDoctor != null) {
       try {
+        // استخدام null assertion لأننا تأكدنا من أنهما ليسا null
+        final patient = selectedPatient!;
+        final doctor = selectedDoctor!;
+        
         final appointment = DoctorAppointment(
           id: _uuid.v4(),
-          doctorId: selectedDoctor.id,
-          patientId: selectedPatient.id,
-          patientName: selectedPatient.name,
+          doctorId: doctor.id,
+          patientId: patient.id,
+          patientName: patient.name,
           date: selectedDate,
-          status: AppointmentStatus.pending,
-          type: selectedType,
+          status: AppointmentStatus.scheduled,
+          type: selectedType ?? 'consultation',
           notes: 'تم الحجز من قبل موظف الاستقبال',
           createdAt: DateTime.now(),
         );
