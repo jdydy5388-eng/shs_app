@@ -4,6 +4,7 @@ import '../../services/data_service.dart';
 import '../../widgets/loading_widgets.dart';
 import '../../widgets/status_banner.dart';
 import '../../utils/ui_snackbar.dart';
+import 'patient_details_screen.dart';
 
 class PatientsScreen extends StatefulWidget {
   const PatientsScreen({super.key});
@@ -202,7 +203,14 @@ class _PatientsScreenState extends State<PatientsScreen> {
                                   color: Colors.grey[400],
                                 ),
                                 onTap: () {
-                                  // TODO: فتح تفاصيل المريض
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => PatientDetailsScreen(
+                                        patient: patient,
+                                      ),
+                                    ),
+                                  );
                                 },
                               ),
                             );
