@@ -6,8 +6,10 @@ import '../services/biometric_auth_service.dart';
 import '../services/data_service.dart';
 import '../config/app_config.dart';
 import '../services/network_auth_context.dart';
+import '../services/notification_service.dart';
 import 'dart:convert';
 import 'dart:async';
+import 'dart:io';
 
 /// Provider للمصادقة - يدعم الوضع المحلي والشبكي
 class AuthProviderLocal with ChangeNotifier {
@@ -81,6 +83,10 @@ class AuthProviderLocal with ChangeNotifier {
           
           _currentUser = user;
           NetworkAuthContext.setUser(_currentUser);
+          
+          // محاولة حفظ FCM Token بعد تسجيل الدخول
+          _saveFCMTokenAfterLogin(user.id);
+          
           notifyListeners();
           return true;
         } else {
@@ -151,7 +157,11 @@ class AuthProviderLocal with ChangeNotifier {
 
         await _localAuthService.setCurrentUser(user.id);
         _currentUser = user;
-      NetworkAuthContext.setUser(_currentUser);
+        NetworkAuthContext.setUser(_currentUser);
+        
+        // محاولة حفظ FCM Token بعد تسجيل الدخول
+        _saveFCMTokenAfterLogin(user.id);
+        
         notifyListeners();
         return true;
       } else {
@@ -331,6 +341,62 @@ class AuthProviderLocal with ChangeNotifier {
     }
 
     return 'تعذّر تسجيل الدخول. يرجى المحاولة مرة أخرى.';
+  }
+
+  /// محاولة حفظ FCM Token بعد تسجيل الدخول
+  Future<void> _saveFCMTokenAfterLogin(String userId) async {
+    // فقط على Android/iOS/Web (ليس Windows)
+    if (Platform.isWindows) {
+      return;
+    }
+
+    try {
+      // الحصول على NotificationService من Provider
+      // نحتاج إلى الوصول إليه من خلال context، لكن يمكننا استخدام singleton pattern
+      // أو يمكننا استخدام NotificationService مباشرة
+      final notificationService = NotificationService();
+      
+      // محاولة الحصول على FCM Token المحفوظ محلياً
+      final savedToken = await notificationService.getSavedFCMToken();
+      
+      if (savedToken != null && savedToken.isNotEmpty) {
+        // حفظ FCM Token في السيرفر
+        try {
+          await _dataService.saveFCMToken(userId, savedToken);
+          debugPrint('✅ تم حفظ FCM Token في الخادم بعد تسجيل الدخول');
+        } catch (e) {
+          debugPrint('⚠️ لم يتم حفظ FCM Token في الخادم بعد تسجيل الدخول: $e');
+        }
+      } else {
+        // إذا لم يكن هناك token محفوظ، محاولة الحصول عليه من Firebase
+        // هذا قد يستغرق وقتاً، لذلك نفعله بشكل غير متزامن
+        _tryGetAndSaveFCMToken(userId).catchError((e) {
+          debugPrint('⚠️ خطأ في محاولة الحصول على FCM Token بعد تسجيل الدخول: $e');
+        });
+      }
+    } catch (e) {
+      debugPrint('⚠️ خطأ في حفظ FCM Token بعد تسجيل الدخول: $e');
+    }
+  }
+
+  /// محاولة الحصول على FCM Token وحفظه
+  Future<void> _tryGetAndSaveFCMToken(String userId) async {
+    try {
+      final notificationService = NotificationService();
+      
+      // محاولة إعادة تهيئة Firebase Messaging إذا لم يكن متاحاً
+      // لكن هذا قد لا يعمل إذا كان Firebase Core غير مهيأ
+      // بدلاً من ذلك، ننتظر قليلاً ثم نحاول الحصول على Token
+      await Future.delayed(const Duration(seconds: 2));
+      
+      final savedToken = await notificationService.getSavedFCMToken();
+      if (savedToken != null && savedToken.isNotEmpty) {
+        await _dataService.saveFCMToken(userId, savedToken);
+        debugPrint('✅ تم حفظ FCM Token في الخادم بعد انتظار');
+      }
+    } catch (e) {
+      debugPrint('⚠️ خطأ في محاولة الحصول على FCM Token: $e');
+    }
   }
 }
 

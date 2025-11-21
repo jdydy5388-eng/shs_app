@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../database/database_service.dart';
 import '../config/server_config.dart';
 import '../utils/response_helper.dart';
+import '../utils/firebase_auth_helper.dart';
 import '../logger/app_logger.dart';
 
 class LabRequestsHandler {
@@ -152,14 +153,16 @@ class LabRequestsHandler {
         },
       );
 
-      // إرسال إشعارات تلقائية
+      // إرسال إشعارات تلقائية (غير متزامن - لا ننتظر)
       _sendLabRequestNotifications(
         labRequestId: body['id'] as String,
         doctorId: body['doctorId'] as String,
         patientId: body['patientId'] as String,
         patientName: body['patientName'] as String,
         testType: body['testType'] as String,
-      );
+      ).catchError((e) {
+        AppLogger.error('Error in async lab request notifications', e);
+      });
 
       return ResponseHelper.success(data: {'message': 'Lab request created successfully'});
     } catch (e) {
@@ -246,6 +249,103 @@ class LabRequestsHandler {
     }
   }
 
+  // إرسال إشعارات عند إنشاء طلب فحص جديد
+  Future<void> _sendLabRequestNotifications({
+    required String labRequestId,
+    required String doctorId,
+    required String patientId,
+    required String patientName,
+    required String testType,
+  }) async {
+    try {
+      final conn = await DatabaseService().connection;
+      
+      // الحصول على اسم الطبيب
+      final doctor = await conn.query(
+        'SELECT name, additional_info FROM users WHERE id = @doctorId',
+        substitutionValues: {'doctorId': doctorId},
+      );
+
+      String doctorName = 'الطبيب';
+      if (doctor.isNotEmpty) {
+        doctorName = doctor.first[0] as String? ?? 'الطبيب';
+      }
+
+      // إرسال إشعار للمختبر
+      final labTechnicians = await conn.query(
+        'SELECT id, name, additional_info FROM users WHERE role = @role',
+        substitutionValues: {'role': 'lab_technician'},
+      );
+
+      for (final tech in labTechnicians) {
+        final techId = tech[0] as String;
+        final additionalInfo = tech[2];
+        String? fcmToken;
+        
+        if (additionalInfo != null) {
+          Map<String, dynamic> info = {};
+          if (additionalInfo is Map) {
+            info = Map<String, dynamic>.from(additionalInfo);
+          } else if (additionalInfo is String) {
+            info = jsonDecode(additionalInfo) as Map<String, dynamic>;
+          }
+          fcmToken = info['fcmToken'] as String?;
+        }
+
+        if (fcmToken != null && fcmToken.isNotEmpty) {
+          await _sendFCMNotification(
+            fcmToken: fcmToken,
+            title: 'طلب فحص جديد',
+            message: 'طلب فحص $testType للمريض $patientName من د. $doctorName',
+            data: {
+              'type': 'lab_request',
+              'id': labRequestId,
+            },
+          );
+        }
+      }
+
+      // إرسال إشعار للمريض
+      final patient = await conn.query(
+        'SELECT additional_info FROM users WHERE id = @patientId',
+        substitutionValues: {'patientId': patientId},
+      );
+
+      if (patient.isNotEmpty) {
+        final additionalInfo = patient.first[0];
+        String? fcmToken;
+        
+        if (additionalInfo != null) {
+          Map<String, dynamic> info = {};
+          if (additionalInfo is Map) {
+            info = Map<String, dynamic>.from(additionalInfo);
+          } else if (additionalInfo is String) {
+            info = jsonDecode(additionalInfo) as Map<String, dynamic>;
+          }
+          fcmToken = info['fcmToken'] as String?;
+        }
+
+        if (fcmToken != null && fcmToken.isNotEmpty) {
+          AppLogger.info('Sending lab request notification to patient $patientId');
+          await _sendFCMNotification(
+            fcmToken: fcmToken,
+            title: 'طلب فحص جديد',
+            message: 'تم إرسال طلب فحص $testType لك من د. $doctorName',
+            data: {
+              'type': 'lab_request',
+              'id': labRequestId,
+            },
+          );
+          AppLogger.info('Lab request notification sent to patient $patientId');
+        } else {
+          AppLogger.warning('Patient $patientId does not have FCM token - notification not sent');
+        }
+      }
+    } catch (e) {
+      AppLogger.error('Error sending lab request notifications', e);
+    }
+  }
+
   // إرسال إشعارات عند إكمال الفحص
   Future<void> _sendLabCompletedNotifications({
     required String labRequestId,
@@ -324,6 +424,116 @@ class LabRequestsHandler {
       }
     } catch (e) {
       AppLogger.error('Error sending lab completed notifications', e);
+    }
+  }
+
+  // إرسال إشعار FCM
+  Future<void> _sendFCMNotification({
+    required String fcmToken,
+    required String title,
+    required String message,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      final serverConfig = ServerConfig();
+      final projectId = serverConfig.firebaseProjectId;
+      
+      // محاولة استخدام V1 API أولاً
+      String? accessToken = await FirebaseAuthHelper.getAccessToken();
+      
+      if (accessToken != null && projectId != null) {
+        // استخدام V1 API
+        final fcmUrl = 'https://fcm.googleapis.com/v1/projects/$projectId/messages:send';
+        
+        // بناء payload حسب V1 API format
+        final messagePayload = <String, dynamic>{
+          'token': fcmToken,
+          'notification': {
+            'title': title,
+            'body': message,
+          },
+        };
+        
+        // إضافة data (يجب أن تكون strings في V1 API)
+        if (data != null && data.isNotEmpty) {
+          final dataMap = <String, String>{};
+          data.forEach((key, value) {
+            // في V1 API، يجب تحويل JSON nested إلى string
+            if (value is Map || value is List) {
+              dataMap[key.toString()] = jsonEncode(value);
+            } else {
+              dataMap[key.toString()] = value.toString();
+            }
+          });
+          messagePayload['data'] = dataMap;
+        }
+        
+        final payload = <String, dynamic>{
+          'message': messagePayload,
+        };
+        
+        final response = await http.post(
+          Uri.parse(fcmUrl),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $accessToken',
+          },
+          body: jsonEncode(payload),
+        );
+        
+        if (response.statusCode == 200) {
+          AppLogger.info('FCM V1 notification sent successfully');
+        } else {
+          final errorBody = response.body;
+          AppLogger.error('FCM V1 notification HTTP error: HTTP ${response.statusCode}: $errorBody', null);
+        }
+      } else {
+        // Fallback to Legacy API إذا كان متاحاً
+        final serverKey = serverConfig.firebaseServerKey;
+        
+        if (serverKey == null || serverKey.isEmpty) {
+          AppLogger.warning('Neither V1 API nor Legacy API configured - notification not sent');
+        } else {
+          // استخدام Legacy API (fallback)
+          final fcmUrl = 'https://fcm.googleapis.com/fcm/send';
+          
+          final payload = <String, dynamic>{
+            'to': fcmToken,
+            'notification': {
+              'title': title,
+              'body': message,
+              'sound': 'default',
+            },
+          };
+          
+          if (data != null && data.isNotEmpty) {
+            payload['data'] = data.map((k, v) => MapEntry(k.toString(), v.toString()));
+          }
+          
+          final response = await http.post(
+            Uri.parse(fcmUrl),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'key=$serverKey',
+            },
+            body: jsonEncode(payload),
+          );
+          
+          if (response.statusCode == 200) {
+            final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+            if (responseData['success'] == 1) {
+              AppLogger.info('FCM Legacy notification sent successfully');
+            } else {
+              final error = responseData['results']?[0]?['error']?.toString() ?? 'Unknown error';
+              AppLogger.error('FCM Legacy notification failed: $error', null);
+            }
+          } else {
+            AppLogger.error('FCM Legacy notification HTTP error: HTTP ${response.statusCode}: ${response.body}', null);
+          }
+        }
+      }
+    } catch (e) {
+      AppLogger.error('FCM notification error', e);
     }
   }
 }
