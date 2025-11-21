@@ -8,6 +8,7 @@ import '../../models/system_settings_model.dart';
 import '../../services/biometric_auth_service.dart';
 import '../../services/local_auth_service.dart';
 import '../../services/data_service.dart';
+import '../../services/notification_service.dart';
 import '../../utils/auth_helper.dart';
 import '../../widgets/loading_widgets.dart';
 import '../../widgets/status_banner.dart';
@@ -1182,8 +1183,218 @@ class _SystemMonitoringScreenState extends State<SystemMonitoringScreen>
               ),
             ),
           ),
+          const SizedBox(height: 24),
+          _buildNotificationsTestSection(),
         ],
       ),
+    );
+  }
+
+  Widget _buildNotificationsTestSection() {
+    final notificationService = NotificationService();
+    final status = notificationService.getFirebaseStatus();
+    
+    return Card(
+      elevation: 3,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.notifications_active,
+                  size: 32,
+                  color: status['isAvailable'] ? Colors.green : Colors.orange,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'اختبار الإشعارات',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        status['isAvailable']
+                            ? 'Firebase متاح - الإشعارات السحابية تعمل'
+                            : 'Firebase غير متاح - الإشعارات المحلية فقط',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _NotificationTestButton(notificationService: notificationService),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'كيفية الاختبار:',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '1. اضغط على "اختبار الإشعارات" أعلاه\n'
+                    '2. انسخ FCM Token من Console\n'
+                    '3. اذهب إلى Firebase Console → Cloud Messaging\n'
+                    '4. أرسل إشعار تجريبي باستخدام الـ Token',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue[700],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationTestButton extends StatefulWidget {
+  final NotificationService notificationService;
+
+  const _NotificationTestButton({required this.notificationService});
+
+  @override
+  State<_NotificationTestButton> createState() => _NotificationTestButtonState();
+}
+
+class _NotificationTestButtonState extends State<_NotificationTestButton> {
+  bool _isTesting = false;
+  String? _fcmToken;
+  String? _error;
+
+  Future<void> _testNotifications() async {
+    setState(() {
+      _isTesting = true;
+      _error = null;
+      _fcmToken = null;
+    });
+
+    try {
+      final result = await widget.notificationService.testNotifications();
+      
+      setState(() {
+        _fcmToken = result['fcmToken'] as String?;
+        _isTesting = false;
+      });
+
+      if (mounted) {
+        final message = _fcmToken != null
+            ? 'تم الاختبار بنجاح! ✅\n\nFCM Token:\n$_fcmToken\n\nانسخه من Console لإرسال إشعار من Firebase Console'
+            : 'تم الاختبار بنجاح! ✅\n\n(لا يوجد FCM Token - قد تكون على Windows)';
+        
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('نتيجة الاختبار'),
+            content: SingleChildScrollView(
+              child: Text(message),
+            ),
+            actions: [
+              if (_fcmToken != null)
+                TextButton(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: _fcmToken!));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('تم نسخ FCM Token')),
+                    );
+                  },
+                  child: const Text('نسخ Token'),
+                ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('حسناً'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isTesting = false;
+        _error = e.toString();
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('خطأ في الاختبار: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ElevatedButton.icon(
+          onPressed: _isTesting ? null : _testNotifications,
+          icon: _isTesting
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.send),
+          label: Text(_isTesting ? 'جاري الاختبار...' : 'اختبار الإشعارات'),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+          ),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'خطأ: $_error',
+              style: TextStyle(color: Colors.red[700], fontSize: 12),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

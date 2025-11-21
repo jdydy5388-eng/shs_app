@@ -276,5 +276,48 @@ class NotificationService {
     // هذه الدالة للاختبار فقط
     await sendInstantNotification(title, body);
   }
+
+  /// اختبار الإشعارات - يعرض FCM Token وإرسال إشعار تجريبي
+  Future<Map<String, dynamic>> testNotifications() async {
+    final result = <String, dynamic>{
+      'firebaseAvailable': _isFirebaseAvailable,
+      'fcmToken': null,
+      'localNotificationTest': false,
+    };
+
+    try {
+      // الحصول على FCM Token
+      if (_isFirebaseAvailable && _firebaseMessaging != null) {
+        final token = await _firebaseMessaging!.getToken();
+        result['fcmToken'] = token;
+        debugPrint('✅ FCM Token للاختبار: $token');
+      } else {
+        result['fcmToken'] = await getSavedFCMToken();
+        debugPrint('ℹ️ استخدام FCM Token المحفوظ: ${result['fcmToken']}');
+      }
+
+      // إرسال إشعار تجريبي محلي
+      await sendInstantNotification(
+        'اختبار الإشعارات',
+        'هذا إشعار تجريبي. إذا رأيت هذا، فالإشعارات تعمل بشكل صحيح! ✅',
+      );
+      result['localNotificationTest'] = true;
+
+      return result;
+    } catch (e) {
+      debugPrint('❌ خطأ في اختبار الإشعارات: $e');
+      result['error'] = e.toString();
+      return result;
+    }
+  }
+
+  /// الحصول على معلومات حالة Firebase
+  Map<String, dynamic> getFirebaseStatus() {
+    return {
+      'isAvailable': _isFirebaseAvailable,
+      'hasMessaging': _firebaseMessaging != null,
+      'platform': Platform.operatingSystem,
+    };
+  }
 }
 
