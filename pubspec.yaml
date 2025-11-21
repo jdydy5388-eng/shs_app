@@ -17,10 +17,13 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
   
-  # Firebase
-  # Note: تم تعطيل Firebase على Windows مؤقتاً بسبب أخطاء الربط
+  # Firebase (يعمل على Android/iOS/Web فقط - Windows يستخدم الإشعارات المحلية)
+  # Note: على Windows، Firebase سيسبب أخطاء ربط C++، لذلك سيتم تعطيله في الكود
+  # TODO: عند البناء على Windows، قم بتعليق السطرين التاليين:
   # firebase_core: ^4.2.1
   # firebase_messaging: ^16.0.4
+  firebase_core: ^4.2.1
+  firebase_messaging: ^16.0.4
   # firebase_auth: ^6.1.2
   # cloud_firestore: ^6.1.0
   # firebase_storage: ^13.0.4
@@ -133,3 +136,10 @@ dependency_overrides:
     path: third_party/flutter_secure_storage_windows_patched
   local_auth_windows:
     path: third_party/local_auth_windows_stub
+  # تعطيل Firebase على Windows لتجنب أخطاء الربط C++
+  # Note: stub packages تعمل فقط على Windows (plugin platforms)
+  # Android/iOS/Web سيستخدمون Firebase الحقيقي
+  firebase_core:
+    path: third_party/firebase_core_stub
+  firebase_messaging:
+    path: third_party/firebase_messaging_stub

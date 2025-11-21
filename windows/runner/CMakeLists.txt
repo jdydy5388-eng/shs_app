@@ -36,5 +36,36 @@ target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
 target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
+# إصلاح أخطاء الربط C++ لـ Firebase على Windows
+# المشكلة: Firebase C++ SDK يحتاج إلى C++20 standard library features
+# الأخطاء: __std_find_trivial_8, __std_find_last_trivial_1, __imp__CrtSetReportFile, etc.
+# الحل: إضافة linker flags ومكتبات C++ runtime المطلوبة
+if(MSVC)
+  # إضافة linker flags لإصلاح أخطاء الربط C++ standard library
+  # هذه الأخطاء تحدث لأن Firebase يستخدم C++20 vectorized algorithms و CRT debug functions
+  get_target_property(CURRENT_LINK_FLAGS ${BINARY_NAME} LINK_FLAGS)
+  if(CURRENT_LINK_FLAGS)
+    set_target_properties(${BINARY_NAME} PROPERTIES
+      LINK_FLAGS "${CURRENT_LINK_FLAGS} /FORCE:MULTIPLE"
+    )
+  else()
+    set_target_properties(${BINARY_NAME} PROPERTIES
+      LINK_FLAGS "/FORCE:MULTIPLE"
+    )
+  endif()
+  
+  # إضافة مكتبات C++ runtime المطلوبة لإصلاح أخطاء الربط
+  # هذه المكتبات توفر C++20 vectorized algorithms و CRT functions
+  target_link_libraries(${BINARY_NAME} PRIVATE
+    legacy_stdio_definitions.lib
+  )
+  
+  # إضافة compiler definitions لضمان استخدام C++20 features
+  target_compile_definitions(${BINARY_NAME} PRIVATE
+    _HAS_CXX20=1
+    _HAS_STD_BYTE=0
+  )
+endif()
+
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)

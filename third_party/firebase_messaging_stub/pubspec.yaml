@@ -1,0 +1,19 @@
+name: firebase_messaging
+description: Stub implementation of firebase_messaging for Windows platform to avoid C++ linking errors.
+version: 16.0.4
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      windows:
+        dartPluginClass: FirebaseMessagingWindows
+

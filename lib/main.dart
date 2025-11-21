@@ -26,28 +26,28 @@ import 'services/local_database_service.dart';
 import 'services/notification_service.dart';
 import 'services/advanced_notification_service.dart';
 
+// Firebase imports - فقط على المنصات المدعومة
+// على Windows، سيتم تخطي Firebase في runtime لتجنب مشاكل الربط C++
+import 'firebase_options.dart';
+import 'package:firebase_core/firebase_core.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // تهيئة Firebase (متاح على Android, iOS, Web فقط حالياً)
-  // على Windows، Firebase Messaging غير مدعوم بشكل كامل
-  // تعطيل Firebase على Windows لتجنب أخطاء الربط
-  if (!Platform.isWindows) {
-    try {
-      // استيراد Firebase فقط على المنصات المدعومة
-      // Note: على Windows، سيتم تخطي هذا الكود
-      if (kIsWeb) {
-        // على الويب، Firebase يعمل
-        // await Firebase.initializeApp(
-        //   options: DefaultFirebaseOptions.currentPlatform,
-        // );
-        debugPrint('Firebase will be initialized on web/Android/iOS');
-      }
-    } catch (e) {
-      debugPrint('Warning: Failed to initialize Firebase: $e');
-    }
+  // تهيئة Firebase (Android, iOS, Web فقط - Windows يستخدم الإشعارات المحلية)
+  // على Windows، Firebase سيسبب أخطاء ربط C++، لذلك نتخطاه تماماً
+  if (Platform.isWindows) {
+    debugPrint('ℹ️ Windows detected - Using local notifications only (Firebase disabled to avoid C++ linking errors)');
   } else {
-    debugPrint('Firebase غير مدعوم على Windows - سيتم استخدام الإشعارات المحلية فقط');
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      debugPrint('✅ Firebase initialized successfully on ${Platform.operatingSystem}');
+    } catch (e) {
+      debugPrint('⚠️ Warning: Failed to initialize Firebase: $e');
+      debugPrint('الإشعارات المحلية ستعمل بشكل طبيعي');
+    }
   }
   
   // تهيئة بيانات اللغة العربية للتنسيق

@@ -48,6 +48,14 @@ function(APPLY_STANDARD_SETTINGS TARGET)
   if(MSVC)
     target_compile_options(${TARGET} PRIVATE /Zc:__cplusplus)
     target_compile_options(${TARGET} PRIVATE /permissive-)
+    # إصلاح أخطاء الربط C++ standard library لـ Firebase
+    # استخدام C++20 standard library features
+    target_compile_options(${TARGET} PRIVATE /std:c++20)
+    # إضافة compiler definitions لضمان استخدام C++20 features
+    target_compile_definitions(${TARGET} PRIVATE 
+      _HAS_CXX20=1
+      _HAS_STD_BYTE=0
+    )
   endif()
 endfunction()
 

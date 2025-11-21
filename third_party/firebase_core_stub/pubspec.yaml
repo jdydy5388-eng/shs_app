@@ -1,0 +1,19 @@
+name: firebase_core
+description: Stub implementation of firebase_core for Windows platform to avoid C++ linking errors.
+version: 4.2.1
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      windows:
+        dartPluginClass: FirebaseCoreWindows
+

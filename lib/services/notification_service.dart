@@ -2,19 +2,19 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:io' show Platform;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import '../services/data_service.dart';
-import '../providers/auth_provider_local.dart';
+
+// Firebase imports - فقط على المنصات المدعومة
+// على Windows، سيتم تخطي Firebase في runtime لتجنب مشاكل الربط C++
+import 'package:firebase_messaging/firebase_messaging.dart';
+
+FirebaseMessaging? _firebaseMessaging;
+bool _isFirebaseAvailable = false;
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
-  
-  // Firebase Messaging متاح فقط على Android, iOS, Web
-  // على Windows، لن يتم استخدام Firebase
-  // Note: تم تعطيل Firebase على Windows لتجنب أخطاء الربط
-  // dynamic _firebaseMessaging;
 
   Future<void> initialize() async {
     // تهيئة الإشعارات المحلية
@@ -33,7 +33,7 @@ class NotificationService {
     // طلب صلاحيات الإشعارات
     await requestPermissions();
     
-    // إعداد Firebase Messaging
+    // إعداد Firebase Messaging (فقط على Android/iOS/Web)
     await _setupFirebaseMessaging();
   }
 
@@ -55,42 +55,96 @@ class NotificationService {
     );
 
     // صلاحيات Firebase (فقط على المنصات المدعومة)
-    // على Windows، تخطي Firebase
-    if (!Platform.isWindows) {
-      // Note: تم تعطيل Firebase على Windows
-      // final settings = await _firebaseMessaging.requestPermission(...);
-      print('Firebase permissions skipped on Windows');
+    if (!Platform.isWindows && _isFirebaseAvailable && _firebaseMessaging != null) {
+      try {
+        final settings = await _firebaseMessaging!.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+          provisional: false,
+        );
+        debugPrint('Firebase permissions: ${settings.authorizationStatus}');
+      } catch (e) {
+        debugPrint('خطأ في طلب صلاحيات Firebase: $e');
+      }
     }
   }
 
   Future<void> _setupFirebaseMessaging() async {
     // على Windows، تخطي Firebase Messaging تماماً
     if (Platform.isWindows) {
-      print('Firebase Messaging غير متاح على Windows - سيتم استخدام الإشعارات المحلية فقط');
+      debugPrint('ℹ️ Windows detected - Firebase Messaging غير متاح، سيتم استخدام الإشعارات المحلية فقط');
       return;
     }
     
     try {
-      // Note: تم تعطيل Firebase على Windows
-      // على Android/iOS/Web، سيتم استخدام Firebase
-      // final token = await _firebaseMessaging.getToken();
-      // ...
-      print('Firebase Messaging initialization skipped on Windows');
+      // استخدام Firebase Messaging (سيتم تخطيه على Windows تلقائياً)
+      // Note: على Windows، سيتم رمي exception هنا
+      _firebaseMessaging = FirebaseMessaging.instance;
+      _isFirebaseAvailable = true;
+
+      // التحقق من أن Firebase Messaging متاح
+      if (_firebaseMessaging == null) {
+        debugPrint('⚠️ Firebase Messaging instance is null');
+        return;
+      }
+
+      final messaging = _firebaseMessaging!;
+
+      // الحصول على FCM Token
+      final token = await messaging.getToken();
+      if (token != null) {
+        debugPrint('✅ FCM Token: $token');
+        await _saveFCMToken(token);
+      }
+
+      // تحديث الـ token عند تغييره
+      messaging.onTokenRefresh.listen((newToken) async {
+        debugPrint('🔄 FCM Token تم تحديثه: $newToken');
+        await _saveFCMToken(newToken);
+      });
+
+      // معالجة الرسائل عندما يكون التطبيق في المقدمة
+      // Note: onMessage و onMessageOpenedApp هما static getters في FirebaseMessaging
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        debugPrint('📨 إشعار جديد: ${message.notification?.title}');
+        _showNotification(
+          message.notification?.title ?? 'إشعار جديد',
+          message.notification?.body ?? '',
+          payload: message.data.toString(),
+        );
+      });
+
+      // معالجة الرسائل عند النقر على الإشعار (عندما يكون التطبيق في الخلفية)
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        debugPrint('👆 تم فتح الإشعار: ${message.data}');
+        _handleNotificationNavigation(message.data);
+      });
+
+      // معالجة الإشعار عند فتح التطبيق من إشعار (عندما يكون التطبيق مغلق)
+      final initialMessage = await messaging.getInitialMessage();
+      if (initialMessage != null) {
+        _handleNotificationNavigation(initialMessage.data);
+      }
+
+      debugPrint('✅ Firebase Messaging initialized successfully');
     } catch (e) {
-      print('Warning: Firebase Messaging غير متاح: $e');
-      print('الإشعارات المحلية ستعمل بشكل طبيعي');
+      debugPrint('⚠️ Warning: Firebase Messaging غير متاح: $e');
+      debugPrint('الإشعارات المحلية ستعمل بشكل طبيعي');
+      _isFirebaseAvailable = false;
     }
   }
 
   void _handleNotificationNavigation(Map<String, dynamic> data) {
     // معالجة التنقل بناءً على نوع الإشعار
     // مثال: إذا كان type == 'appointment' انتقل إلى شاشة المواعيد
-    print('معالجة التنقل: $data');
+    debugPrint('معالجة التنقل: $data');
+    // TODO: إضافة منطق التنقل بناءً على نوع الإشعار
   }
 
   void _onNotificationTapped(NotificationResponse response) {
-    print('تم النقر على الإشعار: ${response.payload}');
-    // معالجة التنقل
+    debugPrint('تم النقر على الإشعار: ${response.payload}');
+    // TODO: إضافة منطق التنقل عند النقر على الإشعار المحلي
   }
 
   Future<void> _showNotification(String title, String body, {String? payload}) async {
@@ -187,16 +241,16 @@ class NotificationService {
         try {
           final dataService = DataService();
           await dataService.saveFCMToken(userId, token);
-          print('تم حفظ FCM Token في الخادم');
+          debugPrint('✅ تم حفظ FCM Token في الخادم');
         } catch (e) {
           // إذا فشل الحفظ في الخادم، نستمر (الـ token محفوظ محلياً)
-          print('لم يتم حفظ FCM Token في الخادم: $e');
+          debugPrint('⚠️ لم يتم حفظ FCM Token في الخادم: $e');
         }
       }
       
-      print('تم حفظ FCM Token محلياً');
+      debugPrint('✅ تم حفظ FCM Token محلياً');
     } catch (e) {
-      print('خطأ في حفظ FCM Token: $e');
+      debugPrint('❌ خطأ في حفظ FCM Token: $e');
     }
   }
 
@@ -206,9 +260,21 @@ class NotificationService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString('fcm_token');
     } catch (e) {
-      print('خطأ في قراءة FCM Token: $e');
+      debugPrint('❌ خطأ في قراءة FCM Token: $e');
       return null;
     }
+  }
+
+  /// إرسال إشعار Firebase (للاختبار)
+  Future<void> sendFirebaseNotification(String title, String body) async {
+    if (!_isFirebaseAvailable) {
+      debugPrint('⚠️ Firebase غير متاح - استخدام الإشعارات المحلية');
+      await sendInstantNotification(title, body);
+      return;
+    }
+    // ملاحظة: إرسال إشعارات Firebase يتم من الخادم
+    // هذه الدالة للاختبار فقط
+    await sendInstantNotification(title, body);
   }
 }
 
