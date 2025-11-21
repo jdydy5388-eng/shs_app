@@ -78,10 +78,10 @@ class AdvancedNotificationService {
   }) async {
     try {
       // إرسال إشعار عبر السيرفر
-      final config = AppConfig();
-      if (config.isNetworkMode) {
+      if (AppConfig.isNetworkMode) {
+        final baseUrl = await AppConfig.serverBaseUrl;
         final response = await http.post(
-          Uri.parse('${config.serverBaseUrl}/api/notifications/send-fcm'),
+          Uri.parse('$baseUrl/api/notifications/send-fcm'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
             'userId': targetUserId,
