@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'package:http/http.dart' as http;
 import '../models/notification_model.dart';
 import '../models/doctor_appointment_model.dart';
 import '../models/hospital_pharmacy_model.dart';
@@ -9,6 +11,7 @@ import '../models/emergency_case_model.dart';
 import '../models/lab_test_type_model.dart';
 import '../models/user_model.dart';
 import '../services/data_service.dart';
+import '../config/app_config.dart';
 import 'notification_service.dart';
 
 enum NotificationPriority {
@@ -74,26 +77,30 @@ class AdvancedNotificationService {
     required String targetUserId,
   }) async {
     try {
-      // الحصول على FCM Token للمستخدم المستهدف من قاعدة البيانات
-      // TODO: إضافة endpoint في الخادم لإرسال الإشعارات
-      // يمكن استخدام Firebase Admin SDK في الخادم لإرسال الإشعارات
-      
-      // مثال على الاستخدام:
-      // final response = await http.post(
-      //   Uri.parse('$baseUrl/api/notifications/send'),
-      //   headers: {'Content-Type': 'application/json'},
-      //   body: jsonEncode({
-      //     'userId': targetUserId,
-      //     'title': title,
-      //     'body': body,
-      //     'priority': priority.toString(),
-      //     'data': data,
-      //   }),
-      // );
-      
-      debugPrint('إرسال إشعار Firebase إلى المستخدم: $targetUserId');
+      // إرسال إشعار عبر السيرفر
+      final config = AppConfig();
+      if (config.isNetworkMode) {
+        final response = await http.post(
+          Uri.parse('${config.serverBaseUrl}/api/notifications/send-fcm'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'userId': targetUserId,
+            'title': title,
+            'body': body,
+            'data': data,
+          }),
+        );
+        
+        if (response.statusCode == 200) {
+          debugPrint('✅ تم إرسال إشعار Firebase إلى المستخدم: $targetUserId');
+        } else {
+          debugPrint('⚠️ فشل إرسال إشعار Firebase: ${response.statusCode}');
+        }
+      } else {
+        debugPrint('ℹ️ الوضع المحلي - إشعار Firebase غير متاح');
+      }
     } catch (e) {
-      debugPrint('خطأ في إرسال إشعار Firebase: $e');
+      debugPrint('❌ خطأ في إرسال إشعار Firebase: $e');
     }
   }
 

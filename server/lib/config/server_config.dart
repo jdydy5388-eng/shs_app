@@ -7,6 +7,7 @@ class ServerConfig {
 
   late InternetAddress host;
   late int port;
+  String? firebaseServerKey;
 
   void load() {
     final env = _loadEnv();
@@ -15,6 +16,9 @@ class ServerConfig {
     host = InternetAddress(hostStr);
     final portValue = env['PORT'] ?? env['SERVER_PORT'] ?? '8080';
     port = int.tryParse(portValue) ?? 8080;
+    
+    // Firebase Server Key (من Firebase Console → Project Settings → Cloud Messaging)
+    firebaseServerKey = env['FIREBASE_SERVER_KEY'];
   }
 
   Map<String, String> _loadEnv() {

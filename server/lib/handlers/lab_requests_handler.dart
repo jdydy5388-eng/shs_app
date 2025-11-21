@@ -1,7 +1,9 @@
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../database/database_service.dart';
+import '../config/server_config.dart';
 import '../utils/response_helper.dart';
 import '../logger/app_logger.dart';
 
@@ -150,6 +152,15 @@ class LabRequestsHandler {
         },
       );
 
+      // إرسال إشعارات تلقائية
+      _sendLabRequestNotifications(
+        labRequestId: body['id'] as String,
+        doctorId: body['doctorId'] as String,
+        patientId: body['patientId'] as String,
+        patientName: body['patientName'] as String,
+        testType: body['testType'] as String,
+      );
+
       return ResponseHelper.success(data: {'message': 'Lab request created successfully'});
     } catch (e) {
       AppLogger.error('Create lab request error', e);
@@ -176,6 +187,19 @@ class LabRequestsHandler {
 
       final setClause = updates.keys.map((k) => '$k = @$k').join(', ');
       
+      // الحصول على بيانات الطلب قبل التحديث
+      final oldRequest = await conn.query(
+        'SELECT doctor_id, patient_id, patient_name, test_type, status FROM lab_requests WHERE id = @id',
+        substitutionValues: {'id': requestId},
+      );
+      
+      if (oldRequest.isEmpty) {
+        return ResponseHelper.error(message: 'Lab request not found', statusCode: 404);
+      }
+      
+      final oldStatus = oldRequest.first[4] as String;
+      final newStatus = updates['status'] as String?;
+      
       await conn.execute(
         '''
         UPDATE lab_requests 
@@ -187,6 +211,17 @@ class LabRequestsHandler {
           ...updates,
         },
       );
+
+      // إرسال إشعارات عند إكمال الفحص
+      if (newStatus == 'completed' && oldStatus != 'completed') {
+        _sendLabCompletedNotifications(
+          labRequestId: requestId,
+          doctorId: oldRequest.first[0] as String,
+          patientId: oldRequest.first[1] as String,
+          patientName: oldRequest.first[2] as String,
+          testType: oldRequest.first[3] as String,
+        );
+      }
 
       return ResponseHelper.success(data: {'message': 'Lab request updated successfully'});
     } catch (e) {
@@ -208,6 +243,87 @@ class LabRequestsHandler {
     } catch (e) {
       AppLogger.error('Delete lab request error', e);
       return ResponseHelper.error(message: 'Failed to delete lab request: $e');
+    }
+  }
+
+  // إرسال إشعارات عند إكمال الفحص
+  Future<void> _sendLabCompletedNotifications({
+    required String labRequestId,
+    required String doctorId,
+    required String patientId,
+    required String patientName,
+    required String testType,
+  }) async {
+    try {
+      final conn = await DatabaseService().connection;
+      
+      // إرسال إشعار للطبيب
+      final doctor = await conn.query(
+        'SELECT additional_info FROM users WHERE id = @doctorId',
+        substitutionValues: {'doctorId': doctorId},
+      );
+
+      if (doctor.isNotEmpty) {
+        final additionalInfo = doctor.first[0];
+        String? fcmToken;
+        
+        if (additionalInfo != null) {
+          Map<String, dynamic> info = {};
+          if (additionalInfo is Map) {
+            info = Map<String, dynamic>.from(additionalInfo);
+          } else if (additionalInfo is String) {
+            info = jsonDecode(additionalInfo) as Map<String, dynamic>;
+          }
+          fcmToken = info['fcmToken'] as String?;
+        }
+
+        if (fcmToken != null && fcmToken.isNotEmpty) {
+          await _sendFCMNotification(
+            fcmToken: fcmToken,
+            title: 'تم إكمال الفحص',
+            message: 'تم إكمال فحص $testType للمريض $patientName',
+            data: {
+              'type': 'lab_result',
+              'id': labRequestId,
+            },
+          );
+        }
+      }
+
+      // إرسال إشعار للمريض
+      final patient = await conn.query(
+        'SELECT additional_info FROM users WHERE id = @patientId',
+        substitutionValues: {'patientId': patientId},
+      );
+
+      if (patient.isNotEmpty) {
+        final additionalInfo = patient.first[0];
+        String? fcmToken;
+        
+        if (additionalInfo != null) {
+          Map<String, dynamic> info = {};
+          if (additionalInfo is Map) {
+            info = Map<String, dynamic>.from(additionalInfo);
+          } else if (additionalInfo is String) {
+            info = jsonDecode(additionalInfo) as Map<String, dynamic>;
+          }
+          fcmToken = info['fcmToken'] as String?;
+        }
+
+        if (fcmToken != null && fcmToken.isNotEmpty) {
+          await _sendFCMNotification(
+            fcmToken: fcmToken,
+            title: 'نتائج الفحص جاهزة',
+            message: 'نتائج فحص $testType جاهزة',
+            data: {
+              'type': 'lab_result',
+              'id': labRequestId,
+            },
+          );
+        }
+      }
+    } catch (e) {
+      AppLogger.error('Error sending lab completed notifications', e);
     }
   }
 }

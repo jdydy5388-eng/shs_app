@@ -1,7 +1,9 @@
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../database/database_service.dart';
+import '../config/server_config.dart';
 import '../utils/response_helper.dart';
 import '../logger/app_logger.dart';
 
@@ -276,6 +278,136 @@ class PrescriptionsHandler {
     } catch (e) {
       AppLogger.error('Update prescription status error', e);
       return ResponseHelper.error(message: 'Failed to update prescription status: $e');
+    }
+  }
+
+  // إرسال إشعارات عند إنشاء وصفة طبية
+  Future<void> _sendPrescriptionNotifications({
+    required String prescriptionId,
+    required String doctorId,
+    required String doctorName,
+    required String patientId,
+    required String patientName,
+  }) async {
+    try {
+      final conn = await DatabaseService().connection;
+      
+      // إرسال إشعار للمريض
+      final patient = await conn.query(
+        'SELECT additional_info FROM users WHERE id = @patientId',
+        substitutionValues: {'patientId': patientId},
+      );
+
+      if (patient.isNotEmpty) {
+        final additionalInfo = patient.first[0];
+        String? fcmToken;
+        
+        if (additionalInfo != null) {
+          Map<String, dynamic> info = {};
+          if (additionalInfo is Map) {
+            info = Map<String, dynamic>.from(additionalInfo);
+          } else if (additionalInfo is String) {
+            info = jsonDecode(additionalInfo) as Map<String, dynamic>;
+          }
+          fcmToken = info['fcmToken'] as String?;
+        }
+
+        if (fcmToken != null && fcmToken.isNotEmpty) {
+          await _sendFCMNotification(
+            fcmToken: fcmToken,
+            title: 'وصفة طبية جديدة',
+            message: 'لديك وصفة طبية جديدة من د. $doctorName',
+            data: {
+              'type': 'prescription',
+              'id': prescriptionId,
+            },
+          );
+        }
+      }
+
+      // إرسال إشعار للصيدلي (pharmacist)
+      final pharmacists = await conn.query(
+        'SELECT id, additional_info FROM users WHERE role = @role',
+        substitutionValues: {'role': 'pharmacist'},
+      );
+
+      for (final pharm in pharmacists) {
+        final pharmId = pharm[0] as String;
+        final additionalInfo = pharm[1];
+        String? fcmToken;
+        
+        if (additionalInfo != null) {
+          Map<String, dynamic> info = {};
+          if (additionalInfo is Map) {
+            info = Map<String, dynamic>.from(additionalInfo);
+          } else if (additionalInfo is String) {
+            info = jsonDecode(additionalInfo) as Map<String, dynamic>;
+          }
+          fcmToken = info['fcmToken'] as String?;
+        }
+
+        if (fcmToken != null && fcmToken.isNotEmpty) {
+          await _sendFCMNotification(
+            fcmToken: fcmToken,
+            title: 'وصفة طبية جديدة',
+            message: 'وصفة طبية جديدة للمريض $patientName من د. $doctorName',
+            data: {
+              'type': 'prescription',
+              'id': prescriptionId,
+            },
+          );
+        }
+      }
+    } catch (e) {
+      AppLogger.error('Error sending prescription notifications', e);
+    }
+  }
+
+  // إرسال إشعار Firebase
+  Future<void> _sendFCMNotification({
+    required String fcmToken,
+    required String title,
+    required String message,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      final serverConfig = ServerConfig();
+      final serverKey = serverConfig.firebaseServerKey;
+      
+      if (serverKey == null || serverKey.isEmpty) {
+        AppLogger.warning('FIREBASE_SERVER_KEY not configured');
+        return;
+      }
+
+      final payload = <String, dynamic>{
+        'to': fcmToken,
+        'notification': {
+          'title': title,
+          'body': message,
+          'sound': 'default',
+        },
+      };
+      
+      if (data != null && data.isNotEmpty) {
+        payload['data'] = data.map((k, v) => MapEntry(k.toString(), v.toString()));
+      }
+
+      final response = await http.post(
+        Uri.parse('https://fcm.googleapis.com/fcm/send'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'key=$serverKey',
+        },
+        body: jsonEncode(payload),
+      );
+
+      if (response.statusCode == 200) {
+        AppLogger.info('FCM notification sent: $title');
+      } else {
+        AppLogger.error('FCM notification failed', 'HTTP ${response.statusCode}: ${response.body}');
+      }
+    } catch (e) {
+      AppLogger.error('FCM notification error', e);
     }
   }
 }
