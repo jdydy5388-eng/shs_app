@@ -8,6 +8,7 @@ import '../services/data_service.dart';
 // Firebase imports - فقط على المنصات المدعومة
 // على Windows، سيتم تخطي Firebase في runtime لتجنب مشاكل الربط C++
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 FirebaseMessaging? _firebaseMessaging;
 bool _isFirebaseAvailable = false;
@@ -81,7 +82,8 @@ class NotificationService {
     try {
       debugPrint('🔄 بدء تهيئة Firebase Messaging...');
       
-      // استخدام Firebase Messaging
+      // استخدام Firebase Messaging مباشرة
+      // إذا فشل، سيتم التعامل معه في catch block
       _firebaseMessaging = FirebaseMessaging.instance;
       _isFirebaseAvailable = true;
       debugPrint('✅ Firebase Messaging instance created');
@@ -117,15 +119,23 @@ class NotificationService {
       // الحصول على FCM Token
       try {
         debugPrint('🔄 جاري الحصول على FCM Token...');
+        
         final token = await messaging.getToken();
+        debugPrint('   Token received: ${token != null ? "✅ (${token.length} chars)" : "❌ null"}');
+        
         if (token != null && token.isNotEmpty) {
           debugPrint('✅ FCM Token: $token');
           await _saveFCMToken(token);
         } else {
           debugPrint('⚠️ FCM Token is null or empty');
+          debugPrint('   قد يكون السبب:');
+          debugPrint('   - صلاحيات الإشعارات غير مُعطاة');
+          debugPrint('   - google-services.json غير موجود أو خاطئ');
+          debugPrint('   - Firebase Cloud Messaging API غير مفعّل');
         }
-      } catch (e) {
+      } catch (e, stackTrace) {
         debugPrint('❌ خطأ في الحصول على FCM Token: $e');
+        debugPrint('   Stack trace: $stackTrace');
         // لا نوقف التهيئة، قد يعمل لاحقاً
       }
 
@@ -165,10 +175,16 @@ class NotificationService {
       debugPrint('✅ Firebase Messaging initialized successfully');
     } catch (e, stackTrace) {
       debugPrint('❌ خطأ في تهيئة Firebase Messaging: $e');
+      debugPrint('   Error type: ${e.runtimeType}');
+      debugPrint('   Error message: ${e.toString()}');
       debugPrint('Stack trace: $stackTrace');
       debugPrint('الإشعارات المحلية ستعمل بشكل طبيعي');
       _isFirebaseAvailable = false;
       _firebaseMessaging = null;
+      
+      // ملاحظة: لا يمكن التحقق من Firebase.apps في stub package
+      // الخطأ أعلاه يشير إلى أن Firebase Messaging فشل في التهيئة
+      // السبب المحتمل: Firebase Core لم يتم تهيئته في main.dart
     }
   }
 
@@ -320,57 +336,127 @@ class NotificationService {
       'firebaseAvailable': _isFirebaseAvailable,
       'fcmToken': null,
       'localNotificationTest': false,
+      'debugInfo': <String, dynamic>{},
     };
 
     try {
+      debugPrint('🔍 بدء اختبار الإشعارات...');
+      debugPrint('   Platform: ${Platform.operatingSystem}');
+      debugPrint('   Firebase Available: $_isFirebaseAvailable');
+      debugPrint('   Firebase Messaging Instance: ${_firebaseMessaging != null}');
+
       // محاولة إعادة تهيئة Firebase Messaging إذا لم يكن متاحاً
       if (!_isFirebaseAvailable && !Platform.isWindows) {
         debugPrint('🔄 محاولة إعادة تهيئة Firebase Messaging...');
         await _setupFirebaseMessaging();
+        debugPrint('   بعد إعادة التهيئة - Firebase Available: $_isFirebaseAvailable');
+        debugPrint('   بعد إعادة التهيئة - Messaging Instance: ${_firebaseMessaging != null}');
       }
 
       // الحصول على FCM Token
       if (_isFirebaseAvailable && _firebaseMessaging != null) {
+        debugPrint('🔄 محاولة الحصول على FCM Token من Firebase Messaging...');
         try {
           final token = await _firebaseMessaging!.getToken();
-          result['fcmToken'] = token;
-          debugPrint('✅ FCM Token للاختبار: $token');
+          debugPrint('   Token received: ${token != null ? "✅ (${token.length} chars)" : "❌ null"}');
           
-          // حفظ الـ token
-          if (token != null) {
+          if (token != null && token.isNotEmpty) {
+            result['fcmToken'] = token;
+            debugPrint('✅ FCM Token للاختبار: $token');
+            
+            // حفظ الـ token
             await _saveFCMToken(token);
-          }
-        } catch (e) {
-          debugPrint('⚠️ خطأ في الحصول على FCM Token: $e');
-          // محاولة الحصول على token محفوظ
-          result['fcmToken'] = await getSavedFCMToken();
-          if (result['fcmToken'] != null) {
-            debugPrint('ℹ️ استخدام FCM Token المحفوظ: ${result['fcmToken']}');
+            result['debugInfo'] = {
+              'tokenSource': 'firebase_messaging',
+              'tokenLength': token.length,
+            };
           } else {
-            debugPrint('⚠️ لا يوجد FCM Token متاح');
+            debugPrint('⚠️ FCM Token فارغ أو null');
+            result['debugInfo'] = {
+              'tokenSource': 'firebase_messaging',
+              'error': 'Token is null or empty',
+            };
+            
+            // محاولة الحصول على token محفوظ
+            final savedToken = await getSavedFCMToken();
+            if (savedToken != null) {
+              result['fcmToken'] = savedToken;
+              debugPrint('ℹ️ استخدام FCM Token المحفوظ: $savedToken');
+              result['debugInfo'] = {
+                'tokenSource': 'saved',
+                'tokenLength': savedToken.length,
+              };
+            }
+          }
+        } catch (e, stackTrace) {
+          debugPrint('❌ خطأ في الحصول على FCM Token: $e');
+          debugPrint('   Stack trace: $stackTrace');
+          result['debugInfo'] = {
+            'tokenSource': 'error',
+            'error': e.toString(),
+          };
+          
+          // محاولة الحصول على token محفوظ
+          final savedToken = await getSavedFCMToken();
+          if (savedToken != null) {
+            result['fcmToken'] = savedToken;
+            debugPrint('ℹ️ استخدام FCM Token المحفوظ بعد الخطأ: $savedToken');
+            result['debugInfo'] = {
+              'tokenSource': 'saved_after_error',
+              'tokenLength': savedToken.length,
+              'originalError': e.toString(),
+            };
+          } else {
+            debugPrint('⚠️ لا يوجد FCM Token محفوظ متاح');
           }
         }
       } else {
-        result['fcmToken'] = await getSavedFCMToken();
-        if (result['fcmToken'] != null) {
-          debugPrint('ℹ️ استخدام FCM Token المحفوظ: ${result['fcmToken']}');
+        debugPrint('⚠️ Firebase Messaging غير متاح');
+        debugPrint('   _isFirebaseAvailable: $_isFirebaseAvailable');
+        debugPrint('   _firebaseMessaging: ${_firebaseMessaging != null}');
+        debugPrint('   Platform.isWindows: ${Platform.isWindows}');
+        
+        // محاولة الحصول على token محفوظ
+        final savedToken = await getSavedFCMToken();
+        if (savedToken != null) {
+          result['fcmToken'] = savedToken;
+          debugPrint('ℹ️ استخدام FCM Token المحفوظ: $savedToken');
+          result['debugInfo'] = {
+            'tokenSource': 'saved',
+            'tokenLength': savedToken.length,
+            'firebaseUnavailable': true,
+          };
         } else {
           debugPrint('⚠️ لا يوجد FCM Token متاح - Firebase غير متاح أو لم يتم تهيئته');
+          result['debugInfo'] = {
+            'tokenSource': 'none',
+            'firebaseUnavailable': true,
+            'reason': Platform.isWindows 
+                ? 'Windows platform (Firebase disabled)' 
+                : 'Firebase not initialized or unavailable',
+          };
         }
       }
 
       // إرسال إشعار تجريبي محلي
+      debugPrint('🔄 إرسال إشعار تجريبي محلي...');
       await sendInstantNotification(
         'اختبار الإشعارات',
         'هذا إشعار تجريبي. إذا رأيت هذا، فالإشعارات تعمل بشكل صحيح! ✅',
       );
       result['localNotificationTest'] = true;
+      debugPrint('✅ تم إرسال الإشعار المحلي بنجاح');
 
+      debugPrint('✅ انتهى اختبار الإشعارات');
       return result;
     } catch (e, stackTrace) {
       debugPrint('❌ خطأ في اختبار الإشعارات: $e');
       debugPrint('Stack trace: $stackTrace');
       result['error'] = e.toString();
+      result['debugInfo'] = {
+        'error': e.toString(),
+        'stackTrace': stackTrace.toString(),
+      };
       return result;
     }
   }
