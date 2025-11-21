@@ -30,11 +30,11 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
-    // طلب صلاحيات الإشعارات
-    await requestPermissions();
-    
-    // إعداد Firebase Messaging (فقط على Android/iOS/Web)
+    // إعداد Firebase Messaging أولاً (فقط على Android/iOS/Web)
     await _setupFirebaseMessaging();
+    
+    // طلب صلاحيات الإشعارات (بعد تهيئة Firebase)
+    await requestPermissions();
   }
 
   Future<void> requestPermissions() async {
@@ -74,28 +74,59 @@ class NotificationService {
     // على Windows، تخطي Firebase Messaging تماماً
     if (Platform.isWindows) {
       debugPrint('ℹ️ Windows detected - Firebase Messaging غير متاح، سيتم استخدام الإشعارات المحلية فقط');
+      _isFirebaseAvailable = false;
       return;
     }
     
     try {
-      // استخدام Firebase Messaging (سيتم تخطيه على Windows تلقائياً)
-      // Note: على Windows، سيتم رمي exception هنا
+      debugPrint('🔄 بدء تهيئة Firebase Messaging...');
+      
+      // استخدام Firebase Messaging
       _firebaseMessaging = FirebaseMessaging.instance;
       _isFirebaseAvailable = true;
+      debugPrint('✅ Firebase Messaging instance created');
 
       // التحقق من أن Firebase Messaging متاح
       if (_firebaseMessaging == null) {
         debugPrint('⚠️ Firebase Messaging instance is null');
+        _isFirebaseAvailable = false;
         return;
       }
 
       final messaging = _firebaseMessaging!;
 
+      // طلب الصلاحيات أولاً (مهم على Android 13+)
+      try {
+        debugPrint('🔄 طلب صلاحيات Firebase...');
+        final settings = await messaging.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+          provisional: false,
+        );
+        debugPrint('✅ Firebase permissions: ${settings.authorizationStatus}');
+        
+        if (settings.authorizationStatus != AuthorizationStatus.authorized &&
+            settings.authorizationStatus != AuthorizationStatus.provisional) {
+          debugPrint('⚠️ صلاحيات الإشعارات غير مُعطاة - قد لا يعمل FCM Token');
+        }
+      } catch (e) {
+        debugPrint('⚠️ خطأ في طلب صلاحيات Firebase: $e');
+      }
+
       // الحصول على FCM Token
-      final token = await messaging.getToken();
-      if (token != null) {
-        debugPrint('✅ FCM Token: $token');
-        await _saveFCMToken(token);
+      try {
+        debugPrint('🔄 جاري الحصول على FCM Token...');
+        final token = await messaging.getToken();
+        if (token != null && token.isNotEmpty) {
+          debugPrint('✅ FCM Token: $token');
+          await _saveFCMToken(token);
+        } else {
+          debugPrint('⚠️ FCM Token is null or empty');
+        }
+      } catch (e) {
+        debugPrint('❌ خطأ في الحصول على FCM Token: $e');
+        // لا نوقف التهيئة، قد يعمل لاحقاً
       }
 
       // تحديث الـ token عند تغييره
@@ -105,7 +136,6 @@ class NotificationService {
       });
 
       // معالجة الرسائل عندما يكون التطبيق في المقدمة
-      // Note: onMessage و onMessageOpenedApp هما static getters في FirebaseMessaging
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         debugPrint('📨 إشعار جديد: ${message.notification?.title}');
         _showNotification(
@@ -122,16 +152,23 @@ class NotificationService {
       });
 
       // معالجة الإشعار عند فتح التطبيق من إشعار (عندما يكون التطبيق مغلق)
-      final initialMessage = await messaging.getInitialMessage();
-      if (initialMessage != null) {
-        _handleNotificationNavigation(initialMessage.data);
+      try {
+        final initialMessage = await messaging.getInitialMessage();
+        if (initialMessage != null) {
+          debugPrint('📱 تم فتح التطبيق من إشعار');
+          _handleNotificationNavigation(initialMessage.data);
+        }
+      } catch (e) {
+        debugPrint('⚠️ خطأ في getInitialMessage: $e');
       }
 
       debugPrint('✅ Firebase Messaging initialized successfully');
-    } catch (e) {
-      debugPrint('⚠️ Warning: Firebase Messaging غير متاح: $e');
+    } catch (e, stackTrace) {
+      debugPrint('❌ خطأ في تهيئة Firebase Messaging: $e');
+      debugPrint('Stack trace: $stackTrace');
       debugPrint('الإشعارات المحلية ستعمل بشكل طبيعي');
       _isFirebaseAvailable = false;
+      _firebaseMessaging = null;
     }
   }
 
@@ -286,14 +323,40 @@ class NotificationService {
     };
 
     try {
+      // محاولة إعادة تهيئة Firebase Messaging إذا لم يكن متاحاً
+      if (!_isFirebaseAvailable && !Platform.isWindows) {
+        debugPrint('🔄 محاولة إعادة تهيئة Firebase Messaging...');
+        await _setupFirebaseMessaging();
+      }
+
       // الحصول على FCM Token
       if (_isFirebaseAvailable && _firebaseMessaging != null) {
-        final token = await _firebaseMessaging!.getToken();
-        result['fcmToken'] = token;
-        debugPrint('✅ FCM Token للاختبار: $token');
+        try {
+          final token = await _firebaseMessaging!.getToken();
+          result['fcmToken'] = token;
+          debugPrint('✅ FCM Token للاختبار: $token');
+          
+          // حفظ الـ token
+          if (token != null) {
+            await _saveFCMToken(token);
+          }
+        } catch (e) {
+          debugPrint('⚠️ خطأ في الحصول على FCM Token: $e');
+          // محاولة الحصول على token محفوظ
+          result['fcmToken'] = await getSavedFCMToken();
+          if (result['fcmToken'] != null) {
+            debugPrint('ℹ️ استخدام FCM Token المحفوظ: ${result['fcmToken']}');
+          } else {
+            debugPrint('⚠️ لا يوجد FCM Token متاح');
+          }
+        }
       } else {
         result['fcmToken'] = await getSavedFCMToken();
-        debugPrint('ℹ️ استخدام FCM Token المحفوظ: ${result['fcmToken']}');
+        if (result['fcmToken'] != null) {
+          debugPrint('ℹ️ استخدام FCM Token المحفوظ: ${result['fcmToken']}');
+        } else {
+          debugPrint('⚠️ لا يوجد FCM Token متاح - Firebase غير متاح أو لم يتم تهيئته');
+        }
       }
 
       // إرسال إشعار تجريبي محلي
@@ -304,8 +367,9 @@ class NotificationService {
       result['localNotificationTest'] = true;
 
       return result;
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('❌ خطأ في اختبار الإشعارات: $e');
+      debugPrint('Stack trace: $stackTrace');
       result['error'] = e.toString();
       return result;
     }
