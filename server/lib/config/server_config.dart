@@ -7,7 +7,9 @@ class ServerConfig {
 
   late InternetAddress host;
   late int port;
-  String? firebaseServerKey;
+  String? firebaseServerKey; // Legacy API (fallback)
+  String? firebaseServiceAccountPath; // V1 API - Service Account JSON file path
+  String? firebaseProjectId; // V1 API - Project ID
 
   void load() {
     final env = _loadEnv();
@@ -17,8 +19,13 @@ class ServerConfig {
     final portValue = env['PORT'] ?? env['SERVER_PORT'] ?? '8080';
     port = int.tryParse(portValue) ?? 8080;
     
-    // Firebase Server Key (من Firebase Console → Project Settings → Cloud Messaging)
+    // Firebase Server Key (Legacy API - fallback فقط)
     firebaseServerKey = env['FIREBASE_SERVER_KEY'];
+    
+    // Firebase V1 API Configuration
+    firebaseServiceAccountPath = env['FIREBASE_SERVICE_ACCOUNT_PATH'] ?? 
+                                 env['GOOGLE_APPLICATION_CREDENTIALS'];
+    firebaseProjectId = env['FIREBASE_PROJECT_ID'] ?? 'shs-app-c66a7';
   }
 
   Map<String, String> _loadEnv() {

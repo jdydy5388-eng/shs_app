@@ -19,6 +19,10 @@ dependencies:
   crypto: ^3.0.5
   http: ^1.2.2
   
+  # Firebase V1 API (OAuth2)
+  googleapis_auth: ^1.4.1
+  googleapis: ^13.1.0
+  
   # Logging
   logger: ^2.4.0
 

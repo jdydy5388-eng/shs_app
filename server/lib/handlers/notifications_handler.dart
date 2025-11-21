@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../database/database_service.dart';
 import '../config/server_config.dart';
 import '../utils/response_helper.dart';
+import '../utils/firebase_auth_helper.dart';
 import '../logger/app_logger.dart';
 
 class NotificationsHandler {
@@ -192,54 +193,109 @@ class NotificationsHandler {
         );
       }
 
-      // إرسال الإشعار عبر Firebase REST API
+      // إرسال الإشعار عبر Firebase REST API (V1 API)
       String? notificationId;
       String? error;
       
       try {
         final serverConfig = ServerConfig();
-        final serverKey = serverConfig.firebaseServerKey;
+        final projectId = serverConfig.firebaseProjectId;
         
-        if (serverKey == null || serverKey.isEmpty) {
-          AppLogger.warning('FIREBASE_SERVER_KEY not configured - notification will be saved only');
-          error = 'Firebase Server Key not configured';
-        } else {
-          // إرسال الإشعار عبر Firebase REST API
-          final fcmUrl = 'https://fcm.googleapis.com/fcm/send';
+        // محاولة استخدام V1 API أولاً
+        String? accessToken = await FirebaseAuthHelper.getAccessToken();
+        
+        if (accessToken != null && projectId != null) {
+          // استخدام V1 API
+          final fcmUrl = 'https://fcm.googleapis.com/v1/projects/$projectId/messages:send';
           
-          final payload = <String, dynamic>{
-            'to': fcmToken,
+          // بناء payload حسب V1 API format
+          final messagePayload = <String, dynamic>{
+            'token': fcmToken,
             'notification': {
               'title': title,
               'body': message,
-              'sound': 'default',
             },
           };
           
+          // إضافة data (يجب أن تكون strings في V1 API)
           if (data != null && data.isNotEmpty) {
-            payload['data'] = data.map((k, v) => MapEntry(k.toString(), v.toString()));
+            final dataMap = <String, String>{};
+            data.forEach((key, value) {
+              // في V1 API، يجب تحويل JSON nested إلى string
+              if (value is Map || value is List) {
+                dataMap[key.toString()] = jsonEncode(value);
+              } else {
+                dataMap[key.toString()] = value.toString();
+              }
+            });
+            messagePayload['data'] = dataMap;
           }
+          
+          final payload = <String, dynamic>{
+            'message': messagePayload,
+          };
           
           final response = await http.post(
             Uri.parse(fcmUrl),
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': 'key=$serverKey',
+              'Authorization': 'Bearer $accessToken',
             },
             body: jsonEncode(payload),
           );
           
           if (response.statusCode == 200) {
-            final responseData = jsonDecode(response.body) as Map<String, dynamic>;
-            if (responseData['success'] == 1) {
-              AppLogger.info('FCM notification sent successfully to $userId');
-            } else {
-              error = responseData['results']?[0]?['error']?.toString() ?? 'Unknown error';
-              AppLogger.error('FCM notification failed', error);
-            }
+            AppLogger.info('FCM V1 notification sent successfully to $userId');
           } else {
-            error = 'HTTP ${response.statusCode}: ${response.body}';
-            AppLogger.error('FCM notification HTTP error', error);
+            final errorBody = response.body;
+            error = 'HTTP ${response.statusCode}: $errorBody';
+            AppLogger.error('FCM V1 notification HTTP error', error);
+          }
+        } else {
+          // Fallback to Legacy API إذا كان متاحاً
+          final serverKey = serverConfig.firebaseServerKey;
+          
+          if (serverKey == null || serverKey.isEmpty) {
+            AppLogger.warning('Neither V1 API nor Legacy API configured - notification will be saved only');
+            error = 'Firebase not configured (neither Service Account nor Server Key)';
+          } else {
+            // استخدام Legacy API (fallback)
+            final fcmUrl = 'https://fcm.googleapis.com/fcm/send';
+            
+            final payload = <String, dynamic>{
+              'to': fcmToken,
+              'notification': {
+                'title': title,
+                'body': message,
+                'sound': 'default',
+              },
+            };
+            
+            if (data != null && data.isNotEmpty) {
+              payload['data'] = data.map((k, v) => MapEntry(k.toString(), v.toString()));
+            }
+            
+            final response = await http.post(
+              Uri.parse(fcmUrl),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'key=$serverKey',
+              },
+              body: jsonEncode(payload),
+            );
+            
+            if (response.statusCode == 200) {
+              final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+              if (responseData['success'] == 1) {
+                AppLogger.info('FCM Legacy notification sent successfully to $userId');
+              } else {
+                error = responseData['results']?[0]?['error']?.toString() ?? 'Unknown error';
+                AppLogger.error('FCM Legacy notification failed', error);
+              }
+            } else {
+              error = 'HTTP ${response.statusCode}: ${response.body}';
+              AppLogger.error('FCM Legacy notification HTTP error', error);
+            }
           }
         }
       } catch (e) {

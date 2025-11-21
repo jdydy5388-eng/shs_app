@@ -5,3 +5,8 @@
 .pub/
 build/
 
+# Firebase Service Account (يحتوي على بيانات حساسة)
+firebase-service-account.json
+*-firebase-adminsdk-*.json
+shs-app-*-firebase-adminsdk-*.json
+
