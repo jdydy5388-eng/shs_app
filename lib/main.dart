@@ -84,10 +84,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) {
           final provider = NotificationProvider();
-          // تهيئة خدمة الإشعارات (async - يعمل في الخلفية)
-          provider.notificationService.initialize().catchError((e) {
-            debugPrint('❌ خطأ في تهيئة NotificationService: $e');
-          });
+          // تهيئة خدمة الإشعارات
+          provider.notificationService.initialize();
           // تهيئة خدمة الإشعارات المتقدمة
           final advancedService = AdvancedNotificationService();
           advancedService.initialize();

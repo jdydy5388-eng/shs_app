@@ -38,63 +38,34 @@ class NotificationService {
   }
 
   Future<void> requestPermissions() async {
-    debugPrint('🔄 طلب صلاحيات الإشعارات...');
-    
-    // صلاحيات Android (Android 13+)
-    if (Platform.isAndroid) {
-      try {
-        final androidPlugin = _localNotifications
-            .resolvePlatformSpecificImplementation<
-                AndroidFlutterLocalNotificationsPlugin>();
-        
-        if (androidPlugin != null) {
-          debugPrint('🔄 طلب صلاحيات Android...');
-          final granted = await androidPlugin.requestNotificationsPermission();
-          if (granted == true) {
-            debugPrint('✅ صلاحيات Android مُعطاة');
-          } else {
-            debugPrint('⚠️ صلاحيات Android غير مُعطاة');
-          }
-        }
-      } catch (e) {
-        debugPrint('❌ خطأ في طلب صلاحيات Android: $e');
-      }
-    }
+    // صلاحيات Android
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
 
     // صلاحيات iOS
-    if (Platform.isIOS) {
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    // صلاحيات Firebase (فقط على المنصات المدعومة)
+    if (!Platform.isWindows && _isFirebaseAvailable && _firebaseMessaging != null) {
       try {
-        final iosPlugin = _localNotifications
-            .resolvePlatformSpecificImplementation<
-                IOSFlutterLocalNotificationsPlugin>();
-        
-        if (iosPlugin != null) {
-          debugPrint('🔄 طلب صلاحيات iOS...');
-          final granted = await iosPlugin.requestPermissions(
-            alert: true,
-            badge: true,
-            sound: true,
-          );
-          debugPrint('✅ صلاحيات iOS: $granted');
-        }
+        final settings = await _firebaseMessaging!.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+          provisional: false,
+        );
+        debugPrint('Firebase permissions: ${settings.authorizationStatus}');
       } catch (e) {
-        debugPrint('❌ خطأ في طلب صلاحيات iOS: $e');
-      }
-      
-      // صلاحيات Firebase (iOS فقط - requestPermission يعمل فقط على iOS)
-      if (_isFirebaseAvailable && _firebaseMessaging != null) {
-        try {
-          debugPrint('🔄 طلب صلاحيات Firebase (iOS)...');
-          final settings = await _firebaseMessaging!.requestPermission(
-            alert: true,
-            badge: true,
-            sound: true,
-            provisional: false,
-          );
-          debugPrint('✅ Firebase permissions: ${settings.authorizationStatus}');
-        } catch (e) {
-          debugPrint('⚠️ خطأ في طلب صلاحيات Firebase: $e');
-        }
+        debugPrint('خطأ في طلب صلاحيات Firebase: $e');
       }
     }
   }
@@ -124,9 +95,25 @@ class NotificationService {
 
       final messaging = _firebaseMessaging!;
 
-      // ملاحظة: requestPermission() يعمل فقط على iOS
-      // على Android، يتم طلب الصلاحيات من requestPermissions() في initialize()
-      
+      // طلب الصلاحيات أولاً (مهم على Android 13+)
+      try {
+        debugPrint('🔄 طلب صلاحيات Firebase...');
+        final settings = await messaging.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+          provisional: false,
+        );
+        debugPrint('✅ Firebase permissions: ${settings.authorizationStatus}');
+        
+        if (settings.authorizationStatus != AuthorizationStatus.authorized &&
+            settings.authorizationStatus != AuthorizationStatus.provisional) {
+          debugPrint('⚠️ صلاحيات الإشعارات غير مُعطاة - قد لا يعمل FCM Token');
+        }
+      } catch (e) {
+        debugPrint('⚠️ خطأ في طلب صلاحيات Firebase: $e');
+      }
+
       // الحصول على FCM Token
       try {
         debugPrint('🔄 جاري الحصول على FCM Token...');
