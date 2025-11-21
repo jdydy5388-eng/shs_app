@@ -271,13 +271,16 @@ class UsersHandler {
 
   Future<Response> _saveFCMToken(Request request, String userId) async {
     try {
+      AppLogger.info('💾 Saving FCM token for user $userId');
       final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
       final fcmToken = body['token'] as String?;
       
       if (fcmToken == null || fcmToken.isEmpty) {
+        AppLogger.warning('⚠️ FCM token is null or empty for user $userId');
         return ResponseHelper.error(message: 'FCM token is required', statusCode: 400);
       }
 
+      AppLogger.info('   FCM Token length: ${fcmToken.length} chars');
       final conn = await DatabaseService().connection;
       
       // التحقق من وجود المستخدم
@@ -308,6 +311,7 @@ class UsersHandler {
       
       additionalInfo['fcmToken'] = fcmToken;
       
+      AppLogger.info('   Updating additional_info with FCM token...');
       await conn.execute(
         '''
         UPDATE users 
@@ -320,6 +324,7 @@ class UsersHandler {
         },
       );
 
+      AppLogger.info('✅ FCM token saved successfully for user $userId');
       return ResponseHelper.success(data: {'message': 'FCM token saved successfully'});
     } catch (e) {
       AppLogger.error('Save FCM token error', e);

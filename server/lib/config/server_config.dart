@@ -9,6 +9,7 @@ class ServerConfig {
   late int port;
   String? firebaseServerKey; // Legacy API (fallback)
   String? firebaseServiceAccountPath; // V1 API - Service Account JSON file path
+  String? firebaseServiceAccountJson; // V1 API - Service Account JSON content (for Render)
   String? firebaseProjectId; // V1 API - Project ID
 
   void load() {
@@ -25,6 +26,7 @@ class ServerConfig {
     // Firebase V1 API Configuration
     firebaseServiceAccountPath = env['FIREBASE_SERVICE_ACCOUNT_PATH'] ?? 
                                  env['GOOGLE_APPLICATION_CREDENTIALS'];
+    firebaseServiceAccountJson = env['FIREBASE_SERVICE_ACCOUNT_JSON']; // JSON content as string (for Render)
     firebaseProjectId = env['FIREBASE_PROJECT_ID'] ?? 'shs-app-c66a7';
   }
 

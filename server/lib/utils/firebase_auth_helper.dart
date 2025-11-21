@@ -20,23 +20,34 @@ class FirebaseAuthHelper {
     
     try {
       final config = ServerConfig();
-      final serviceAccountPath = config.firebaseServiceAccountPath;
+      Map<String, dynamic> serviceAccountJson;
       
-      if (serviceAccountPath == null || serviceAccountPath.isEmpty) {
-        AppLogger.warning('FIREBASE_SERVICE_ACCOUNT_PATH not configured');
-        return null;
+      // محاولة قراءة من Environment Variable أولاً (لـ Render)
+      if (config.firebaseServiceAccountJson != null && config.firebaseServiceAccountJson!.isNotEmpty) {
+        AppLogger.info('Reading Service Account from environment variable');
+        serviceAccountJson = jsonDecode(config.firebaseServiceAccountJson!) as Map<String, dynamic>;
+      } else {
+        // محاولة قراءة من File
+        final serviceAccountPath = config.firebaseServiceAccountPath;
+        
+        if (serviceAccountPath == null || serviceAccountPath.isEmpty) {
+          AppLogger.warning('FIREBASE_SERVICE_ACCOUNT_PATH not configured');
+          return null;
+        }
+        
+        final serviceAccountFile = File(serviceAccountPath);
+        if (!serviceAccountFile.existsSync()) {
+          AppLogger.error('Service Account file not found: $serviceAccountPath', null);
+          AppLogger.error('Please configure FIREBASE_SERVICE_ACCOUNT_PATH or FIREBASE_SERVICE_ACCOUNT_JSON', null);
+          return null;
+        }
+        
+        AppLogger.info('Reading Service Account from file: $serviceAccountPath');
+        // قراءة Service Account JSON
+        serviceAccountJson = jsonDecode(
+          await serviceAccountFile.readAsString(),
+        ) as Map<String, dynamic>;
       }
-      
-      final serviceAccountFile = File(serviceAccountPath);
-      if (!serviceAccountFile.existsSync()) {
-        AppLogger.error('Service Account file not found: $serviceAccountPath', null);
-        return null;
-      }
-      
-      // قراءة Service Account JSON
-      final serviceAccountJson = jsonDecode(
-        await serviceAccountFile.readAsString(),
-      ) as Map<String, dynamic>;
       
       // استخدام googleapis_auth للحصول على access token
       final credentials = auth.ServiceAccountCredentials.fromJson(serviceAccountJson);

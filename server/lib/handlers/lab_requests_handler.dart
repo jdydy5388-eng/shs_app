@@ -258,6 +258,8 @@ class LabRequestsHandler {
     required String testType,
   }) async {
     try {
+      AppLogger.info('🔄 Starting lab request notifications for request $labRequestId');
+      AppLogger.info('   Patient ID: $patientId, Doctor ID: $doctorId');
       final conn = await DatabaseService().connection;
       
       // الحصول على اسم الطبيب
@@ -306,27 +308,39 @@ class LabRequestsHandler {
       }
 
       // إرسال إشعار للمريض
+      AppLogger.info('🔍 Looking up patient $patientId for FCM token...');
       final patient = await conn.query(
         'SELECT additional_info FROM users WHERE id = @patientId',
         substitutionValues: {'patientId': patientId},
       );
 
-      if (patient.isNotEmpty) {
+      if (patient.isEmpty) {
+        AppLogger.warning('⚠️ Patient $patientId not found in database');
+      } else {
         final additionalInfo = patient.first[0];
         String? fcmToken;
         
+        AppLogger.info('   Patient found, checking additional_info...');
         if (additionalInfo != null) {
           Map<String, dynamic> info = {};
           if (additionalInfo is Map) {
             info = Map<String, dynamic>.from(additionalInfo);
           } else if (additionalInfo is String) {
-            info = jsonDecode(additionalInfo) as Map<String, dynamic>;
+            try {
+              info = jsonDecode(additionalInfo) as Map<String, dynamic>;
+            } catch (e) {
+              AppLogger.error('Failed to parse additional_info JSON', e);
+              info = {};
+            }
           }
           fcmToken = info['fcmToken'] as String?;
+          AppLogger.info('   FCM Token found: ${fcmToken != null && fcmToken.isNotEmpty ? "✅ (${fcmToken.length} chars)" : "❌ null or empty"}');
+        } else {
+          AppLogger.warning('   Patient $patientId has null additional_info');
         }
 
         if (fcmToken != null && fcmToken.isNotEmpty) {
-          AppLogger.info('Sending lab request notification to patient $patientId');
+          AppLogger.info('📤 Sending lab request notification to patient $patientId');
           await _sendFCMNotification(
             fcmToken: fcmToken,
             title: 'طلب فحص جديد',
@@ -336,13 +350,15 @@ class LabRequestsHandler {
               'id': labRequestId,
             },
           );
-          AppLogger.info('Lab request notification sent to patient $patientId');
+          AppLogger.info('✅ Lab request notification sent to patient $patientId');
         } else {
-          AppLogger.warning('Patient $patientId does not have FCM token - notification not sent');
+          AppLogger.warning('⚠️ Patient $patientId does not have FCM token - notification not sent');
+          AppLogger.warning('   Patient needs to log in again to save FCM token');
         }
       }
-    } catch (e) {
-      AppLogger.error('Error sending lab request notifications', e);
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Error sending lab request notifications', e);
+      AppLogger.error('Stack trace', stackTrace);
     }
   }
 
@@ -435,13 +451,24 @@ class LabRequestsHandler {
     Map<String, dynamic>? data,
   }) async {
     try {
+      AppLogger.info('📤 Attempting to send FCM notification');
+      AppLogger.info('   Title: $title');
+      AppLogger.info('   Message: $message');
+      AppLogger.info('   Token length: ${fcmToken.length}');
+      
       final serverConfig = ServerConfig();
       final projectId = serverConfig.firebaseProjectId;
       
+      AppLogger.info('   Project ID: $projectId');
+      AppLogger.info('   Service Account Path: ${serverConfig.firebaseServiceAccountPath}');
+      
       // محاولة استخدام V1 API أولاً
+      AppLogger.info('   Getting OAuth2 access token...');
       String? accessToken = await FirebaseAuthHelper.getAccessToken();
       
       if (accessToken != null && projectId != null) {
+        AppLogger.info('   ✅ Access token obtained (${accessToken.length} chars)');
+        AppLogger.info('   Using V1 API');
         // استخدام V1 API
         final fcmUrl = 'https://fcm.googleapis.com/v1/projects/$projectId/messages:send';
         
@@ -472,6 +499,7 @@ class LabRequestsHandler {
           'message': messagePayload,
         };
         
+        AppLogger.info('   Sending POST request to FCM...');
         final response = await http.post(
           Uri.parse(fcmUrl),
           headers: {
@@ -481,19 +509,28 @@ class LabRequestsHandler {
           body: jsonEncode(payload),
         );
         
+        AppLogger.info('   Response status: ${response.statusCode}');
         if (response.statusCode == 200) {
-          AppLogger.info('FCM V1 notification sent successfully');
+          AppLogger.info('✅ FCM V1 notification sent successfully');
+          final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+          AppLogger.info('   Response: $responseData');
         } else {
           final errorBody = response.body;
-          AppLogger.error('FCM V1 notification HTTP error: HTTP ${response.statusCode}: $errorBody', null);
+          AppLogger.error('❌ FCM V1 notification HTTP error: HTTP ${response.statusCode}: $errorBody', null);
         }
       } else {
+        AppLogger.warning('⚠️ Access token is null or Project ID is null');
+        AppLogger.warning('   Access token: ${accessToken != null ? "exists" : "null"}');
+        AppLogger.warning('   Project ID: ${projectId ?? "null"}');
+        
         // Fallback to Legacy API إذا كان متاحاً
         final serverKey = serverConfig.firebaseServerKey;
         
         if (serverKey == null || serverKey.isEmpty) {
-          AppLogger.warning('Neither V1 API nor Legacy API configured - notification not sent');
+          AppLogger.error('❌ Neither V1 API nor Legacy API configured - notification not sent', null);
+          AppLogger.error('   Please configure FIREBASE_SERVICE_ACCOUNT_PATH and FIREBASE_PROJECT_ID in .env', null);
         } else {
+          AppLogger.info('   Falling back to Legacy API');
           // استخدام Legacy API (fallback)
           final fcmUrl = 'https://fcm.googleapis.com/fcm/send';
           
