@@ -27,7 +27,7 @@ class ServerConfig {
     firebaseServiceAccountPath = env['FIREBASE_SERVICE_ACCOUNT_PATH'] ?? 
                                  env['GOOGLE_APPLICATION_CREDENTIALS'];
     firebaseServiceAccountJson = env['FIREBASE_SERVICE_ACCOUNT_JSON']; // JSON content as string (for Render)
-    firebaseProjectId = env['FIREBASE_PROJECT_ID'] ?? 'shs-app-c66a7';
+    firebaseProjectId = env['FIREBASE_PROJECT_ID'] ?? 'shs-app-6224c';
   }
 
   Map<String, String> _loadEnv() {

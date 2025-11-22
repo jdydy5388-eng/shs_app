@@ -154,14 +154,21 @@ class LabRequestsHandler {
       );
 
       // إرسال إشعارات تلقائية (غير متزامن - لا ننتظر)
+      AppLogger.info('📋 Lab request created - triggering notifications');
+      AppLogger.info('   Request ID: ${body['id']}');
+      AppLogger.info('   Doctor ID: ${body['doctorId']}');
+      AppLogger.info('   Patient ID: ${body['patientId']}');
+      AppLogger.info('   Test Type: ${body['testType']}');
+      
       _sendLabRequestNotifications(
         labRequestId: body['id'] as String,
         doctorId: body['doctorId'] as String,
         patientId: body['patientId'] as String,
         patientName: body['patientName'] as String,
         testType: body['testType'] as String,
-      ).catchError((e) {
-        AppLogger.error('Error in async lab request notifications', e);
+      ).catchError((e, stackTrace) {
+        AppLogger.error('❌ Error in async lab request notifications', e);
+        AppLogger.error('Stack trace', stackTrace);
       });
 
       return ResponseHelper.success(data: {'message': 'Lab request created successfully'});
@@ -258,8 +265,12 @@ class LabRequestsHandler {
     required String testType,
   }) async {
     try {
-      AppLogger.info('🔄 Starting lab request notifications for request $labRequestId');
-      AppLogger.info('   Patient ID: $patientId, Doctor ID: $doctorId');
+      AppLogger.info('🔄 ========== Starting lab request notifications ==========');
+      AppLogger.info('   Request ID: $labRequestId');
+      AppLogger.info('   Patient ID: $patientId');
+      AppLogger.info('   Patient Name: $patientName');
+      AppLogger.info('   Doctor ID: $doctorId');
+      AppLogger.info('   Test Type: $testType');
       final conn = await DatabaseService().connection;
       
       // الحصول على اسم الطبيب
@@ -341,6 +352,7 @@ class LabRequestsHandler {
 
         if (fcmToken != null && fcmToken.isNotEmpty) {
           AppLogger.info('📤 Sending lab request notification to patient $patientId');
+          AppLogger.info('   FCM Token: ${fcmToken.substring(0, 20)}... (${fcmToken.length} chars)');
           await _sendFCMNotification(
             fcmToken: fcmToken,
             title: 'طلب فحص جديد',
@@ -354,8 +366,13 @@ class LabRequestsHandler {
         } else {
           AppLogger.warning('⚠️ Patient $patientId does not have FCM token - notification not sent');
           AppLogger.warning('   Patient needs to log in again to save FCM token');
+          AppLogger.warning('   Additional info was: ${additionalInfo != null ? "exists" : "null"}');
         }
+      } else {
+        AppLogger.warning('⚠️ Patient $patientId not found in database');
       }
+      
+      AppLogger.info('🔄 ========== Finished lab request notifications ==========');
     } catch (e, stackTrace) {
       AppLogger.error('❌ Error sending lab request notifications', e);
       AppLogger.error('Stack trace', stackTrace);
@@ -451,16 +468,17 @@ class LabRequestsHandler {
     Map<String, dynamic>? data,
   }) async {
     try {
-      AppLogger.info('📤 Attempting to send FCM notification');
+      AppLogger.info('📤 ========== Attempting to send FCM notification ==========');
       AppLogger.info('   Title: $title');
       AppLogger.info('   Message: $message');
-      AppLogger.info('   Token length: ${fcmToken.length}');
+      AppLogger.info('   Token: ${fcmToken.substring(0, 30)}... (${fcmToken.length} chars)');
       
       final serverConfig = ServerConfig();
       final projectId = serverConfig.firebaseProjectId;
       
-      AppLogger.info('   Project ID: $projectId');
-      AppLogger.info('   Service Account Path: ${serverConfig.firebaseServiceAccountPath}');
+      AppLogger.info('   Project ID: ${projectId ?? "NULL"}');
+      AppLogger.info('   Service Account Path: ${serverConfig.firebaseServiceAccountPath ?? "NULL"}');
+      AppLogger.info('   Service Account JSON: ${serverConfig.firebaseServiceAccountJson != null && serverConfig.firebaseServiceAccountJson!.isNotEmpty ? "EXISTS (${serverConfig.firebaseServiceAccountJson!.length} chars)" : "NULL or EMPTY"}');
       
       // محاولة استخدام V1 API أولاً
       AppLogger.info('   Getting OAuth2 access token...');
@@ -510,17 +528,28 @@ class LabRequestsHandler {
         );
         
         AppLogger.info('   Response status: ${response.statusCode}');
+        AppLogger.info('   Response body: ${response.body}');
+        
         if (response.statusCode == 200) {
           AppLogger.info('✅ FCM V1 notification sent successfully');
           final responseData = jsonDecode(response.body) as Map<String, dynamic>;
-          AppLogger.info('   Response: $responseData');
+          AppLogger.info('   Response data: $responseData');
         } else {
           final errorBody = response.body;
-          AppLogger.error('❌ FCM V1 notification HTTP error: HTTP ${response.statusCode}: $errorBody', null);
+          AppLogger.error('❌ FCM V1 notification HTTP error: HTTP ${response.statusCode}', null);
+          AppLogger.error('   Error body: $errorBody', null);
+          
+          // محاولة تحليل الخطأ
+          try {
+            final errorData = jsonDecode(errorBody) as Map<String, dynamic>;
+            AppLogger.error('   Parsed error: $errorData', null);
+          } catch (_) {
+            // لا يمكن تحليل الخطأ كـ JSON
+          }
         }
       } else {
         AppLogger.warning('⚠️ Access token is null or Project ID is null');
-        AppLogger.warning('   Access token: ${accessToken != null ? "exists" : "null"}');
+        AppLogger.warning('   Access token: ${accessToken != null ? "exists (${accessToken.length} chars)" : "null"}');
         AppLogger.warning('   Project ID: ${projectId ?? "null"}');
         
         // Fallback to Legacy API إذا كان متاحاً
@@ -528,7 +557,8 @@ class LabRequestsHandler {
         
         if (serverKey == null || serverKey.isEmpty) {
           AppLogger.error('❌ Neither V1 API nor Legacy API configured - notification not sent', null);
-          AppLogger.error('   Please configure FIREBASE_SERVICE_ACCOUNT_PATH and FIREBASE_PROJECT_ID in .env', null);
+          AppLogger.error('   Please configure FIREBASE_SERVICE_ACCOUNT_JSON and FIREBASE_PROJECT_ID in environment variables', null);
+          AppLogger.error('   Or configure FIREBASE_SERVICE_ACCOUNT_PATH and FIREBASE_PROJECT_ID in .env', null);
         } else {
           AppLogger.info('   Falling back to Legacy API');
           // استخدام Legacy API (fallback)
@@ -569,8 +599,11 @@ class LabRequestsHandler {
           }
         }
       }
-    } catch (e) {
-      AppLogger.error('FCM notification error', e);
+      
+      AppLogger.info('📤 ========== Finished FCM notification attempt ==========');
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ FCM notification error', e);
+      AppLogger.error('Stack trace', stackTrace);
     }
   }
 }

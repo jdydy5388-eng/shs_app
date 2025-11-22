@@ -271,7 +271,8 @@ class UsersHandler {
 
   Future<Response> _saveFCMToken(Request request, String userId) async {
     try {
-      AppLogger.info('💾 Saving FCM token for user $userId');
+      AppLogger.info('💾 ========== Saving FCM token for user ==========');
+      AppLogger.info('   User ID: $userId');
       final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
       final fcmToken = body['token'] as String?;
       
@@ -280,7 +281,7 @@ class UsersHandler {
         return ResponseHelper.error(message: 'FCM token is required', statusCode: 400);
       }
 
-      AppLogger.info('   FCM Token length: ${fcmToken.length} chars');
+      AppLogger.info('   FCM Token: ${fcmToken.substring(0, 30)}... (${fcmToken.length} chars)');
       final conn = await DatabaseService().connection;
       
       // التحقق من وجود المستخدم
@@ -311,7 +312,9 @@ class UsersHandler {
       
       additionalInfo['fcmToken'] = fcmToken;
       
+      AppLogger.info('   Current additional_info keys: ${additionalInfo.keys.toList()}');
       AppLogger.info('   Updating additional_info with FCM token...');
+      
       await conn.execute(
         '''
         UPDATE users 
@@ -324,10 +327,33 @@ class UsersHandler {
         },
       );
 
+      // التحقق من أن الـ token تم حفظه بشكل صحيح
+      final verifyUser = await conn.query(
+        'SELECT additional_info FROM users WHERE id = @userId',
+        substitutionValues: {'userId': userId},
+      );
+      
+      if (verifyUser.isNotEmpty) {
+        final savedInfo = verifyUser.first[0];
+        Map<String, dynamic> savedInfoMap = {};
+        if (savedInfo != null) {
+          if (savedInfo is Map) {
+            savedInfoMap = Map<String, dynamic>.from(savedInfo);
+          } else if (savedInfo is String) {
+            savedInfoMap = jsonDecode(savedInfo) as Map<String, dynamic>;
+          }
+        }
+        
+        final savedToken = savedInfoMap['fcmToken'] as String?;
+        AppLogger.info('   Verification: FCM token in DB: ${savedToken != null && savedToken.isNotEmpty ? "✅ EXISTS (${savedToken.length} chars)" : "❌ NOT FOUND"}');
+      }
+
       AppLogger.info('✅ FCM token saved successfully for user $userId');
+      AppLogger.info('💾 ========== Finished saving FCM token ==========');
       return ResponseHelper.success(data: {'message': 'FCM token saved successfully'});
-    } catch (e) {
-      AppLogger.error('Save FCM token error', e);
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Save FCM token error', e);
+      AppLogger.error('Stack trace', stackTrace);
       return ResponseHelper.error(message: 'Failed to save FCM token: $e');
     }
   }
