@@ -21,6 +21,7 @@ class _RoomsBedsManagementScreenState extends State<RoomsBedsManagementScreen>
   final DataService _dataService = DataService();
   List<RoomModel> _rooms = [];
   Map<String, List<BedModel>> _bedsByRoom = {};
+  Map<String, String> _patientNames = {}; // خريطة لتخزين أسماء المرضى
   bool _isLoading = true;
   RoomType? _filterType;
   late TabController _tabController;
@@ -45,14 +46,39 @@ class _RoomsBedsManagementScreenState extends State<RoomsBedsManagementScreen>
       final roomsList = rooms.cast<RoomModel>();
 
       final bedsByRoom = <String, List<BedModel>>{};
+      final patientIds = <String>{};
+      
       for (final room in roomsList) {
         final beds = await _dataService.getBeds(roomId: room.id);
         bedsByRoom[room.id] = beds.cast<BedModel>();
+        // جمع معرفات المرضى من الأسرة المشغولة
+        for (final bed in beds) {
+          if (bed.patientId != null && bed.patientId!.isNotEmpty) {
+            patientIds.add(bed.patientId!);
+          }
+        }
+      }
+
+      // تحميل أسماء المرضى
+      final patientNames = <String, String>{};
+      if (patientIds.isNotEmpty) {
+        try {
+          final patients = await _dataService.getPatients();
+          for (final patient in patients) {
+            if (patientIds.contains(patient.id)) {
+              patientNames[patient.id] = patient.name;
+            }
+          }
+        } catch (e) {
+          // في حالة فشل تحميل أسماء المرضى، نستمر بدونها
+          print('خطأ في تحميل أسماء المرضى: $e');
+        }
       }
 
       setState(() {
         _rooms = roomsList;
         _bedsByRoom = bedsByRoom;
+        _patientNames = patientNames;
         _isLoading = false;
       });
     } catch (e) {
@@ -342,6 +368,12 @@ class _RoomsBedsManagementScreenState extends State<RoomsBedsManagementScreen>
       }
     }
 
+    // الحصول على اسم المريض إذا كان السرير مشغولاً
+    String? patientName;
+    if (bed.status == BedStatus.occupied && bed.patientId != null) {
+      patientName = _patientNames[bed.patientId];
+    }
+
     return InkWell(
       onTap: () => _showBedActions(bed),
       child: Chip(
@@ -357,6 +389,11 @@ class _RoomsBedsManagementScreenState extends State<RoomsBedsManagementScreen>
               '${bed.label} ($statusText)',
               style: const TextStyle(fontSize: 12),
             ),
+            if (patientName != null)
+              Text(
+                'المريض: $patientName',
+                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black87),
+              ),
             if (stayDuration != null)
               Text(
                 'مدة الإقامة: $stayDuration',

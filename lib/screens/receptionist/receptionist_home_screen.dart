@@ -4,6 +4,7 @@ import 'receptionist_patients_screen.dart';
 import 'receptionist_appointments_screen.dart';
 import 'receptionist_invoices_screen.dart';
 import '../auth/login_screen.dart';
+import '../admin/rooms_beds_management_screen.dart';
 
 class ReceptionistFeature {
   const ReceptionistFeature({
@@ -40,6 +41,7 @@ class _ReceptionistHomeScreenState extends State<ReceptionistHomeScreen> {
     const ReceptionistPatientsScreen(),
     const ReceptionistAppointmentsScreen(),
     const ReceptionistInvoicesScreen(),
+    const RoomsBedsManagementScreen(),
   ];
 
   @override
@@ -70,6 +72,10 @@ class _ReceptionistHomeScreenState extends State<ReceptionistHomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.receipt),
             label: 'الفواتير',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bed),
+            label: 'الغرف والأسرة',
           ),
         ],
       ),
@@ -125,6 +131,23 @@ class ReceptionistHomeContent extends StatelessWidget {
           'متابعة المدفوعات المعلقة',
         ],
         builder: (_) => const ReceptionistInvoicesScreen(),
+      ),
+      ReceptionistFeature(
+        title: 'إدارة الغرف والأسرة',
+        description: 'إدارة الغرف والأسرة وتوزيع المرضى',
+        icon: Icons.bed,
+        color: Colors.purple,
+        details: [
+          'عرض جميع الغرف والأسرة',
+          'إضافة غرف جديدة',
+          'إضافة أسرة للغرف',
+          'حجز أسرة للمرضى',
+          'نقل المرضى بين الأسرة',
+          'إخلاء الأسرة',
+          'إدارة حالة الصيانة',
+          'عرض الإحصائيات',
+        ],
+        builder: (_) => const RoomsBedsManagementScreen(),
       ),
     ];
 

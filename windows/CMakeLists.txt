@@ -32,6 +32,28 @@ set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE}")
 # Use Unicode for all projects.
 add_definitions(-DUNICODE -D_UNICODE)
 
+# إصلاح أخطاء الربط C++20 لـ Firebase
+# المشكلة: Firebase C++ SDK يحتاج إلى C++20 vectorized algorithms
+# الحل: التأكد من أن جميع الأهداف تستخدم C++20 بشكل صحيح
+if(MSVC)
+  # إضافة إعدادات C++20 لجميع الأهداف
+  set(CMAKE_CXX_STANDARD 20)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  set(CMAKE_CXX_EXTENSIONS OFF)
+  
+  # إضافة compiler definitions لجميع الأهداف
+  add_compile_definitions(
+    _HAS_CXX20=1
+    _HAS_STD_BYTE=0
+    _CRT_SECURE_NO_WARNINGS
+    _SILENCE_ALL_CXX20_DEPRECATION_WARNINGS=1
+  )
+  
+  # إضافة compiler options لجميع الأهداف
+  # ملاحظة: /permissive- قد يسبب مشاكل مع بعض plugins، لذا سنستخدمه بحذر
+  add_compile_options(/std:c++20 /Zc:__cplusplus)
+endif()
+
 # Compilation settings that should be applied to most targets.
 #
 # Be cautious about adding new options here, as plugins use this function by
@@ -55,7 +77,21 @@ function(APPLY_STANDARD_SETTINGS TARGET)
     target_compile_definitions(${TARGET} PRIVATE 
       _HAS_CXX20=1
       _HAS_STD_BYTE=0
+      _CRT_SECURE_NO_WARNINGS
+      _SILENCE_ALL_CXX20_DEPRECATION_WARNINGS=1
     )
+    # إضافة linker flags لإصلاح أخطاء الربط C++20 vectorized algorithms
+    # /FORCE:MULTIPLE يسمح بربط رموز متعددة (مفيد عند وجود تعارضات)
+    get_target_property(CURRENT_LINK_FLAGS ${TARGET} LINK_FLAGS)
+    if(CURRENT_LINK_FLAGS)
+      set_target_properties(${TARGET} PROPERTIES
+        LINK_FLAGS "${CURRENT_LINK_FLAGS} /FORCE:MULTIPLE"
+      )
+    else()
+      set_target_properties(${TARGET} PROPERTIES
+        LINK_FLAGS "/FORCE:MULTIPLE"
+      )
+    endif()
   endif()
 endfunction()
 
@@ -70,6 +106,16 @@ add_subdirectory("runner")
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
 include(flutter/generated_plugins.cmake)
+
+# إصلاح مشكلة flutter_local_notifications_windows
+# المشكلة: CW2A يعيد ATL::CW2A وليس std::string مباشرة
+# الحل: إضافة إعدادات خاصة للـ plugin
+if(MSVC AND TARGET flutter_local_notifications_windows)
+  # إضافة compiler options لإصلاح مشكلة CW2A
+  target_compile_options(flutter_local_notifications_windows PRIVATE /Zc:__cplusplus)
+  # إضافة compiler definitions
+  target_compile_definitions(flutter_local_notifications_windows PRIVATE _CRT_SECURE_NO_WARNINGS)
+endif()
 
 
 # === Installation ===

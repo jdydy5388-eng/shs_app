@@ -38,11 +38,11 @@ target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
 # إصلاح أخطاء الربط C++ لـ Firebase على Windows
 # المشكلة: Firebase C++ SDK يحتاج إلى C++20 standard library features
-# الأخطاء: __std_find_trivial_8, __std_find_last_trivial_1, __imp__CrtSetReportFile, etc.
+# الأخطاء: __std_find_trivial_8, __std_find_last_trivial_1, etc.
 # الحل: إضافة linker flags ومكتبات C++ runtime المطلوبة
 if(MSVC)
   # إضافة linker flags لإصلاح أخطاء الربط C++ standard library
-  # هذه الأخطاء تحدث لأن Firebase يستخدم C++20 vectorized algorithms و CRT debug functions
+  # هذه الأخطاء تحدث لأن Firebase يستخدم C++20 vectorized algorithms
   get_target_property(CURRENT_LINK_FLAGS ${BINARY_NAME} LINK_FLAGS)
   if(CURRENT_LINK_FLAGS)
     set_target_properties(${BINARY_NAME} PROPERTIES
@@ -55,7 +55,9 @@ if(MSVC)
   endif()
   
   # إضافة مكتبات C++ runtime المطلوبة لإصلاح أخطاء الربط
-  # هذه المكتبات توفر C++20 vectorized algorithms و CRT functions
+  # هذه المكتبات توفر C++20 vectorized algorithms
+  # ملاحظة: هذه الرموز متوفرة في MSVC 2019 16.8+ مع C++20
+  # إذا استمرت المشكلة، قد تحتاج إلى تحديث Visual Studio
   target_link_libraries(${BINARY_NAME} PRIVATE
     legacy_stdio_definitions.lib
   )
@@ -64,6 +66,7 @@ if(MSVC)
   target_compile_definitions(${BINARY_NAME} PRIVATE
     _HAS_CXX20=1
     _HAS_STD_BYTE=0
+    _CRT_SECURE_NO_WARNINGS
   )
 endif()
 
