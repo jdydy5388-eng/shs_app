@@ -153,20 +153,21 @@ if(EXISTS "${REGISTRANT_CC}")
     endif()
   endif()
   
-  # Replace Firebase registration if exists and not commented
-  string(FIND "${REGISTRANT_CONTENT}" "FirebaseCorePluginCApiRegisterWithRegistrar" REG_POS)
-  if(REG_POS GREATER_EQUAL 0)
-    # Check if already commented
-    string(FIND "${REGISTRANT_CONTENT}" "//.*FirebaseCorePluginCApiRegisterWithRegistrar" REG_COMMENTED)
-    if(REG_COMMENTED LESS 0)
-      # Replace using regex to match multiline pattern
+  # Replace Firebase registration - ALWAYS check and replace if not commented
+  # This handles both single-line and multi-line patterns
+  string(REGEX MATCH "FirebaseCorePluginCApiRegisterWithRegistrar" HAS_REG "${REGISTRANT_CONTENT}")
+  if(HAS_REG)
+    # Check if already commented - look for // before FirebaseCore
+    string(REGEX MATCH "//[[:space:]]*FirebaseCorePluginCApiRegisterWithRegistrar" IS_COMMENTED "${REGISTRANT_CONTENT}")
+    if(NOT IS_COMMENTED)
+      # Pattern 1: Multi-line with registry->GetRegistrarForPlugin on separate line
       string(REGEX REPLACE 
-        "([ \t]*)FirebaseCorePluginCApiRegisterWithRegistrar[^;]*;[^\n]*\n[^\n]*registry->GetRegistrarForPlugin\\(\"FirebaseCorePluginCApi\"\\)[^;]*;"
+        "([ \t]*)FirebaseCorePluginCApiRegisterWithRegistrar\\([^\n]*\n[ \t]*registry->GetRegistrarForPlugin\\(\"FirebaseCorePluginCApi\"\\)[^\n]*\\);"
         "\\1// Firebase disabled on Windows due to C++20 linking issues\n\\1// FirebaseCorePluginCApiRegisterWithRegistrar(\n\\1//     registry->GetRegistrarForPlugin(\"FirebaseCorePluginCApi\"));"
         REGISTRANT_CONTENT "${REGISTRANT_CONTENT}")
-      # Fallback: simple single-line replacement
+      # Pattern 2: Single line or compact format
       string(REGEX REPLACE 
-        "([ \t]*)FirebaseCorePluginCApiRegisterWithRegistrar\\([^)]+\\);"
+        "([ \t]*)FirebaseCorePluginCApiRegisterWithRegistrar\\([^)]*\\);"
         "\\1// Firebase disabled on Windows due to C++20 linking issues\n\\1// FirebaseCorePluginCApiRegisterWithRegistrar(\n\\1//     registry->GetRegistrarForPlugin(\"FirebaseCorePluginCApi\"));"
         REGISTRANT_CONTENT "${REGISTRANT_CONTENT}")
     endif()
