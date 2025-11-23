@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/room_bed_model.dart';
 import '../../models/user_model.dart';
+import '../../models/lab_request_model.dart';
+import '../../models/medical_record_model.dart';
 import '../../services/data_service.dart';
 import '../../utils/auth_helper.dart';
 import 'assign_bed_screen.dart';
@@ -262,25 +264,30 @@ class _RoomsBedsManagementScreenState extends State<RoomsBedsManagementScreen>
             Text('النوع: $roomTypeText'),
             if (room.floor != null) Text('الطابق: ${room.floor}'),
             Text('عدد الأسرة: ${beds.length}'),
-          ],
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Chip(
-              label: Text(
-                'مشغولة: $occupiedBeds',
-                style: const TextStyle(fontSize: 12),
-              ),
-              backgroundColor: Colors.red.withValues(alpha: 0.2),
-            ),
             const SizedBox(height: 4),
-            Chip(
-              label: Text(
-                'متاحة: $availableBeds',
-                style: const TextStyle(fontSize: 12),
-              ),
-              backgroundColor: Colors.green.withValues(alpha: 0.2),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                Chip(
+                  label: Text(
+                    'مشغولة: $occupiedBeds',
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                  backgroundColor: Colors.red.withValues(alpha: 0.2),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
+                ),
+                Chip(
+                  label: Text(
+                    'متاحة: $availableBeds',
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                  backgroundColor: Colors.green.withValues(alpha: 0.2),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
             ),
           ],
         ),
@@ -383,6 +390,72 @@ class _RoomsBedsManagementScreenState extends State<RoomsBedsManagementScreen>
       patientName = _patientNames[bed.patientId];
     }
 
+    // إذا كان السرير مشغولاً، نعرض معلومات المريض بشكل أوضح
+    if (bed.status == BedStatus.occupied && patientName != null) {
+      return InkWell(
+        onTap: () => _showBedActions(bed),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.red.withValues(alpha: 0.15),
+            border: Border.all(color: Colors.red.withValues(alpha: 0.5), width: 1.5),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: Colors.red,
+                    radius: 10,
+                    child: const Icon(Icons.person, size: 12, color: Colors.white),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${bed.label} ($statusText)',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.person_pin, size: 14, color: Colors.blue),
+                    const SizedBox(width: 4),
+                    Text(
+                      patientName!,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (stayDuration != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'مدة الإقامة: $stayDuration',
+                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+    
+    // للأسرة غير المشغولة، نستخدم التصميم العادي
     return InkWell(
       onTap: () => _showBedActions(bed),
       child: Chip(
@@ -398,11 +471,6 @@ class _RoomsBedsManagementScreenState extends State<RoomsBedsManagementScreen>
               '${bed.label} ($statusText)',
               style: const TextStyle(fontSize: 12),
             ),
-            if (patientName != null)
-              Text(
-                'المريض: $patientName',
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black87),
-              ),
             if (stayDuration != null)
               Text(
                 'مدة الإقامة: $stayDuration',
@@ -798,6 +866,13 @@ class _RoomsBedsManagementScreenState extends State<RoomsBedsManagementScreen>
   }
 
   void _showBedActions(BedModel bed) {
+    // قائمة خاصة للأسرة المشغولة
+    if (bed.status == BedStatus.occupied) {
+      _showOccupiedBedMenu(bed);
+      return;
+    }
+
+    // القائمة العادية للأسرة الأخرى
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
@@ -811,24 +886,6 @@ class _RoomsBedsManagementScreenState extends State<RoomsBedsManagementScreen>
                 onTap: () {
                   Navigator.pop(context);
                   _assignBed(bed);
-                },
-              ),
-            ],
-            if (bed.status == BedStatus.occupied) ...[
-              ListTile(
-                leading: const Icon(Icons.transfer_within_a_station),
-                title: const Text('نقل المريض'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _transferBed(bed);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.exit_to_app),
-                title: const Text('إخلاء السرير'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _vacateBed(bed);
                 },
               ),
             ],
@@ -852,6 +909,151 @@ class _RoomsBedsManagementScreenState extends State<RoomsBedsManagementScreen>
                 },
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showOccupiedBedMenu(BedModel bed) {
+    final patientName = bed.patientId != null ? _patientNames[bed.patientId] : null;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.bed, color: Colors.red),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('السرير: ${bed.label}'),
+                  if (patientName != null)
+                    Text(
+                      'المريض: $patientName',
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blue),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildMenuButton(
+                icon: Icons.send,
+                title: 'SEND TO....',
+                subtitle: 'نقل المريض',
+                onTap: () {
+                  Navigator.pop(context);
+                  _transferBed(bed);
+                },
+              ),
+              const Divider(),
+              _buildMenuButton(
+                icon: Icons.assignment,
+                title: 'REQUESTS LIST',
+                subtitle: 'قائمة الطلبات',
+                onTap: () {
+                  Navigator.pop(context);
+                  _showRequestsList(bed);
+                },
+              ),
+              const Divider(),
+              _buildMenuButton(
+                icon: Icons.history,
+                title: 'OLD PROCEDURE',
+                subtitle: 'الإجراءات السابقة',
+                onTap: () {
+                  Navigator.pop(context);
+                  _showOldProcedures(bed);
+                },
+              ),
+              const Divider(),
+              _buildMenuButton(
+                icon: Icons.logout,
+                title: 'DISCHARGE',
+                subtitle: 'إخلاء السرير',
+                color: Colors.orange,
+                onTap: () {
+                  Navigator.pop(context);
+                  _vacateBed(bed);
+                },
+              ),
+              const Divider(),
+              _buildMenuButton(
+                icon: Icons.medical_services,
+                title: 'DOCTOR FOLLOW UP',
+                subtitle: 'متابعة الطبيب',
+                onTap: () {
+                  Navigator.pop(context);
+                  _showDoctorFollowUp(bed);
+                },
+              ),
+              const Divider(),
+              _buildMenuButton(
+                icon: Icons.arrow_back,
+                title: 'BACK',
+                subtitle: 'رجوع',
+                onTap: () => Navigator.pop(context),
+              ),
+              const Divider(),
+              _buildMenuButton(
+                icon: Icons.exit_to_app,
+                title: 'EXIT F6',
+                subtitle: 'خروج',
+                color: Colors.red,
+                onTap: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuButton({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    Color? color,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        child: Row(
+          children: [
+            Icon(icon, color: color ?? Colors.blue, size: 24),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: color ?? Colors.blue,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
           ],
         ),
       ),
@@ -985,6 +1187,259 @@ class _RoomsBedsManagementScreenState extends State<RoomsBedsManagementScreen>
         );
       }
     }
+  }
+
+  void _showRequestsList(BedModel bed) {
+    if (bed.patientId == null || bed.patientId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('لا يوجد مريض في هذا السرير'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // عرض قائمة طلبات الفحوصات للمريض
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('قائمة الطلبات'),
+        content: FutureBuilder<List>(
+          future: _dataService.getLabRequests(patientId: bed.patientId),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            
+            if (snapshot.hasError) {
+              return Text('خطأ: ${snapshot.error}');
+            }
+            
+            final requests = (snapshot.data ?? []).cast<LabRequestModel>();
+            
+            if (requests.isEmpty) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Text('لا توجد طلبات فحوصات'),
+                ),
+              );
+            }
+            
+            return SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: requests.length,
+                itemBuilder: (context, index) {
+                  final request = requests[index];
+                  return ListTile(
+                    leading: Icon(
+                      _getRequestStatusIcon(request.status),
+                      color: _getRequestStatusColor(request.status),
+                    ),
+                    title: Text(request.testType),
+                    subtitle: Text('${request.patientName} - ${_formatDate(request.requestedAt)}'),
+                    trailing: Chip(
+                      label: Text(_getRequestStatusText(request.status)),
+                      backgroundColor: _getRequestStatusColor(request.status).withValues(alpha: 0.2),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إغلاق'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getRequestStatusIcon(dynamic status) {
+    final statusStr = status.toString().toLowerCase();
+    if (statusStr.contains('pending')) return Icons.pending;
+    if (statusStr.contains('completed')) return Icons.check_circle;
+    if (statusStr.contains('cancelled')) return Icons.cancel;
+    return Icons.assignment;
+  }
+
+  Color _getRequestStatusColor(dynamic status) {
+    final statusStr = status.toString().toLowerCase();
+    if (statusStr.contains('pending')) return Colors.orange;
+    if (statusStr.contains('completed')) return Colors.green;
+    if (statusStr.contains('cancelled')) return Colors.red;
+    return Colors.grey;
+  }
+
+  String _getRequestStatusText(dynamic status) {
+    final statusStr = status.toString().toLowerCase();
+    if (statusStr.contains('pending')) return 'قيد الانتظار';
+    if (statusStr.contains('completed')) return 'مكتمل';
+    if (statusStr.contains('cancelled')) return 'ملغى';
+    return 'غير محدد';
+  }
+
+  String _formatDate(DateTime date) {
+    return DateFormat('yyyy-MM-dd HH:mm').format(date);
+  }
+
+  void _showOldProcedures(BedModel bed) {
+    if (bed.patientId == null || bed.patientId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('لا يوجد مريض في هذا السرير'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // عرض السجل الطبي للمريض (الإجراءات السابقة)
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('الإجراءات السابقة'),
+        content: FutureBuilder<List>(
+          future: _dataService.getMedicalRecords(patientId: bed.patientId),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            
+            if (snapshot.hasError) {
+              return Text('خطأ: ${snapshot.error}');
+            }
+            
+            final records = (snapshot.data ?? []).cast<MedicalRecordModel>();
+            
+            if (records.isEmpty) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Text('لا توجد سجلات طبية'),
+                ),
+              );
+            }
+            
+            return SizedBox(
+              width: double.maxFinite,
+              height: 400,
+              child: ListView.builder(
+                itemCount: records.length,
+                itemBuilder: (context, index) {
+                  final record = records[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: Icon(
+                        Icons.medical_information,
+                        color: Colors.blue,
+                      ),
+                      title: Text(record.title),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('التاريخ: ${_formatDate(record.date)}'),
+                          if (record.doctorName != null)
+                            Text('الطبيب: ${record.doctorName}'),
+                          if (record.description != null && record.description!.isNotEmpty)
+                            Text(
+                              record.description!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
+                      ),
+                      isThreeLine: true,
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إغلاق'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDoctorFollowUp(BedModel bed) {
+    if (bed.patientId == null || bed.patientId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('لا يوجد مريض في هذا السرير'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final patientName = _patientNames[bed.patientId];
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.medical_services, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('متابعة الطبيب'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (patientName != null) ...[
+              Text(
+                'المريض: $patientName',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+            ],
+            const Text(
+              'يرجى التواصل مع الطبيب المعالج للمتابعة.',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'يمكنك الاطلاع على:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text('• السجلات الطبية'),
+            const Text('• الوصفات الطبية'),
+            const Text('• نتائج الفحوصات'),
+            const Text('• التقارير الطبية'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إغلاق'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              _showOldProcedures(bed);
+            },
+            icon: const Icon(Icons.medical_information),
+            label: const Text('عرض السجلات الطبية'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showTypeFilter() {
