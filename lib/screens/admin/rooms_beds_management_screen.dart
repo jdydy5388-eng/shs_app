@@ -322,32 +322,97 @@ class _RoomsBedsManagementScreenState extends State<RoomsBedsManagementScreen>
                     children: beds.map((bed) => _buildBedChip(bed)).toList(),
                   ),
                 const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () => _addBed(room),
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text('إضافة سرير'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () => _editRoom(room),
-                      icon: const Icon(Icons.edit, size: 18),
-                      label: const Text('تعديل'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () => _deleteRoom(room),
-                      icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-                      label: const Text('حذف', style: TextStyle(color: Colors.red)),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.red),
-                      ),
-                    ),
-                  ],
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    // على الشاشات الصغيرة، نضع الأزرار في عمود
+                    if (constraints.maxWidth < 600) {
+                      return Column(
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () => _addBed(room),
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text('إضافة سرير'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _editRoom(room),
+                                  icon: const Icon(Icons.edit, size: 18),
+                                  label: const Text('تعديل'),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _deleteRoom(room),
+                                  icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                                  label: const Text('حذف', style: TextStyle(color: Colors.red)),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: Colors.red),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    }
+                    // على الشاشات الكبيرة، نستخدم Row
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => _addBed(room),
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text('إضافة سرير'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _editRoom(room),
+                            icon: const Icon(Icons.edit, size: 18),
+                            label: const Text('تعديل'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _deleteRoom(room),
+                            icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                            label: const Text('حذف', style: TextStyle(color: Colors.red)),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Colors.red),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),
