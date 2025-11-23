@@ -1027,6 +1027,10 @@ class NetworkDataService {
     await _put('rooms/rooms/$roomId', body);
   }
 
+  Future<void> deleteRoom(String roomId) async {
+    await _delete('rooms/rooms/$roomId');
+  }
+
   Future<List<BedModel>> getBeds({String? roomId, BedStatus? status}) async {
     final query = <String, String>{};
     if (roomId != null) query['roomId'] = roomId;

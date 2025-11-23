@@ -1,4 +1,4 @@
-﻿//
+//
 //  Generated file. Do not edit.
 //
 
@@ -23,4 +23,3 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
   UrlLauncherWindowsRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("UrlLauncherWindows"));
 }
-

@@ -8,6 +8,7 @@ import 'assign_bed_screen.dart';
 import 'transfer_bed_screen.dart';
 import 'create_room_screen.dart';
 import 'create_bed_screen.dart';
+import 'edit_room_screen.dart';
 
 class RoomsBedsManagementScreen extends StatefulWidget {
   const RoomsBedsManagementScreen({super.key});
@@ -330,6 +331,14 @@ class _RoomsBedsManagementScreenState extends State<RoomsBedsManagementScreen>
                       onPressed: () => _editRoom(room),
                       icon: const Icon(Icons.edit, size: 18),
                       label: const Text('تعديل'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _deleteRoom(room),
+                      icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                      label: const Text('حذف', style: TextStyle(color: Colors.red)),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.red),
+                      ),
                     ),
                   ],
                 ),
@@ -716,10 +725,76 @@ class _RoomsBedsManagementScreenState extends State<RoomsBedsManagementScreen>
   }
 
   void _editRoom(RoomModel room) {
-    // يمكن إضافة شاشة تعديل الغرفة لاحقاً
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('ميزة التعديل قيد التطوير')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditRoomScreen(room: room),
+      ),
+    ).then((_) => _loadData());
+  }
+
+  Future<void> _deleteRoom(RoomModel room) async {
+    // التحقق من وجود أسرة مشغولة
+    final beds = _bedsByRoom[room.id] ?? [];
+    final occupiedBeds = beds.where((b) => b.status == BedStatus.occupied).length;
+    
+    if (occupiedBeds > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('لا يمكن حذف الغرفة لأنها تحتوي على $occupiedBeds سرير مشغول'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تأكيد الحذف'),
+        content: Text(
+          beds.isNotEmpty
+              ? 'هل أنت متأكد من حذف الغرفة "${room.name}"؟\nسيتم حذف جميع الأسرة المرتبطة بها (${beds.length} سرير).'
+              : 'هل أنت متأكد من حذف الغرفة "${room.name}"؟',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
     );
+
+    if (confirm != true) return;
+
+    try {
+      await _dataService.deleteRoom(room.id);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم حذف الغرفة بنجاح'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _loadData();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('خطأ في حذف الغرفة: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showBedActions(BedModel bed) {

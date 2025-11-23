@@ -276,6 +276,7 @@ class DataService {
   Future<List> getRooms() => _service.getRooms();
   Future<void> createRoom(room) => _service.createRoom(room);
   Future<void> updateRoom(String id, {name, type, floor, notes}) => _service.updateRoom(id, name: name, type: type, floor: floor, notes: notes);
+  Future<void> deleteRoom(String id) => _service.deleteRoom(id);
 
   Future<List> getBeds({String? roomId, status}) => _service.getBeds(roomId: roomId, status: status);
   Future<void> createBed(bed) => _service.createBed(bed);

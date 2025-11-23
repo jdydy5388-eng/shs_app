@@ -1583,6 +1583,14 @@ class LocalDataService {
     await db.update('rooms', updates, where: 'id = ?', whereArgs: [roomId]);
   }
 
+  Future<void> deleteRoom(String roomId) async {
+    final db = await _db.database;
+    // حذف جميع الأسرة المرتبطة بالغرفة أولاً
+    await db.delete('beds', where: 'room_id = ?', whereArgs: [roomId]);
+    // ثم حذف الغرفة
+    await db.delete('rooms', where: 'id = ?', whereArgs: [roomId]);
+  }
+
   Future<List<BedModel>> getBeds({String? roomId, BedStatus? status}) async {
     final db = await _db.database;
     final where = <String>[];

@@ -105,14 +105,99 @@ add_subdirectory("runner")
 
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
+
+# ===================================================================
+# FIREBASE DISABLE FIX - MUST BE BEFORE include()
+# Modify generated files to disable Firebase before including them
+# ===================================================================
+# Fix generated_plugins.cmake: Remove firebase_core and add skip condition
+set(PLUGINS_CMAKE "${CMAKE_CURRENT_SOURCE_DIR}/flutter/generated_plugins.cmake")
+if(EXISTS "${PLUGINS_CMAKE}")
+  file(READ "${PLUGINS_CMAKE}" PLUGINS_CONTENT)
+  # Remove firebase_core from list
+  string(REGEX REPLACE "[\r\n][ \t]*firebase_core[\r\n]" "\n" PLUGINS_CONTENT "${PLUGINS_CONTENT}")
+  # Add skip condition if not present
+  if(NOT PLUGINS_CONTENT MATCHES "Skip firebase_core")
+    string(REGEX REPLACE 
+      "(foreach\\(plugin[^)]+\\))"
+      "\\1\n  # Skip firebase_core - C++20 linking issues on Windows\n  if(NOT plugin STREQUAL \"firebase_core\")"
+      PLUGINS_CONTENT "${PLUGINS_CONTENT}")
+    string(REGEX REPLACE
+      "(endforeach\\(plugin\\))"
+      "  endif()\n\\1"
+      PLUGINS_CONTENT "${PLUGINS_CONTENT}")
+  endif()
+  file(WRITE "${PLUGINS_CMAKE}" "${PLUGINS_CONTENT}")
+endif()
+
+# Fix generated_plugin_registrant.cc: Comment out Firebase includes
+# This MUST work even if Flutter regenerates the file during build
+set(REGISTRANT_CC "${CMAKE_CURRENT_SOURCE_DIR}/flutter/generated_plugin_registrant.cc")
+if(EXISTS "${REGISTRANT_CC}")
+  file(READ "${REGISTRANT_CC}" REGISTRANT_CONTENT)
+  set(ORIGINAL_REGISTRANT "${REGISTRANT_CONTENT}")
+  
+  # Simple check: if file contains uncommented Firebase include, replace it
+  string(FIND "${REGISTRANT_CONTENT}" "#include <firebase_core/firebase_core_plugin_c_api.h>" INCLUDE_POS)
+  string(FIND "${REGISTRANT_CONTENT}" "//.*firebase_core_plugin_c_api.h" COMMENTED_CHECK)
+  
+  if(INCLUDE_POS GREATER_EQUAL 0)
+    # Check if already commented by looking for comment pattern before it
+    string(SUBSTRING "${REGISTRANT_CONTENT}" ${INCLUDE_POS} 1 CHAR_BEFORE)
+    # If not commented, replace it
+    if(NOT COMMENTED_CHECK GREATER_EQUAL 0)
+      string(REPLACE 
+        "#include <firebase_core/firebase_core_plugin_c_api.h>"
+        "// Firebase disabled on Windows due to C++20 linking issues\n// #include <firebase_core/firebase_core_plugin_c_api.h>"
+        REGISTRANT_CONTENT "${REGISTRANT_CONTENT}")
+    endif()
+  endif()
+  
+  # Replace Firebase registration if exists and not commented
+  string(FIND "${REGISTRANT_CONTENT}" "FirebaseCorePluginCApiRegisterWithRegistrar" REG_POS)
+  if(REG_POS GREATER_EQUAL 0)
+    # Check if already commented
+    string(FIND "${REGISTRANT_CONTENT}" "//.*FirebaseCorePluginCApiRegisterWithRegistrar" REG_COMMENTED)
+    if(REG_COMMENTED LESS 0)
+      # Replace using regex to match multiline pattern
+      string(REGEX REPLACE 
+        "([ \t]*)FirebaseCorePluginCApiRegisterWithRegistrar[^;]*;[^\n]*\n[^\n]*registry->GetRegistrarForPlugin\\(\"FirebaseCorePluginCApi\"\\)[^;]*;"
+        "\\1// Firebase disabled on Windows due to C++20 linking issues\n\\1// FirebaseCorePluginCApiRegisterWithRegistrar(\n\\1//     registry->GetRegistrarForPlugin(\"FirebaseCorePluginCApi\"));"
+        REGISTRANT_CONTENT "${REGISTRANT_CONTENT}")
+      # Fallback: simple single-line replacement
+      string(REGEX REPLACE 
+        "([ \t]*)FirebaseCorePluginCApiRegisterWithRegistrar\\([^)]+\\);"
+        "\\1// Firebase disabled on Windows due to C++20 linking issues\n\\1// FirebaseCorePluginCApiRegisterWithRegistrar(\n\\1//     registry->GetRegistrarForPlugin(\"FirebaseCorePluginCApi\"));"
+        REGISTRANT_CONTENT "${REGISTRANT_CONTENT}")
+    endif()
+  endif()
+  
+  # Always write back (CMake will optimize if unchanged)
+  file(WRITE "${REGISTRANT_CC}" "${REGISTRANT_CONTENT}")
+endif()
+
+# Now include the modified files
 include(flutter/generated_plugins.cmake)
 
+# Additional safety: Remove firebase_core_plugin from linking if it somehow got linked
+if(TARGET firebase_core_plugin)
+  set_target_properties(firebase_core_plugin PROPERTIES EXCLUDE_FROM_ALL TRUE)
+  get_target_property(CURRENT_LIBS ${BINARY_NAME} LINK_LIBRARIES)
+  if(CURRENT_LIBS)
+    list(REMOVE_ITEM CURRENT_LIBS firebase_core_plugin)
+    set_target_properties(${BINARY_NAME} PROPERTIES LINK_LIBRARIES "${CURRENT_LIBS}")
+  endif()
+endif()
+
 # إصلاح مشكلة flutter_local_notifications_windows
-# المشكلة: CW2A يعيد ATL::CW2A وليس std::string مباشرة
+# المشكلة 1: CW2A يعيد ATL::CW2A وليس std::string مباشرة
+# المشكلة 2: C1041 - cannot open program database (PDB) - عدة عمليات CL.EXE تكتب على نفس PDB
 # الحل: إضافة إعدادات خاصة للـ plugin
 if(MSVC AND TARGET flutter_local_notifications_windows)
   # إضافة compiler options لإصلاح مشكلة CW2A
   target_compile_options(flutter_local_notifications_windows PRIVATE /Zc:__cplusplus)
+  # إضافة /FS لإصلاح مشكلة PDB (C1041) - يسمح لعدة عمليات CL.EXE بالكتابة على نفس PDB
+  target_compile_options(flutter_local_notifications_windows PRIVATE /FS)
   # إضافة compiler definitions
   target_compile_definitions(flutter_local_notifications_windows PRIVATE _CRT_SECURE_NO_WARNINGS)
 endif()
