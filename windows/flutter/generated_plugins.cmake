@@ -4,7 +4,6 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   file_selector_windows
-  firebase_core
   flutter_secure_storage_windows
   url_launcher_windows
 )
@@ -16,10 +15,13 @@ list(APPEND FLUTTER_FFI_PLUGIN_LIST
 set(PLUGIN_BUNDLED_LIBRARIES)
 
 foreach(plugin ${FLUTTER_PLUGIN_LIST})
+  # Skip firebase_core - C++20 linking issues on Windows
+  if(NOT plugin STREQUAL "firebase_core")
   add_subdirectory(flutter/ephemeral/.plugin_symlinks/${plugin}/windows plugins/${plugin})
   target_link_libraries(${BINARY_NAME} PRIVATE ${plugin}_plugin)
   list(APPEND PLUGIN_BUNDLED_LIBRARIES $<TARGET_FILE:${plugin}_plugin>)
   list(APPEND PLUGIN_BUNDLED_LIBRARIES ${${plugin}_bundled_libraries})
+  endif()
 endforeach(plugin)
 
 foreach(ffi_plugin ${FLUTTER_FFI_PLUGIN_LIST})

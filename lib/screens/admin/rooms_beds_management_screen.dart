@@ -475,7 +475,7 @@ class _RoomsBedsManagementScreenState extends State<RoomsBedsManagementScreen>
                   CircleAvatar(
                     backgroundColor: Colors.red,
                     radius: 10,
-                    child: const Icon(Icons.person, size: 12, color: Colors.white),
+                    child: const Icon(Icons.bed, size: 12, color: Colors.white),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -527,6 +527,7 @@ class _RoomsBedsManagementScreenState extends State<RoomsBedsManagementScreen>
         avatar: CircleAvatar(
           backgroundColor: statusColor,
           radius: 8,
+          child: Icon(Icons.bed, size: 14, color: Colors.white),
         ),
         label: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
