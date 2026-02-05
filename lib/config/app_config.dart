@@ -7,7 +7,7 @@ class AppConfig {
   
   // إعدادات الخادم (يستخدم فقط في الوضع الشبكي)
   // إذا كان لديك خادم منشور عبر Render أو دومين ثابت، حدده هنا
-  static const String _defaultRemoteBaseUrl = 'https://shs-app.onrender.com';
+  static const String _defaultRemoteBaseUrl = 'https://shs-app-qhd1.onrender.com';
 
   // يتم تخزين العنوان في الذاكرة لتجنب إعادة الحساب في كل مرة
   static String? _cachedServerBaseUrl;
