@@ -41,7 +41,7 @@ class NotificationsHandler {
       query += ' ORDER BY scheduled_at ASC';
 
       final rows = await conn.query(query, substitutionValues: values.isEmpty ? null : values);
-      final data = rows.map((r) => {
+      final data = rows.map((r) => <String, dynamic>{
         'id': r[0], 'type': r[1], 'recipient': r[2], 'subject': r[3], 'message': r[4],
         'scheduledAt': r[5], 'status': r[6], 'relatedType': r[7], 'relatedId': r[8],
         'createdAt': r[9], 'sentAt': r[10], 'error': r[11],
@@ -194,7 +194,6 @@ class NotificationsHandler {
       }
 
       // إرسال الإشعار عبر Firebase REST API (V1 API)
-      String? notificationId;
       String? error;
       
       try {
@@ -304,14 +303,14 @@ class NotificationsHandler {
       }
 
       // حفظ الإشعار في قاعدة البيانات
-      final notificationId = DateTime.now().millisecondsSinceEpoch.toString();
+      final savedNotificationId = DateTime.now().millisecondsSinceEpoch.toString();
       await conn.execute(
         '''
         INSERT INTO notifications (id, type, recipient, subject, message, scheduled_at, status, related_type, related_id, created_at, sent_at, error)
         VALUES (@id, 'push', @recipient, @subject, @message, @scheduledAt, 'sent', @relatedType, @relatedId, @createdAt, @sentAt, @error)
         ''',
         substitutionValues: {
-          'id': notificationId,
+          'id': savedNotificationId,
           'recipient': userId,
           'subject': title,
           'message': message,
@@ -328,14 +327,14 @@ class NotificationsHandler {
       if (error != null) {
         return ResponseHelper.success(data: {
           'message': 'Notification saved but FCM send failed',
-          'notificationId': notificationId,
+          'notificationId': savedNotificationId,
           'error': error,
         });
       }
 
       return ResponseHelper.success(data: {
         'message': 'FCM notification sent successfully',
-        'notificationId': notificationId,
+        'notificationId': savedNotificationId,
       });
     } catch (e) {
       AppLogger.error('Send FCM notification error', e);
